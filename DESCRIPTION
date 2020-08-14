@@ -1,0 +1,31 @@
+Package: SpatialGEV
+Title: Fit spatial generalized extreme value models
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Meixi",
+           family = "Chen",
+           role = c("aut", "cre"),
+           email = "meixichen2010@gmail.com",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description:  The models in this package are built using the template model builder (TMB) in R, which has the fast ability to integrate out the latent variables using Laplace approximation. This package allows the users to choose in the fit function which parameter(s) is considered as following the GP, so the users can fit spatial GEV models with different complexities to their dataset without having to write the models in TMB by themselves. 
+License: GPL (>= 2)
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    TMB (>= 1.7.16),
+    mvtnorm,
+    evd,
+    optimCheck, 
+    fields,
+    scales,
+    viridisLite,
+    maps,
+    grDevices,
+    graphics,
+    stats
+LinkingTo: 
+    TMB
+RoxygenNote: 7.0.2
+Roxygen: list(markdown = TRUE)
+Suggests: 
+    testthat
