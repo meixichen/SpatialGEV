@@ -2,28 +2,26 @@
 % Please edit documentation in R/map_plot.R
 \name{map_plot}
 \alias{map_plot}
-\title{Plot a the response values on a map.}
+\title{Plot values with coordinates on a map.}
 \usage{
-map_plot(y, x, file = "", title, ylim, width = 800, height = 600)
+map_plot(y, x, title, ylim, legend.shrink = 0.5, legend.horizontal = FALSE)
 }
 \arguments{
 \item{y}{Vector of \code{n} response values.}
 
 \item{x}{\verb{n x 2}matrix of longitude and latitude of the corresponding response values.}
 
-\item{file}{A character string naming a file for writing.}
-
-\item{title}{A character string of the title of the output picture.}
+\item{title}{Optional. A character string of the title of the output picture.}
 
 \item{ylim}{The scale of \code{y} to generate colors. Default is the range of \code{y}.}
 
-\item{width}{The width of the output file. Default is 800.}
+\item{legend.shrink}{Relative size of the legend. Default is 0.5.}
 
-\item{height}{The height of the output file. Default is 600.}
+\item{legend.horizontal}{Whether the legend is horizontal in the plot. Default is \code{FALSE}.}
 }
 \value{
-A \code{png} file of the generated map with different colors indicating the values of y on different locations.
+A plot of the generated map with different colors indicating the values of y on different locations.
 }
 \description{
-Plot a the response values on a map.
+Plot values with coordinates on a map.
 }

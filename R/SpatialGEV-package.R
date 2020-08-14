@@ -2,11 +2,11 @@
 #' @import mvtnorm
 #' @import evd
 #' @import optimCheck
+#' @import dplyr
 #' @importFrom scales alpha
 #' @importFrom fields color.scale image.plot
 #' @importFrom viridisLite viridis
 #' @importFrom maps map
-#' @importFrom grDevices dev.off png
 #' @importFrom graphics par points
 #' @importFrom stats dist nlminb rnorm runif
 #' @rawNamespace useDynLib(SpatialGEV, .registration=TRUE);useDynLib(SpatialGEV_TMBExports)
