@@ -65,22 +65,43 @@ random_post_draws <- draws$random
 # Plot the approximate posterior
 ## Fixed effects
 par(mfrow = c(2,2))
-hist(fixed_post_draws[1, 6:1000], ylab = "", xlab = "a", main = NULL, breaks = 30, 
+hist(fixed_post_draws[1, ], ylab = "", xlab = "a", main = NULL, breaks = 30, 
      cex.axis = 1.2, cex.lab = 1.2) # location
-hist(fixed_post_draws[2, 6:1000], ylab = "", xlab = "log(s)", main = NULL, breaks = 30, 
+hist(fixed_post_draws[2, ], ylab = "", xlab = "log(s)", main = NULL, breaks = 30, 
      cex.axis = 1.2, cex.lab = 1.2) # log shape
 
-hist(fixed_post_draws[3, 6:1000], ylab = "", xlab = expression(log(sigma^2)), main = NULL, breaks = 35, 
+hist(fixed_post_draws[3, ], ylab = "", xlab = expression(log(sigma^2)), main = NULL, breaks = 35, 
      cex.axis = 1.2, cex.lab = 1.2) # log sigma
-hist(fixed_post_draws[4, 6:1000], ylab = "", xlab= "log(\u2113)", main = NULL, breaks = 30, 
+hist(fixed_post_draws[4, ], ylab = "", xlab= "log(\u2113)", main = NULL, breaks = 30, 
      cex.axis = 1.2, cex.lab = 1.2) # log ell
 
 ## Random effect
-plot_ind <- sort(sample(1:nrow(grid_data), 9))
+plot_ind <- sort(sample(1:nrow(random_post_draws), 9))
 par(mfrow = c(3,3))
 for (i in plot_ind){
-  hist(random_post_draws[i,6:995], breaks = 40,  ylab = "",
+  hist(random_post_draws[i, ], breaks = 40,  ylab = "",
        xlab = parse(text = paste0(expression(log(b)), "[", i, "]")),
        main = NULL, cex.axis = 1.6, cex.lab = 2)
 }
 
+# Compare the observed highest wind speed to the quantile estimates
+optim_logb <- rep(NA, nrow(random_post_draws))
+for (i in 1:nrow(random_post_draws)){
+  den_b <- density(random_post_draws[i,])
+  optim_logb[i] <- den_b$x[which.max(den_b$y)]
+}
+
+den_a <- density(fixed_post_draws[1, ])
+den_s <- density(fixed_post_draws[2, ])
+optim_a <- den_a$x[which.max(den_a$y)]
+optim_b <- exp(optim_logb)
+optim_s <- exp(den_s$x[which.max(den_s$y)])
+
+q_est <- rep(NA, nrow(random_post_draws))
+for (i in 1:nrow(random_post_draws)){
+  q_est[i] <- qgev(0.1, loc = optim_a, scale = optim_b[i], shape = 0, lower.tail = TRUE)
+}
+
+par(mfrow = c(1, 1))
+plot(test_set$max_wind, q_est, xlab = "Observed highest wind speed", ylab = "Estimated 10% upper quantile",
+     cex.lab = 1.2, cex.axis = 1.2)
