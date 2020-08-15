@@ -66,14 +66,14 @@ random_post_draws <- draws$random
 ## Fixed effects
 par(mfrow = c(2,2))
 hist(fixed_post_draws[1, ], ylab = "", xlab = "a", main = NULL, breaks = 30, 
-     cex.axis = 1.2, cex.lab = 1.2) # location
+     cex.axis = 1.3, cex.lab = 1.3) # location
 hist(fixed_post_draws[2, ], ylab = "", xlab = "log(s)", main = NULL, breaks = 30, 
-     cex.axis = 1.2, cex.lab = 1.2) # log shape
+     cex.axis = 1.3, cex.lab = 1.3) # log shape
 
 hist(fixed_post_draws[3, ], ylab = "", xlab = expression(log(sigma^2)), main = NULL, breaks = 35, 
-     cex.axis = 1.2, cex.lab = 1.2) # log sigma
+     cex.axis = 1.3, cex.lab = 1.3) # log sigma
 hist(fixed_post_draws[4, ], ylab = "", xlab= "log(\u2113)", main = NULL, breaks = 30, 
-     cex.axis = 1.2, cex.lab = 1.2) # log ell
+     cex.axis = 1.3, cex.lab = 1.3) # log ell
 
 ## Random effect
 plot_ind <- sort(sample(1:nrow(random_post_draws), 9))
@@ -81,7 +81,7 @@ par(mfrow = c(3,3))
 for (i in plot_ind){
   hist(random_post_draws[i, ], breaks = 40,  ylab = "",
        xlab = parse(text = paste0(expression(log(b)), "[", i, "]")),
-       main = NULL, cex.axis = 1.6, cex.lab = 2)
+       main = NULL, cex.axis = 1.3, cex.lab = 1.6)
 }
 
 # Compare the observed highest wind speed to the quantile estimates
