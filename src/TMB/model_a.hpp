@@ -1,6 +1,8 @@
 #ifndef model_a_hpp
 #define model_a_hpp
 
+#include "SpatialGEV/utils.hpp"
+
 #undef TMB_OBJECTIVE_PTR
 #define TMB_OBJECTIVE_PTR obj
 
@@ -32,33 +34,36 @@ Type model_a(objective_function<Type>* obj) {
   
   using namespace density;
   matrix<Type> cov(n,n);
-  if (sp_thres == 0){
-    matrix<Type> tmp = -dd/ell;
-    matrix<Type> dd_exp = exp(tmp.array());
-    cov = sigma*dd_exp;
-  } else {
-    // construct the covariance matrix
-    int i,j; 
-    for (i = 0; i < n; i++){
-      cov(i,i) = sigma;
-      for (j = 0; j < i; j++){
-        Type h = dd(i,j);
-        if (h >= sp_thres) {
-          cov(i,j) = 0;
-          cov(j,i) = 0;
-        } else {
-          cov(i,j) = sigma*exp(-h/ell);  
-          cov(j,i) = cov(i,j);
-        }
-      }
-    }
-  }
+  cov_expo2<Type>(cov, dd, sigma, ell, sp_thres);
+  // if (sp_thres == 0){
+  //   matrix<Type> tmp = -dd/ell;
+  //   matrix<Type> dd_exp = exp(tmp.array());
+  //   cov = sigma*dd_exp;
+  // } else {
+  //   // construct the covariance matrix
+  //   int i,j; 
+  //   for (i = 0; i < n; i++){
+  //     cov(i,i) = sigma;
+  //     for (j = 0; j < i; j++){
+  //       Type h = dd(i,j);
+  //       if (h >= sp_thres) {
+  //         cov(i,j) = 0;
+  //         cov(j,i) = 0;
+  //       } else {
+  //         cov(i,j) = sigma*exp(-h/ell);  
+  //         cov(j,i) = cov(i,j);
+  //       }
+  //     }
+  //   }
+  // }
   
-  Type nll = n*log_b; 
+  // Type nll = n*log_b;
+  Type nll = Type(0.0);
   // the negloglik of GEV
   for(int i=0;i<n;i++) {
-    Type t = 1 + s * (y[i] - a[i]) / b;
-    nll += pow(t, -1/s) + (s + 1)/s * log(t) ;
+    // Type t = 1 + s * (y[i] - a[i]) / b;
+    // nll += pow(t, -1/s) + (s + 1)/s * log(t) ;
+    nll -= gev_lpdf<Type>(y[i], a[i], log_b, s);
   }
   
   // the negloglik of location parameter ~ MVNORM
