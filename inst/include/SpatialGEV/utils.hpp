@@ -29,7 +29,7 @@ using cRefRowVector_t = const Eigen::Ref <const Eigen::Matrix<Type, 1, Eigen::Dy
 /// @return Log-density of Gumbel distribution evaluated at its inputs.
 template <class Type>
 Type gumbel_lpdf(Type x, Type a, Type log_b) {
-  Type t = (y[i] - a[i]) / exp(log_b);
+  Type t = (x - a) / exp(log_b);
   return -exp(-Type(1.0) * t) - t - log_b;
 }
 

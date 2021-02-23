@@ -31,8 +31,8 @@ Type model_a(objective_function<Type>* obj){
   using namespace density;
   
   // construct the covariance matrix
-  matrix<Type> cov(n,n);
-  cov_expo<Type>(cov, dd, sigma_a, ell_a, sp_thres);
+  matrix<Type> cova(n,n);
+  cov_expo<Type>(cova, dd, sigma_a, ell_a, sp_thres);
   
   // calculate the negative log likelihood
   Type nll = Type(0.0); 
