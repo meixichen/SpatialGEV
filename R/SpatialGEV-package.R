@@ -1,7 +1,7 @@
 #' @keywords internal
 #' @import mvtnorm
 #' @import evd
-#' @import dplyr
+#' @importFrom bayestestR ci
 #' @importFrom scales alpha
 #' @importFrom fields color.scale image.plot
 #' @importFrom viridisLite viridis

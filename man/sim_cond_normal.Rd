@@ -7,9 +7,9 @@
 sim_cond_normal(joint.mean, a, X.new, X.obs, kernel = kernel_exp, sigma, ell)
 }
 \arguments{
-\item{joint.mean}{The length `n` mean vector of the MVN distribution. By default mu1 is the first `m` elements of `joint.mean`}
+\item{joint.mean}{The length \code{n} mean vector of the MVN distribution. By default mu1 is the first \code{m} elements of \code{joint.mean}}
 
-\item{a}{A vector of length `n-m`, the values of mu2 to condition on}
+\item{a}{A vector of length \code{n-m}, the values of mu2 to condition on}
 
 \item{X.new}{A matrix containing the coordiantes of new locations}
 
@@ -22,8 +22,8 @@ sim_cond_normal(joint.mean, a, X.new, X.obs, kernel = kernel_exp, sigma, ell)
 \item{ell}{Parameter of kernel function}
 }
 \value{
-A function that takes in one argument `n` as the number of samples to draw from the condition normal distribution
-of `X.new` given `X.old`: either from `rmvnorm` for MVN or `rnorm` for univariate normal. The old and new data are assumed
+A function that takes in one argument \code{n} as the number of samples to draw from the condition normal distribution
+of \code{X.new} given \code{X.old}: either from \code{rmvnorm} for MVN or \code{rnorm} for univariate normal. The old and new data are assumed
 to follow a joint multivariate normal distribution.
 }
 \description{

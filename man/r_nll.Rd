@@ -7,23 +7,23 @@
 r_nll(y, dd, a, log_b, s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b)
 }
 \arguments{
-\item{y}{Vector of `n` independent GEV realizations.}
+\item{y}{Vector of \code{n} independent GEV realizations.}
 
-\item{dd}{An `n x n` distance matrix.}
+\item{dd}{An \verb{n x n} distance matrix.}
 
-\item{a}{Vector of `n` location paramter}
+\item{a}{Vector of \code{n} location paramter}
 
-\item{log_b}{A numeric value or a vector of `n` log-transformed scale parameters if considered as a random effect.}
+\item{log_b}{A numeric value or a vector of \code{n} log-transformed scale parameters if considered as a random effect.}
 
 \item{s}{Shape parameter}
 
-\item{log_sigma_a}{The squared variance parameter (scalar) on the diagonal of the covariance matrix of `a ~ GP` with the constraint of `sigma_a > 0`.}
+\item{log_sigma_a}{The squared variance parameter (scalar) on the diagonal of the covariance matrix of \code{a ~ GP} with the constraint of \code{sigma_a > 0}.}
 
-\item{log_ell_a}{The parameter (scalar) that controls the impact of the distance bewteen two locations on the covariance with the constraint of `ell_a > 0`.}
+\item{log_ell_a}{The parameter (scalar) that controls the impact of the distance bewteen two locations on the covariance with the constraint of \code{ell_a > 0}.}
 
-\item{log_sigma_b}{The squared variance parameter (scalar) on the diagonal of the covariance matrix of `logb ~ GP` with the constraint of `sigma_b > 0`.}
+\item{log_sigma_b}{The squared variance parameter (scalar) on the diagonal of the covariance matrix of \code{logb ~ GP} with the constraint of \code{sigma_b > 0}.}
 
-\item{log_ell_b}{The parameter (scalar) that controls the impact of the distance bewteen two locations on the covariance with the constraint of `ell_b > 0`.}
+\item{log_ell_b}{The parameter (scalar) that controls the impact of the distance bewteen two locations on the covariance with the constraint of \code{ell_b > 0}.}
 }
 \value{
 Scalar value of the negative loglikelihood.

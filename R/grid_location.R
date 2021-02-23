@@ -21,8 +21,6 @@ grid_location <- function(lon, lat, sp.resolution=2, lon.range=range(lon), lat.r
   grid.x <- seq(lon.range[1], lon.range[2]-sp.resolution, by = sp.resolution)
   grid.y <- seq(lat.range[1], lat.range[2]-sp.resolution, by = sp.resolution)
   grid.mat <- matrix(1 : (length(grid.x) * length(grid.y)), nrow = length(grid.y))
-  rownames(grid.mat) <- grid.ys
-  colnames(grid.mat) <- grid.x
   x.it <- findInterval(lon, grid.x)
   y.it <- findInterval(lat, grid.y)
   n <- length(lon)

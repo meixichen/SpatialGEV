@@ -4,12 +4,12 @@
 \name{SpatialGEV-package}
 \alias{SpatialGEV}
 \alias{SpatialGEV-package}
-\title{SpatialGEV: What the Package Does (One Line, Title Case)}
+\title{SpatialGEV: Fit Spatial Generalized Extreme Value Models}
 \description{
-What the package does (one paragraph).
+The models in this package are built using the template model builder (TMB) in R, which has the fast ability to integrate out the latent variables using Laplace approximation. This package allows the users to choose in the fit function which parameter(s) is considered as following the GP, so the users can fit spatial GEV models with different complexities to their dataset without having to write the models in TMB by themselves. This package also offers a method to sample from both fixed and random effects posterior.
 }
 \author{
-\strong{Maintainer}: First Last \email{first.last@example.com} (\href{https://orcid.org/YOUR-ORCID-ID}{ORCID})
+\strong{Maintainer}: Meixi Chen \email{meixi.chen@uwaterloo.ca} (\href{https://orcid.org/YOUR-ORCID-ID}{ORCID})
 
 }
 \keyword{internal}

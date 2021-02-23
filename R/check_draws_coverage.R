@@ -1,5 +1,6 @@
 #' Posterior draw coverage check
 #'
+#' @param y A vector of length `n` containing the true observations. We would like to check if the true observation at each location is covered in the posterior draw.
 #' @param draws An `n x k` matrix with `n` being the number of draws from the posterior predictive distribution and `k` being the number of locations
 #' @param expected_covr A vector of length `m` containing the expected lengths of credible intervals to look at 
 #' @param ci.method Either "HDI" (default) or "ETI" for calculating the credible intervals. The former is the highest density interval and the latter is the equal tail interval.
@@ -7,7 +8,7 @@
 #' in the credible interval given by the posterior draws, with the length of credible interval given by the i-th entry 
 #' in `expected_covr`.
 #' @export
-check_draws_coverage <- function(draws, expected_covr=seq(0.1, 0.99, by = 0.01), ci.method="HDI"){
+check_draws_coverage <- function(y, draws, expected_covr=seq(0.1, 0.99, by = 0.01), ci.method="HDI"){
   is_covered <- lapply(1:length(expected_covr), 
                        function(j){
                          theor_covr <- expected_covr[j]

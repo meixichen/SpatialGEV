@@ -13,19 +13,19 @@ grid_location(
 )
 }
 \arguments{
-\item{lon}{Numeric, `n` longitude values}
+\item{lon}{Numeric, \code{n} longitude values}
 
-\item{lat}{Numeric, `n` latitude values}
+\item{lat}{Numeric, \code{n} latitude values}
 
 \item{sp.resolution}{Numeric, must be a single value that indicates the minimal unit length of the grid.}
 
-\item{lon.range}{Optional vector that indicates the range of `lon`. Default is `range(lon)`.}
+\item{lon.range}{Optional vector that indicates the range of \code{lon}. Default is \code{range(lon)}.}
 
-\item{lat.range}{Optional vector that indicates the range of `lat`. Default is `range(lat)`.}
+\item{lat.range}{Optional vector that indicates the range of \code{lat}. Default is \code{range(lat)}.}
 }
 \value{
-An `n x 3` data frame containing three variables: `station_ind` corresponds to unique id for each grid, 
-`station_lon` is the longitude of the grid, `station_lat` is the latitude of the grid. Since the output data frame
+An \verb{n x 3} data frame containing three variables: \code{station_ind} corresponds to unique id for each grid,
+\code{station_lon} is the longitude of the grid, \code{station_lat} is the latitude of the grid. Since the output data frame
 retains the order of the input coordinates, the original coordinate dataset and the output have can be linked one-to-one
 by the row index.
 }
@@ -33,7 +33,7 @@ by the row index.
 Grid the locations with fixed cell size
 }
 \details{
-The longitude and latitude of each grid is the mean of the boundary values, respectively. 
-For example, if `sp.resolution=`, then `station_lon=55.5` and `station_lat=22.5` correspond to the square whose 
+The longitude and latitude of each grid is the mean of the boundary values, respectively.
+For example, if \verb{sp.resolution=}, then \code{station_lon=55.5} and \code{station_lat=22.5} correspond to the square whose
 left boundary is 55, right boundary is 56, upper boundary is 23, and lower boundary is 22.
 }

@@ -12,9 +12,19 @@ License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
 Imports: 
-    TMB (>= 1.7.16)
+    TMB (>= 1.7.16),
+    mvtnorm,
+    evd,
+    bayestestR,
+    fields,
+    scales,
+    viridisLite,
+    maps,
+    graphics,
+    stats
 LinkingTo: 
     TMB
 RoxygenNote: 7.0.2
+Roxygen: list(markdown = TRUE)
 Suggests: 
     testthat

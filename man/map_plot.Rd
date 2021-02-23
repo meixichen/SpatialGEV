@@ -15,17 +15,17 @@ map_plot(
 )
 }
 \arguments{
-\item{y}{Vector of `n` response values.}
+\item{y}{Vector of \code{n} response values.}
 
-\item{x}{`n x 2`matrix of longitude and latitude of the corresponding response values.}
+\item{x}{\verb{n x 2}matrix of longitude and latitude of the corresponding response values.}
 
 \item{title}{Optional. A character string of the title of the output picture.}
 
-\item{ylim}{The scale of `y` to generate colors. Default is the range of `y`.}
+\item{ylim}{The scale of \code{y} to generate colors. Default is the range of \code{y}.}
 
 \item{legend.shrink}{Relative size of the legend. Default is 0.5.}
 
-\item{legend.horizontal}{Whether the legend is horizontal in the plot. Default is `FALSE`.}
+\item{legend.horizontal}{Whether the legend is horizontal in the plot. Default is \code{FALSE}.}
 
 \item{legend.position}{Vector of 4 coordinates of the legend each ranging from 0 to 1}
 }
