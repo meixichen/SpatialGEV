@@ -48,7 +48,7 @@ spatialGEV_fit <- function(y, X, random, init.param, reparam.s, sp.thres=0, adfu
   mod <- paste("model",random, sep="_")
   n_loc <- length(y)
   dd <- as.matrix(stats::dist(X))
-  data <- list(n = n_loc, y = y, dd = dd, sp_thres = sp.thres, reparam_s = reparam.s)
+  data <- list(model=mod, n = n_loc, y = y, dd = dd, sp_thres = sp.thres, reparam_s = reparam.s)
   
   if (random == "ab" & !ignore.random){
     random <- c("a", "log_b")
@@ -56,12 +56,10 @@ spatialGEV_fit <- function(y, X, random, init.param, reparam.s, sp.thres=0, adfu
   else if (ignore.random){
     random <- NULL
   }
-  compile(paste0(mod, ".cpp")) ##
-  dyn.load(dynlib(mod)) ##
   adfun <- TMB::MakeADFun(data = data,
                           parameters = init.param,
                           random = random,
-                          DLL = mod, 
+                          DLL = "SpatialGEV_TMBExports", 
                           silent = silent)
   if (adfun.only){
     adfun

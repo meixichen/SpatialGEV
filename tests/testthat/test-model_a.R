@@ -4,11 +4,6 @@ test_that("`model_a` gives the same likelihood as the one calculated in R under 
   n.tests <- 30 # number of test simulations
   
   for (ii in 1:n.tests){
-    #####To be deleted before making a package ######
-    mod <- "model_a" ##
-    compile(paste0(mod, ".cpp")) ##
-    dyn.load(dynlib(mod)) ##
-    #################################
     # simulate parameters and data
     n_sqrt <- sample(5:10, 1)
     n <- n_sqrt^2 
