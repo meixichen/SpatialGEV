@@ -56,11 +56,18 @@ spatialGEV_fit <- function(y, X, random, init.param, reparam.s, sp.thres=0, adfu
   else if (ignore.random){
     random <- NULL
   }
+  
+  map <- list()
+  if (reparam.s == "zero") { # if using Gumbel, make sure s is not being estimated
+    map <- list(s = factor(NA))
+  }
   adfun <- TMB::MakeADFun(data = data,
                           parameters = init.param,
                           random = random,
+                          map = map,
                           DLL = "SpatialGEV_TMBExports", 
                           silent = silent)
+  
   if (adfun.only){
     adfun
   }
