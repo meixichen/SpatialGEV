@@ -20,6 +20,19 @@ using RefRowVector_t = Eigen::Ref <Eigen::Matrix<Type, 1, Eigen::Dynamic> >;
 template <class Type>
 using cRefRowVector_t = const Eigen::Ref <const Eigen::Matrix<Type, 1, Eigen::Dynamic> >;
 
+/// Calculates the log-density of the Gumbel distribution.
+///
+/// @param[in] x Argument to the density.
+/// @param[in] a Location parameter.
+/// @param[in] log_b Log of scale parameter.
+///
+/// @return Log-density of Gumbel distribution evaluated at its inputs.
+template <class Type>
+Type gumbel_lpdf(Type x, Type a, Type log_b) {
+  Type t = (y[i] - a[i]) / exp(log_b);
+  return -exp(-Type(1.0) * t) - t - log_b;
+}
+
 /// Calculates the log-density of the GEV distribution.
 ///
 /// @param[in] x Argument to the density.
@@ -35,7 +48,7 @@ Type gev_lpdf(Type x, Type a, Type log_b, Type s) {
   // return pow(t - Type(1.0)/s) + (s + Type(1.0))/s + log(t);
 }
 
-/// Compute the variance matrix for the square exponential kernel.
+/// Compute the variance matrix for the exponential kernel.
 ///
 /// @param[out] cov Matrix into which to store the output.
 /// @param[in] dd Distance matrix.
@@ -43,7 +56,7 @@ Type gev_lpdf(Type x, Type a, Type log_b, Type s) {
 /// @param[in] ell Length parameter.
 /// @param[in] sp_thres Threshold parameter.
 template <class Type>
-void cov_expo2(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dd,
+void cov_expo(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dd,
 	       Type sigma, Type ell, Type sp_thres) {
   int i,j;
   int n = dd.rows();

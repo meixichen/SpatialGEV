@@ -1,0 +1,21 @@
+#' Posterior draw coverage check
+#'
+#' @param draws An `n x k` matrix with `n` being the number of draws from the posterior predictive distribution and `k` being the number of locations
+#' @param expected_covr A vector of length `m` containing the expected lengths of credible intervals to look at 
+#' @param ci.method Either "HDI" (default) or "ETI" for calculating the credible intervals. The former is the highest density interval and the latter is the equal tail interval.
+#' @return A vector of `m`. The i-th entry is the proportion of locations at which the true observation is contained 
+#' in the credible interval given by the posterior draws, with the length of credible interval given by the i-th entry 
+#' in `expected_covr`.
+#' @export
+check_draws_coverage <- function(draws, expected_covr=seq(0.1, 0.99, by = 0.01), ci.method="HDI"){
+  is_covered <- lapply(1:length(expected_covr), 
+                       function(j){
+                         theor_covr <- expected_covr[j]
+                         sapply(1:ncol(draws),
+                                function(i){
+                                  wind_ci <- bayestestR::ci(draws[,i], ci = theor_covr, method = ci.method)
+                                  ifelse({y[i] >= wind_ci$CI_low & y[i] <= wind_ci$CI_high}, 1, 0)
+                                })
+                       }) 
+  sapply(is_covered, mean) 
+}
