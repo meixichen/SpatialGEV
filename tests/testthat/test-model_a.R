@@ -66,7 +66,7 @@ test_that("`model_a` gives the same likelihood as the one calculated in R under 
     s <- 0
     y <- unlist(Map(evd::rgev, n=1, loc=a, scale=exp(log_b), shape=s))
     
-    init.param=list(a=a, log_b=log_b, s=0, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
+    init.param=list(a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
     adfun <- spatialGEV_fit(y, X, random="a",
                             init.param=init.param,
                             reparam.s="zero",
@@ -74,7 +74,7 @@ test_that("`model_a` gives the same likelihood as the one calculated in R under 
                             adfun.only=TRUE,
                             ignore.random=TRUE,
                             silent=TRUE)
-    nll_tmb <- adfun$fn(unlist(init.param))
+    nll_tmb <- adfun$fn(unlist(init.param[-3]))
     nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
     expect_equal(nll_r, nll_tmb)
     
