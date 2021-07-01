@@ -10,7 +10,8 @@ spatialGEV_fit(
   random,
   init.param,
   reparam.s,
-  sp.thres = 0,
+  s.prior,
+  sp.thres,
   adfun.only = FALSE,
   ignore.random = FALSE,
   silent = FALSE
@@ -25,9 +26,11 @@ spatialGEV_fit(
 
 \item{init.param}{A list of initial parameters of. See details.}
 
-\item{reparam.s}{A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive".}
+\item{reparam.s}{A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive". See details.}
 
-\item{sp.thres}{Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to \code{sp.thres} will be set to 0. Default is 0, which means not using sparse matrix.}
+\item{s.prior}{Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation.}
+
+\item{sp.thres}{Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to \code{sp.thres} will be set to 0. Default is 0, which means not using sparse matrix.}
 
 \item{adfun.only}{Only output the ADfun constructed using TMB?}
 

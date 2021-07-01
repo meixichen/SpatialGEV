@@ -18,6 +18,8 @@ Type model_a(objective_function<Type>* obj){
   DATA_MATRIX(dd); // distance matrix
   DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=0, no thresholding is made.
   DATA_STRING(reparam_s); // a flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positve"
+  DATA_SCALAR(s_mean); // The mean of the normal prior on s or log(|s|), depending on what reparametrization is used for s. 
+  DATA_SCALAR(s_sd); // The standard deviation of the normal prior on s or log(|s|). If s_sd>9999, a flat prior is imposed.
   // parameter list
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER(log_b); // log-transformed scale parameters of the GEV model  
@@ -41,7 +43,9 @@ Type model_a(objective_function<Type>* obj){
       nll -= gumbel_lpdf<Type>(y[i], a[i], log_b);
     }
   } else{ // the case where we are using GEV distribution with nonzerio shape parameter
-    
+    if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
+      nll -= dnorm(s, s_mean, s_sd, true);
+    }
     if (reparam_s == "positive"){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
       s = exp(s);
     } else if (reparam_s == "negative"){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)

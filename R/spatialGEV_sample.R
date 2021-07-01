@@ -48,7 +48,7 @@ spatialGEV_sample <- function(model, n_draw, observation=TRUE){
         0
       }
     }
-    y_draws <- rep(NULL, n_draw) # Tried to preallocate a large matrix but got error message about not enough memory
+    y_draws <- rep(NULL, n_draw) # <<==== This needs to be fixed! Tried to preallocate a large matrix but got error message about not enough memory
     for (i in 1:n_obs){
       loc_draw <- rep(NA, n_draw)
       for (j in 1:n_draw){

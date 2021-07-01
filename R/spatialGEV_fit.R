@@ -4,8 +4,9 @@
 #' @param X `n x 2`matrix of longitude and latitude of the corresponding response values.
 #' @param random Either "a" or "ab". This indicates which GEV parameters are considered as random effects.
 #' @param init.param A list of initial parameters of. See details. 
-#' @param reparam.s A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive".
-#' @param sp.thres Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp.thres` will be set to 0. Default is 0, which means not using sparse matrix.
+#' @param reparam.s A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive". See details.
+#' @param s.prior Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation. 
+#' @param sp.thres Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp.thres` will be set to 0. Default is 0, which means not using sparse matrix.
 #' @param adfun.only Only output the ADfun constructed using TMB?
 #' @param ignore.random Ignore random effect?
 #' @param silent Do not show tracing information?
@@ -33,7 +34,7 @@
 #' The order of parameters in `init.param` must be: a, log_b, log_s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b.
 #' If reparam.s = "negative" or "postive", the initial value of `s` should be that of log(|s|).
 #' @export
-spatialGEV_fit <- function(y, X, random, init.param, reparam.s, sp.thres=0, adfun.only=FALSE, ignore.random=FALSE, silent=FALSE){
+spatialGEV_fit <- function(y, X, random, init.param, reparam.s, s.prior, sp.thres, adfun.only=FALSE, ignore.random=FALSE, silent=FALSE){
   
   if (length(y) != nrow(X)){
     stop("The length of y must be the same as the number of rows of X.")
@@ -48,7 +49,17 @@ spatialGEV_fit <- function(y, X, random, init.param, reparam.s, sp.thres=0, adfu
   mod <- paste("model",random, sep="_")
   n_loc <- length(y)
   dd <- as.matrix(stats::dist(X))
+  if (missing(sp.thres)) sp.thres <- 0
   data <- list(model=mod, n = n_loc, y = y, dd = dd, sp_thres = sp.thres, reparam_s = reparam.s)
+
+  if (missing(s.prior)){
+    data$s_mean <- 9999
+    data$s_sd <- 9999
+  }
+  else{ # specify the mean and sd of normal prior for s
+    data$s_mean <- s.prior[1]
+    data$s_sd <- s.prior[2]
+  }
   
   if (random == "ab" & !ignore.random){
     random <- c("a", "log_b")

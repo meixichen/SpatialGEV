@@ -8,7 +8,7 @@ check_draws_coverage(
   y,
   draws,
   expected_covr = seq(0.1, 0.99, by = 0.01),
-  ci.method = "HDI"
+  ci.method = "ETI"
 )
 }
 \arguments{
@@ -18,7 +18,7 @@ check_draws_coverage(
 
 \item{expected_covr}{A vector of length \code{m} containing the expected lengths of credible intervals to look at}
 
-\item{ci.method}{Either "HDI" (default) or "ETI" for calculating the credible intervals. The former is the highest density interval and the latter is the equal tail interval.}
+\item{ci.method}{Either "ETI" (default) or "HDI" for calculating the credible intervals. The former is the highest density interval and the latter is the equal tail interval.}
 }
 \value{
 A vector of \code{m}. The i-th entry is the proportion of locations at which the true observation is contained
