@@ -6,4 +6,3 @@ src/*.o
 src/*.so
 src/*.dll
 paper-code/GEV-GP-data-analysis_cache/
-paper-code/GEV-GP-data-analysis_files/
