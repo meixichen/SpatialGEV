@@ -1,6 +1,7 @@
 #######################################################
-# Set up and import the data from the IBTrACS dataset
-# Plot the raw and gridded data
+# Import and preprocess the IBTrACS dataset
+# Data available at https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r00/access/netcdf/
+# Knapp, K. R., M. C. Kruk, D. H. Levinson, H. J. Diamond, and C. J. Neumann, 2010: The International Best Track Archive for Climate Stewardship (IBTrACS): Unifying tropical cyclone best track data
 ######################################################
 require(ncdf4) # this package is required to read the original IBTrACS data
 require(dplyr)
