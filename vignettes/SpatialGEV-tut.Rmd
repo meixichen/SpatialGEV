@@ -1,0 +1,214 @@
+---
+title: "***SpatialGEV***: Tutorial"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{***SpatialGEV***: Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: { equationNumbers: { autoNumber: "AMS" } }
+});
+</script>
+
+\newcommand{\bm}[1]{\boldsymbol{#1}}
+\newcommand{\tx}[1]{\textrm{#1}}
+\newcommand{\xx}{{\bm{x}}}
+\newcommand{\yy}{{\bm{y}}}
+\newcommand{\XX}{{\bm{X}}}
+\newcommand{\YY}{{\bm{Y}}}
+\newcommand{\ZZ}{{\bm{Z}}}
+\newcommand{\tth}{{\bm{\theta}}}
+\newcommand{\pps}{{\bm{\psi}}}
+\newcommand{\uu}{{\bm{u}}}
+\newcommand{\SSi}{{\bm{\Sigma}}}
+\newcommand{\VV}{{\bm{V}}}
+\newcommand{\iid}{{\overset{iid}{\sim}}}
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE, 
+  message = FALSE,
+  fig.align = "center",
+  fig.pos = "!htb",
+  fig.retina = 2,
+  out.width="60%",
+  collapse = TRUE,
+  comment = "#>"
+)
+require(SpatialGEV)
+require(ggplot2)
+require(ggpubr)
+require(evd) # GEV density and simulation
+require(mvtnorm) # MVN distribution
+require(mclust) # Simulate log normal surface
+```
+
+This tutorial explains how ***SpatialGEV*** makes inference for GEV-GP models.
+
+# GEV-GP Model
+The GEV-GP model is a hierarchical model with a data layer and a spatial random effects layer. Let $y_i$ denote the extreme value recorded at location $i = 1, \ldots, n$ and $\xx_i\in\mathbb{R}^2$ denote its geographical coordinates. The data layer specifies that each observation $y_i$ has a GEV distribution, denoted by $y \sim \mathrm{GEV}(a, b_o, s_o)$, whose CDF is given by  
+\begin{equation}\label{eqn:gev-distn}
+    F(y\mid a, b_o, s_o) =
+    \begin{cases}
+    \exp\left\{-\left(1+s_o\frac{y-a}{b_o}\right)^{-\frac{1}{s_o}}\right\} \ \ &\mathrm{for} \ s_o\neq 0,\\
+    \exp\left\{-\exp\left(-\frac{y-a}{b_o}\right)\right\} \ \ &\mathrm{for} \ s_o=0
+    \end{cases}
+\end{equation}
+where $a\in\mathbb{R}$, $b_o>0$, and $s_o\in\mathbb{R}$ are location, scale, and shape parameters, respectively. The support of the GEV distribution depends on the parameter values where $y$ is bounded below by $a-b_o/s_o$ from below when $s_o>0$, bounded above by $a-b_o/s_o$ when $s_o<0$, and unbounded when $s_o=0$. To capture the spatial dependence in the data, we assume some or all of the GEV parameters in the data layer are spatially varying. Thus they are introduced as random effects in the model. 
+
+Note that due to the positive constraint on the scale parameter, we reparametrize it by $b(\xx)=\log(b_o(\xx))$. Furthermore, we assume there is no upper bound on the extreme observations such that the shape parameter $s_o$ must be non-negative. For simplicity we take $s_o$ to be positive, and work with the unconstrained parameter $s=\log(s_o)$. 
+
+The hierarchical model has the following layers:
+\begin{equation}
+\begin{aligned}
+y_i \mid a(\xx_i), b(\xx_i), s & \overset{ind}{\sim} \mathrm{GEV}\big( a(\xx_i), \exp( b(\xx_i) ), \exp(s)\big)\\
+a(\xx) \mid \sigma_a, \lambda_a &\sim \mathcal{GP}\big( 0, k(\xx, \xx' \mid \sigma_a^2, \lambda_a) \big)\\
+b(\xx) \mid \sigma_b, \lambda_b &\sim \mathcal{GP}\big( 0, k(\xx, \xx' \mid \sigma_b^2, \lambda_b) \big)
+\end{aligned}
+\end{equation}
+
+Let $\uu=(a(\xx), b(\xx))$ denote the random effects vector, and $\tth=(s, \log(\lambda_a), \log(\lambda_b), \log(\sigma_a^2), \log(\sigma_b^2))$ denote the fixed effect and hyperparameters vector.
+
+# Simulation Study
+
+## Data
+We simulate one observation per locations on a $20\times 20$ regular lattice on $[0, 10] \times [0,10] \subset \mathbb{R}^2$, such that there are $n=400$ observations in total. Both $a(\xx)$ and $b(\xx)$ are simulated from the log density surface of bivariate normal (mixture).
+```{r sim-data}
+set.seed(123)
+# 1. Simulate location coordinates
+lon <- seq(0, 10, length.out = 20)
+lat <- seq(0, 10, length.out = 20)
+locs <- expand.grid(x = lon, y = lat)
+n_loc <- nrow(locs)
+
+# 2. Simulate a from the log density surface of bivariate normal
+mu_a <- c(4,4)
+Sig_a <- diag(2,2)
+a <- mvtnorm::dmvnorm(x=locs, mean=mu_a, sigma=Sig_a, log=TRUE)
+a <- (a + 30)/5
+a_mat <- matrix(a, ncol=sqrt(n_loc))
+
+# 3. Simulate log(b) from the log density surface of bivariate normal mixture of 2 components
+G <- 2 # number of components
+pro <- c(0.4,0.6) # mixing proportion
+mu1 <- c(1, 0) # mean of the first component
+mu2 <- c(8, 7) # mean of the second component
+mean <- cbind(mu1, mu2)
+diag_entry <- c(0.5, 1)
+Sig1 <- diag(diag_entry[1], 2) # covariance matrix of the first component
+Sig2 <- diag(diag_entry[2], 2) # covariance matrix of the second component
+variance <- list(d=2, G=G, sigma=array(Sig1, Sig2), sigmasq=diag_entry, scale=diag_entry)
+parameters <- list(pro=pro, mean=mean, variance=variance)
+logb <- mclust::dens("VII", data = locs, logarithm = TRUE, parameters = parameters) 
+logb <- (logb - max(logb))/15# rescale log(b)
+logb_mat <- matrix(logb, ncol=sqrt(n_loc))
+
+# 4. Simulate s
+logs <- -2
+
+# 5. Simulate data
+y <- unlist(Map(rgev, n=1, loc=a, scale=exp(logb), shape=exp(logs)))
+y_mat <- matrix(y, ncol=sqrt(n_loc))
+```
+
+Heat maps for $a(\xx)$ and $b(\xx)$ on the spatial domain are displayed below.
+```{r sim-heatmaps, fig.width=4, fig.height=3.2}
+par(mar=c(4.5,4.5,2,1))
+fields::image.plot(x=lon, y=lat, z=a_mat, xlab="Longitude", ylab="Latitude",
+                   main="Heat map of a", graphics.reset = TRUE)
+fields::image.plot(x=lon, y=lat, z=logb_mat, xlab="Longitude", ylab="Latitude",
+                   main="Heat map of log(b)", graphics.reset = TRUE)
+```
+
+## Model fitting
+We can fit the model by calling `spatialGEV_fit`. By specifying `random="ab"`, we tell the model that both $a$ and $b$ are considered spatial random effects. Initial parameter values are passed to `init.param`. `reparam.s="positive"` means we constrain the shape parameter $s$ to be positive, i.e. taking a log transformation of it.
+```{r sim-fit}
+start <- Sys.time()
+mod_fit <- spatialGEV_fit(y = y, X = locs, random = "ab", 
+                          init.param = list(a =a, log_b = logb, s=logs, 
+                                            log_sigma_a = 1, log_ell_a = 5, 
+                                            log_sigma_b = 1, log_ell_b = 5),
+                          reparam.s = "positive", silent = TRUE)
+paste0("Time (in mins) taken to fit is ", difftime(Sys.time(), start))
+```
+Posterior mean estimates of $a(\xx)$ and $b(\xx)$ versus their true values are plotted below.
+```{r sim-fit-vis, fig.width=4, fig.height=3.4}
+rep <- mod_fit$report
+a_mean <- rep$par.random[1:n_loc]
+logb_mean<- rep$par.random[(n_loc+1):(2*n_loc)]
+logs_mean <- rep$par.fixed[1]
+zr_a <- range(c(a, a_mean))
+zr_b <- range(c(logb, logs_mean))
+ggplot()+
+  geom_point(aes(x=a, y=a_mean))+
+  xlim(zr_a[1],zr_a[2])+ylim(zr_a[1],zr_a[2])+
+  geom_abline(linetype="dashed", size=1, color="blue")+
+  ylab("Estimated a")+xlab("True a")+
+  theme_bw()+
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        text = element_text(size=15))
+ggplot()+
+  geom_point(aes(x=logb, y=logb_mean))+
+  xlim(zr_b[1],zr_b[2])+ylim(zr_b[1],zr_b[2])+
+  geom_abline(linetype="dashed", size=1, color="blue")+
+  ylab("Estimated log(b)")+xlab("True log(b)")+
+  theme_bw()+
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        text = element_text(size=15))
+```
+
+The interest of extreme weather modelling often lies in estimating the return level, which is the $p\times 100$\% upper quantile of the extreme value distribution at a given spatial location $\xx$. We define this quantity as $z_p\big(a(\xx), b_o(\xx), s_o(\xx)\big)$, or simply $z_p(\xx)$, which is calculated using \eqref{eqn:gev-distn} by:
+\begin{equation}\label{eqn:upper-quantile}
+\begin{aligned}
+z_p\big(a(\xx), b_o(\xx), s_o(\xx)\big) &= F^{-1}(1-p\mid a(\xx), b_o(\xx), s_o) \\
+&= \begin{cases} 
+a(\xx)-\frac{b_o(\xx)}{s_o}\left\{1-[-\log(1-p)]^{-s_o}\right\} \ \ & s_o\neq 0,\\
+a(\xx)-b_o(\xx)\log[-\log(1-p)] \ \ &s_o=0.
+\end{cases}
+\end{aligned}
+\end{equation}
+
+Now we show how to sample 5000 times from the posterior distribution of the 10\% return level $z_{10}(\xx)$ and calculate its posterior mean at each location.
+```{r sim-return-val}
+# True values
+q <- 0.9
+q_true <- apply(cbind(a, exp(logb)), 1,
+                function(x) evd::qgev(q, x[1], x[2], shape=exp(logs)))
+
+# Sample from the joint posterior distribution of all model parameters
+n_sim <- 5000
+set.seed(123)
+all_draws <- spatialGEV_sample(mod_fit, n_sim, observation = FALSE)
+all_draws <- all_draws$parameter_draws
+
+# Calculate the return levels from the samples
+q_means <- rep(NA, n_loc)
+s_vec <- exp(all_draws[, (2*n_loc+1)])
+for (i in 1:n_loc){
+  a_vec <- all_draws[ ,i]
+  b_vec <- exp(all_draws[ ,i+n_loc])
+  q_means[i] <- mean(apply(cbind(a_vec, b_vec, s_vec), 1, 
+                         function(x) evd::qgev(q, x[1], x[2], x[3])))
+} 
+```
+
+Below plots the posterior mean eastimates of $z_{10}(\xx)$ against their true values.
+```{r sim-return-plot, fig.width=4, fig.height=3.4}
+rng_q <- range(c(q_true, q_means))
+ggplot(mapping=aes(x=q_true, y=q_means))+
+  geom_point()+
+  geom_abline(linetype="dashed", size=1, color="blue")+
+  xlim(rng_q[1],rng_q[2])+ylim(rng_q[1],rng_q[2])+
+  ylab(expression(paste("Estimated ", z[10], "(x)")))+xlab(expression(paste("True ", z[10], "(x)")))+
+  theme_bw()+
+  theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),
+        text = element_text(size=15))
+```
+
