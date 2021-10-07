@@ -12,5 +12,5 @@ A fast Bayesian inference method for spatial random effects modelling of weather
 
 To download this package in R, run 
 ```r
-devtools::install_github("meixichen/SpatialGEV")`
+devtools::install_github("meixichen/SpatialGEV")
 ```
