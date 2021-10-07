@@ -37,6 +37,7 @@ Type model_ab(objective_function<Type>* obj){
   Type ell_b = exp(log_ell_b);
   
   using namespace density;
+  using namespace SpatialGEV;
   
   // construct the covariance matrices
   matrix<Type> cova(n,n);
