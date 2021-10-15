@@ -4,12 +4,7 @@
 \alias{check_draws_coverage}
 \title{Posterior draw coverage check}
 \usage{
-check_draws_coverage(
-  y,
-  draws,
-  expected_covr = seq(0.1, 0.99, by = 0.01),
-  ci.method = "ETI"
-)
+check_draws_coverage(y, draws, expected_covr = seq(0.1, 0.99, by = 0.01))
 }
 \arguments{
 \item{y}{A vector of length \code{n} containing the true observations. We would like to check if the true observation at each location is covered in the posterior draw.}
@@ -17,12 +12,10 @@ check_draws_coverage(
 \item{draws}{An \verb{n x k} matrix with \code{n} being the number of draws from the posterior predictive distribution and \code{k} being the number of locations}
 
 \item{expected_covr}{A vector of length \code{m} containing the expected lengths of credible intervals to look at}
-
-\item{ci.method}{Either "ETI" (default) or "HDI" for calculating the credible intervals. The former is the highest density interval and the latter is the equal tail interval.}
 }
 \value{
 A vector of \code{m}. The i-th entry is the proportion of locations at which the true observation is contained
-in the credible interval given by the posterior draws, with the length of credible interval given by the i-th entry
+in the equal-tail credible interval given by the posterior draws, with the length of credible interval given by the i-th entry
 in \code{expected_covr}.
 }
 \description{
