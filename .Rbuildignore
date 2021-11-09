@@ -1,2 +1,3 @@
 ^README.md$
-inst/extdata/
+^inst/extdata$
+^joss$
