@@ -12,15 +12,10 @@ A fast Bayesian inference method for spatial random effects modelling of weather
 
 Before installing ***SpatialGEV***, make sure you have ***TMB*** installed following the instructions [here](https://github.com/kaskr/adcomp/wiki/Download).
 
-To download this package in R with a quick tutorial, run 
+To download this package in R, run 
 ```r
-devtools::install_github("meixichen/SpatialGEV", build_vignettes=TRUE)
+devtools::install_github("meixichen/SpatialGEV")
 ```
-The tutorial can be viewed by running
-```r
-vignette("SpatialGEV-tut")
-```
-
 
 ### Test
 
