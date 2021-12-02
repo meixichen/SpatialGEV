@@ -16,11 +16,3 @@ To download this package in R, run
 ```r
 devtools::install_github("meixichen/SpatialGEV")
 ```
-
-### Test
-
-To make sure the package works properly on your machine, run the built-in unit tests in ***SpatialGEV***:
-```r
-require(SpatialGEV)
-testthat::test_package("SpatialGEV")
-```
