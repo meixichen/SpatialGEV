@@ -28,7 +28,12 @@ spatialGEV_sample <- function(model, n_draw, observation=TRUE){
   joint_cov <- backsolve(r = C, 
                          x = backsolve(r = C, x = diag(nrow(jointPrec_mat)), 
                                        transpose = TRUE)) # Cholesky decomp
-  joint_mean <- c(rep$par.random, rep$par.fixed)
+  mean_random <- rep$par.random
+  mean_fixed <- rep$par.fixed
+  par_names_random <- paste0(names(mean_random), 1:n_obs) # add location index to the end of each parameter name
+  par_names_fixed <- names(mean_fixed) # extract parameter names for the fixed effects
+  joint_mean <- c(mean_random, mean_fixed)
+  names(joint_mean) <- c(par_names_random, par_names_fixed) # modify parameter names
   joint_post_draw <- mvtnorm::rmvnorm(n_draw, joint_mean, joint_cov) # sample from the joint MVN
   output_list <- list(parameter_draws=joint_post_draw)
   # run below only if posterior draws of GEV observations are wanted
@@ -48,7 +53,7 @@ spatialGEV_sample <- function(model, n_draw, observation=TRUE){
         0
       }
     }
-    y_draws <- rep(NULL, n_draw) # <<==== This needs to be fixed! Tried to preallocate a large matrix but got error message about not enough memory
+    y_draws <- rep(NULL, n_draw) # <<==== TODO: Should allocate space for y_draws. Tried to preallocate a large matrix but got error message about not enough memory.
     for (i in 1:n_obs){
       loc_draw <- rep(NA, n_draw)
       for (j in 1:n_draw){
@@ -65,6 +70,7 @@ spatialGEV_sample <- function(model, n_draw, observation=TRUE){
       }
       y_draws <- cbind(y_draws, loc_draw)
     }
+    colnames(y_draws) <- paste0("y", 1:n_obs)
     output_list[["y_draws"]] <- y_draws
   }
   output_list
