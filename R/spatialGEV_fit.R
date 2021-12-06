@@ -3,15 +3,15 @@
 #' @param y Vector of `n` response values. 
 #' @param X `n x 2`matrix of longitude and latitude of the corresponding response values.
 #' @param random Either "a" or "ab". This indicates which GEV parameters are considered as random effects.
-#' @param init.param A list of initial parameters of. See details. 
-#' @param reparam.s A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive". See details.
-#' @param s.prior Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation. 
-#' @param sp.thres Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp.thres` will be set to 0. Default is 0, which means not using sparse matrix.
-#' @param adfun.only Only output the ADfun constructed using TMB?
-#' @param ignore.random Ignore random effect?
+#' @param init_param A list of initial parameters of. See details. 
+#' @param reparam_s A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive". See details.
+#' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation. 
+#' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp_thres` will be set to 0. Default is 0, which means not using sparse matrix.
+#' @param adfun_only Only output the ADfun constructed using TMB?
+#' @param ignore_random Ignore random effect?
 #' @param silent Do not show tracing information?
-#' @return If `adfun.only=TRUE`, an list given by `MakeADFun()` is output.
-#' If `adfun.only=FALSE`, this function outpus a list containing the following:
+#' @return If `adfun_only=TRUE`, an list given by `MakeADFun()` is output.
+#' If `adfun_only=FALSE`, this function outpus a list containing the following:
 #' - An adfun object
 #' - A fit object given by calling `nlminb()` on the adfun
 #' - An object of class `sdreport` from TMB which contains the point estimates, standard error, and precision matrix for the fixed and random effects
@@ -31,10 +31,10 @@
 #' ```
 #' init.pram=list(a=rep(1,n),log_b=rep(0,n),s=1,log_sigma_a=0,log_ell_a=0, log_sigma_b=0,log_ell_b=0).
 #' ```
-#' The order of parameters in `init.param` must be: a, log_b, log_s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b.
-#' If reparam.s = "negative" or "postive", the initial value of `s` should be that of log(|s|).
+#' The order of parameters in `init_param` must be: a, log_b, log_s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b.
+#' If reparam_s = "negative" or "postive", the initial value of `s` should be that of log(|s|).
 #' @export
-spatialGEV_fit <- function(y, X, random, init.param, reparam.s, s.prior, sp.thres, adfun.only=FALSE, ignore.random=FALSE, silent=FALSE){
+spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, sp_thres, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
   
   if (length(y) != nrow(X)){
     stop("The length of y must be the same as the number of rows of X.")
@@ -42,44 +42,44 @@ spatialGEV_fit <- function(y, X, random, init.param, reparam.s, s.prior, sp.thre
   if (!(random %in% c("a", "ab"))){
     stop("Argument random must be either 'a' or 'ab'.")
   } 
-  if (!(reparam.s %in% c("zero", "unconstrained", "positive", "negative"))){
-    stop("Argument reparam.s must be one of 'zero', 'unconstrained', 'positive', or 'negative'.")
+  if (!(reparam_s %in% c("zero", "unconstrained", "positive", "negative"))){
+    stop("Argument reparam_s must be one of 'zero', 'unconstrained', 'positive', or 'negative'.")
   } 
   
   mod <- paste("model",random, sep="_")
   n_loc <- length(y)
   dd <- as.matrix(stats::dist(X))
-  if (missing(sp.thres)) sp.thres <- 0
-  data <- list(model=mod, n = n_loc, y = y, dd = dd, sp_thres = sp.thres, reparam_s = reparam.s)
+  if (missing(sp_thres)) sp_thres <- 0
+  data <- list(model=mod, n = n_loc, y = y, dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
 
-  if (missing(s.prior)){
+  if (missing(s_prior)){
     data$s_mean <- 9999
     data$s_sd <- 9999
   }
   else{ # specify the mean and sd of normal prior for s
-    data$s_mean <- s.prior[1]
-    data$s_sd <- s.prior[2]
+    data$s_mean <- s_prior[1]
+    data$s_sd <- s_prior[2]
   }
   
-  if (random == "ab" & !ignore.random){
+  if (random == "ab" & !ignore_random){
     random <- c("a", "log_b")
   }
-  else if (ignore.random){
+  else if (ignore_random){
     random <- NULL
   }
   
   map <- list()
-  if (reparam.s == "zero") { # if using Gumbel, make sure s is not being estimated
+  if (reparam_s == "zero") { # if using Gumbel, make sure s is not being estimated
     map <- list(s = factor(NA))
   }
   adfun <- TMB::MakeADFun(data = data,
-                          parameters = init.param,
+                          parameters = init_param,
                           random = random,
                           map = map,
                           DLL = "SpatialGEV_TMBExports", 
                           silent = silent)
   
-  if (adfun.only){
+  if (adfun_only){
     adfun
   }
   else{
