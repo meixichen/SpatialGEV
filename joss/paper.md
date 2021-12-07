@@ -12,8 +12,10 @@ authors:
   orcid: 0000-0003-1012-5352
   affiliation: 1
 - name: Martin Lysy
+  orcid: 0000-0001-9974-1121
   affiliation: 1
 - name: Reza Ramezan
+  orcid: 0000-0003-0450-3249
   affiliation: 1
 bibliography: paper.bib
 affiliations:
@@ -64,9 +66,9 @@ The R pacakge `SpatialExtremes` [@spatialextremes] is one of the most popular so
 # Example
 
 ## Model fitting
-The main functions of the `SpatialGEV` package are `spatialGEV_fit()`, `spatialGEV_sample()`, and `spatialGEV_predict()`. This example shows how to apply these functions to analyze a simulated dataset using the GEV-GP model. The spatial domain is a $20\times 20$ regular lattice on $[0, 10] \times [0,10] \subset \mathbb{R}^2$, such that there are $n=400$ locations in total. The GEV location parameter $a(\xx)$ and the log-transformed scale parameter $\log b(\xx)$ are generated from the unimodal and bimodal functions depicted in Figure \ref{fig:sim-par}. The log-transformed GEV shape parameter $s$ is set to be $-2$, constant across locations. Throughout this paper, $b(\xx)$ and $s$ denote the scale and shape parameters on the log scale. One observation per location is simulated from the GEV distribution conditional on the GEV parameters $(a(\xx), b(\xx), s)$. The simulated data is provided by the package as a data frame called `simulatedData`.
+The main functions of the `SpatialGEV` package are `spatialGEV_fit()`, `spatialGEV_sample()`, and `spatialGEV_predict()`. This example shows how to apply these functions to analyze a simulated dataset using the GEV-GP model. The spatial domain is a $20\times 20$ regular lattice on $[0, 10] \times [0,10] \subset \mathbb{R}^2$, such that there are $n=400$ locations in total. The GEV location parameter $a(\xx)$ and the log-transformed scale parameter $\log(b(\xx))$ are generated from the unimodal and bimodal functions depicted in Figure \ref{fig:sim-par}. The GEV shape parameter $s$ is set to be $\exp(-2)$, constant across locations. One observation per location is simulated from the GEV distribution conditional on the GEV parameters $(a(\xx), b(\xx), s)$. The simulated data is provided by the package as a data frame called `simulatedData`.
 
-![The simulated GEV location parameters $a(\xx_i)$ and log-transformed scale parameters $\log b(\xx_i)$ plotted on regular lattices.\label{fig:sim-par}](sim-par.pdf){width=80%}
+![The simulated GEV location parameters $a(\xx_i)$ and log-transformed scale parameters $\log(b(\xx_i))$ plotted on regular lattices.\label{fig:sim-par}](sim-par.pdf){width=80%}
 
 The GEV-GP model is fitted by calling `spatialGEV_fit()`. By specifying `random="ab"`, both the location parameter $a$ and scale parameter $b$ are considered spatial random effects. Initial parameter values are passed to `init_param`, where `log_sigma_{a/b}` and `log_ell_{a/b}` are hyperparameters in the GP kernel functions for the GEV parameter spatial processes. The argument `reparam_s="positive"` means we constrain the shape parameter to be positive, i.e., its estimation is done on the log scale. The posterior mean estimates of the spatial random effects can be accessed from `mod_fit$report$par.random`, whereas the fixed effects can be obtained from `mod_fit$report$par.fixed`.
 
