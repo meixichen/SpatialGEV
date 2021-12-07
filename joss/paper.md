@@ -96,16 +96,16 @@ p_val <- 0.1                    # 10% return level
 
 # Sample from the joint posterior distribution of all model parameters
 n_draw <- 5000                  # Number of samples from the posterior
-all_draws <- spatialGEV_sample(model = mod_fit, n_draw = n_draw, observation = FALSE)
+all_draws <- spatialGEV_sample(model = mod_fit, n_draw = n_draw)
 all_draws <- all_draws$parameter_draws
 
 # Calculate the posterior mean of the return levels from the samples
 n_loc <- length(y)              # number of locations
-q_means <- rep(NA, n_loc)       # vector of posterior means of the return levels
+q_means <- rep(NA, n_loc)       # posterior means of the return levels
 s_vec <- exp(all_draws[, "s"])  # posterior samples of s
 for (i in 1:n_loc){
-  a_vec <- all_draws[ , paste0("a", i)]          # posterior samples of a at location i
-  b_vec <- exp(all_draws[ , paste0("log_b", i)]) # posterior samples of b at location i
+  a_vec <- all_draws[ , paste0("a", i)]          # posterior samples of a(x_i)
+  b_vec <- exp(all_draws[ , paste0("log_b", i)]) # posterior samples of b(x_i)
   q_means[i] <- mean(apply(cbind(a_vec, b_vec, s_vec), 1, 
                          function(x) evd::qgev(1-p_val, x[1], x[2], x[3])))
 }

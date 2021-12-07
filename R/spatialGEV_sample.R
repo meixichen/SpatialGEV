@@ -5,7 +5,7 @@
 #' @param observation whether to draw from the posterior distribution of the GEV observation?
 #' @return A list of matrices containing the joint posterior draws of the parameters and optionally the GEV observations
 #' @export
-spatialGEV_sample <- function(model, n_draw, observation=TRUE){
+spatialGEV_sample <- function(model, n_draw, observation=FALSE){
   # Extract info from model
   rep <- model$report
   random_ind <- rep$env$random #indices of random effects
