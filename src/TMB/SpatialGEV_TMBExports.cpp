@@ -4,6 +4,7 @@
 #include <TMB.hpp>
 #include "model_a_spde.hpp"
 #include "model_a.hpp"
+#include "model_ab_spde.hpp"
 #include "model_ab.hpp"
 
 template<class Type>
@@ -13,6 +14,8 @@ Type objective_function<Type>::operator() () {
     return model_a_spde(this);
   } else if(model == "model_a") {
     return model_a(this);
+  } else if(model == "model_ab_spde") {
+    return model_ab_spde(this);
   } else if(model == "model_ab") {
     return model_ab(this);
   } else {
