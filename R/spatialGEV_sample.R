@@ -40,16 +40,16 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE){
   if (observation){
     s_draw_fun <- function(j, s_ind){ 
       # `j` points to the j-th draw and `s_ind` is the index of s in the parameter vector of the model
-      if (reparam_s == "unconstrained"){
+      if (reparam_s == 3){
         joint_post_draw[j, s_ind]
       }
-      else if (reparam_s == "positive"){
+      else if (reparam_s == 1){
         exp(joint_post_draw[j, s_ind])
       }
-      else if (reparam_s == "negative"){
+      else if (reparam_s == 2){
         -exp(joint_post_draw[j, s_ind])
       }
-      else{ # if reparam_s="zero"
+      else{ # if reparam_s=0
         0
       }
     }

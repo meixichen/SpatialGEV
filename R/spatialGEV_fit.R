@@ -5,8 +5,9 @@
 #' @param random Either "a" or "ab". This indicates which GEV parameters are considered as random effects.
 #' @param init_param A list of initial parameters of. See details. 
 #' @param reparam_s A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive". See details.
-#' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation. 
-#' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp_thres` will be set to 0. Default is 0, which means not using sparse matrix.
+#' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation.
+#' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE approximation).
+#' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp_thres` will be set to 0. Default is 0, which means not using sparse matrix. Default to 0.
 #' @param adfun_only Only output the ADfun constructed using TMB?
 #' @param ignore_random Ignore random effect?
 #' @param silent Do not show tracing information?
@@ -34,7 +35,7 @@
 #' The order of parameters in `init_param` must be: a, log_b, log_s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b.
 #' If reparam_s = "negative" or "postive", the initial value of `s` should be that of log(|s|).
 #' @export
-spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, sp_thres, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
+spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel="exp", sp_thres=0, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
   
   if (length(y) != nrow(X)){
     stop("The length of y must be the same as the number of rows of X.")
@@ -57,7 +58,8 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, sp_thre
   else{
     stop("Argument reparam_s must be one of 'zero', 'unconstrained', 'positive', or 'negative'.")
   }  
-  mod <- paste("model",random, sep="_")
+  mod <- paste("model", random, sep="_")
+  mod <- paste(mod, kernel, sep="_")
   n_loc <- length(y)
   dd <- as.matrix(stats::dist(X))
   if (missing(sp_thres)) sp_thres <- 0

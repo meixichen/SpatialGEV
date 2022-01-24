@@ -1,5 +1,5 @@
-#ifndef model_a_hpp
-#define model_a_hpp
+#ifndef model_a_matern_hpp
+#define model_a_matern_hpp
 
 #include "SpatialGEV/utils.hpp"
 
@@ -7,10 +7,10 @@
 #define TMB_OBJECTIVE_PTR obj
 
 template<class Type>
-Type model_a(objective_function<Type>* obj){
+Type model_a_matern(objective_function<Type>* obj){
   /*
   Model layer 1: y ~ GEV(a, b, s)
-  Model layer 2: a ~ GP(0, Sigma_a(sigma_a, ell_a))
+  Model layer 2: a ~ GP(0, Sigma_a(phi_a, kappa_a))
   */ 
   using namespace density;
   using namespace SpatialGEV;
@@ -26,16 +26,14 @@ Type model_a(objective_function<Type>* obj){
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER(log_b); // log-transformed scale parameters of the GEV model  
   PARAMETER(s); // initial shape parameter of the GEV model. IMPORTANT: If reparam_s = "negative" or "postive", the initial input should be log(|s|)
-  PARAMETER(log_sigma_a); // hyperparameter: log-transformed squared amplitude parameter (scalar) of the exponential covariance function in Sigma_a
-  PARAMETER(log_ell_a); // hyperparameter: log-transformed smoothness parameter (scalar) of the exponential covariance function in Sigma_a
+  PARAMETER(phi_a); // hyperparameter: Matern range parameter
+  PARAMETER(kappa_a); // hyperparameter: Matern smoothness parameter
 
   int n = y.size();
-  Type sigma_a = exp(log_sigma_a);
-  Type ell_a = exp(log_ell_a);
   
   // construct the covariance matrix
   matrix<Type> cova(n,n);
-  cov_expo<Type>(cova, dd, sigma_a, ell_a, sp_thres);
+  cov_matern<Type>(cova, dd, phi_a, kappa_a, sp_thres);
   
   // calculate the negative log likelihood
   Type nll = Type(0.0); 

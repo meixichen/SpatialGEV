@@ -2,22 +2,28 @@
 
 #define TMB_LIB_INIT R_init_SpatialGEV_TMBExports
 #include <TMB.hpp>
+#include "model_a_exp.hpp"
+#include "model_a_matern.hpp"
 #include "model_a_spde.hpp"
-#include "model_a.hpp"
+#include "model_ab_exp.hpp"
+#include "model_ab_matern.hpp"
 #include "model_ab_spde.hpp"
-#include "model_ab.hpp"
 
 template<class Type>
 Type objective_function<Type>::operator() () {
   DATA_STRING(model);
-  if(model == "model_a_spde") {
+  if(model == "model_a_exp") {
+    return model_a_exp(this);
+  } else if(model == "model_a_matern") {
+    return model_a_matern(this);
+  } else if(model == "model_a_spde") {
     return model_a_spde(this);
-  } else if(model == "model_a") {
-    return model_a(this);
+  } else if(model == "model_ab_exp") {
+    return model_ab_exp(this);
+  } else if(model == "model_ab_matern") {
+    return model_ab_matern(this);
   } else if(model == "model_ab_spde") {
     return model_ab_spde(this);
-  } else if(model == "model_ab") {
-    return model_ab(this);
   } else {
     error("Unknown model.");
   }
