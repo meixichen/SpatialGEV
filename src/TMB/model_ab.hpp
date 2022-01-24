@@ -14,12 +14,14 @@ Type model_ab(objective_function<Type>* obj){
   a ~ GP(0, Sigma_a(sigma_a, ell_a))
   logb ~ GP(0, Sigma_b(sigma_b, ell_b))
   */ 
+  using namespace density;
+  using namespace SpatialGEV;
+  
   // data inputs
-  DATA_INTEGER(n); // number of observations 
   DATA_VECTOR(y); // response vector: mws. Assumed to be > 0
   DATA_MATRIX(dd); // distance matrix
   DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=0, no thresholding is made.
-  DATA_STRING(reparam_s); // a flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positve"
+  DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positve"
   DATA_SCALAR(s_mean); // The mean of the normal prior on s or log(|s|), depending on what reparametrization is used for s. 
   DATA_SCALAR(s_sd); // The standard deviation of the normal prior on s or log(|s|). If s_sd>9999, a flat prior is imposed.
   // parameter list
@@ -31,13 +33,11 @@ Type model_ab(objective_function<Type>* obj){
   PARAMETER(log_sigma_b); // hyperparameter: log-transformed squared amplitude parameter (scalar) of the exponential covariance function in Sigma_b
   PARAMETER(log_ell_b); // hyperparameter: log-transformed smoothness parameter (scalar) of the exponential covariance function in Sigma_b
 
+  int n = y.size();
   Type sigma_a = exp(log_sigma_a);
   Type ell_a = exp(log_ell_a);
   Type sigma_b = exp(log_sigma_b);
   Type ell_b = exp(log_ell_b);
-  
-  using namespace density;
-  using namespace SpatialGEV;
   
   // construct the covariance matrices
   matrix<Type> cova(n,n);
@@ -47,26 +47,8 @@ Type model_ab(objective_function<Type>* obj){
   
   // calculate the negative log likelihood
   Type nll = Type(0.0); 
-  if (reparam_s == "zero"){ // this is the case we are using Gumbel distribution
-    for(int i=0;i<n;i++) {
-      nll -= gumbel_lpdf<Type>(y[i], a[i], log_b[i]);
-    }
-  } else{ // the case where we are using GEV distribution with nonzerio shape parameter
-    if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
-      nll -= dnorm(s, s_mean, s_sd, true);
-    }
-    if (reparam_s == "positive"){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
-      s = exp(s);
-    } else if (reparam_s == "negative"){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
-      s = -exp(s);
-    } // if we don't use any reparametrization, then s is unconstrained
-    
-    for(int i=0;i<n;i++) {
-      nll -= gev_lpdf<Type>(y[i], a[i], log_b[i], s);
-    }
-    
-  } 
-  
+  nll_accumulator_ab<Type>(nll, y, a, log_b, s, n, reparam_s, s_mean, s_sd);
+
   nll += MVNORM(cova)(a);
   nll += MVNORM(covb)(log_b);
   

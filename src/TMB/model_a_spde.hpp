@@ -20,7 +20,7 @@ Type model_a_spde(objective_function<Type>* obj){
   // data inputs
   DATA_VECTOR(y); // response vector
   DATA_IVECTOR(meshidxloc); // indices of the locations in the mesh matrix
-  DATA_STRING(reparam_s); // a flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positve"
+  DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is zero: 0, constrained   to positive: 1 , constrained to be negative: 2, or unconstrained: 3
   DATA_SCALAR(s_mean); // The mean of the normal prior on s or log(|s|), depending on what reparametrization is used for s. 
   DATA_SCALAR(s_sd); // The standard deviation of the normal prior on s or log(|s|). If s_sd>9999, a flat prior is imposed.
   DATA_STRUCT(spde, spde_t); // take the returned object by INLA::inla.spde2.matern in R
@@ -40,7 +40,7 @@ Type model_a_spde(objective_function<Type>* obj){
   nll = GMRF(Q)(a);
   
   // calculate the negative log likelihood
-  if (reparam_s == "zero"){ // this is the case we are using Gumbel distribution
+  if (reparam_s == 0){ // this is the case we are using Gumbel distribution
     for(int i=0;i<n;i++) {
       nll -= gumbel_lpdf<Type>(y[i], a[meshidxloc[i]], log_b);
     }
@@ -48,9 +48,9 @@ Type model_a_spde(objective_function<Type>* obj){
     if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
       nll -= dnorm(s, s_mean, s_sd, true);
     }
-    if (reparam_s == "positive"){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
+    if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies tha    t we are optimizing log(s)
       s = exp(s);
-    } else if (reparam_s == "negative"){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
+    } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this impl    ies that we are optimizing log(-s)
       s = -exp(s);
     } // if we don't use any reparametrization, then s is unconstrained
     
@@ -59,7 +59,8 @@ Type model_a_spde(objective_function<Type>* obj){
     }
     
   } 
-  
+
+
   return nll;  
 }
 

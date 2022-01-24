@@ -42,15 +42,26 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, sp_thre
   if (!(random %in% c("a", "ab"))){
     stop("Argument random must be either 'a' or 'ab'.")
   } 
-  if (!(reparam_s %in% c("zero", "unconstrained", "positive", "negative"))){
+  if (reparam_s == "zero"){
+    reparam_s <- as.integer(0)
+  }
+  else if (reparam_s == "positive"){
+    reparam_s <- as.integer(1)
+  }
+  else if (reparam_s == "negative"){
+    reparam_s <- as.integer(2)
+  }
+  else if (reparam_s == "unconstrained"){
+    reparam_s <- as.integer(3)
+  }
+  else{
     stop("Argument reparam_s must be one of 'zero', 'unconstrained', 'positive', or 'negative'.")
-  } 
-  
+  }  
   mod <- paste("model",random, sep="_")
   n_loc <- length(y)
   dd <- as.matrix(stats::dist(X))
   if (missing(sp_thres)) sp_thres <- 0
-  data <- list(model=mod, n = n_loc, y = y, dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
+  data <- list(model=mod, y = y, dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
 
   if (missing(s_prior)){
     data$s_mean <- 9999

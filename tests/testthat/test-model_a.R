@@ -22,43 +22,43 @@ test_that("`model_a` gives the same likelihood as the one calculated in R under 
     s <- runif(1, 0.01, 0.1)
     y <- unlist(Map(evd::rgev, n=1, loc=a, scale=exp(log_b), shape=s))
     
-    init.param=list(a=a, log_b=log_b, s=log(s), log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
+    init_param=list(a=a, log_b=log_b, s=log(s), log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
     adfun <- spatialGEV_fit(y, X, random="a",
-                            init.param=init.param,
-                            reparam.s="positive",
-                            sp.thres=0,
-                            adfun.only=TRUE,
-                            ignore.random=TRUE,
+                            init_param=init_param,
+                            reparam_s="positive",
+                            sp_thres=0,
+                            adfun_only=TRUE,
+                            ignore_random=TRUE,
                             silent=TRUE)
-    nll_tmb <- adfun$fn(unlist(init.param))
+    nll_tmb <- adfun$fn(unlist(init_param))
     nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
     expect_equal(nll_r, nll_tmb)
     
     # Unconstrained s
-    init.param=list(a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
+    init_param=list(a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
     adfun <- spatialGEV_fit(y, X, random="a",
-                            init.param=init.param,
-                            reparam.s="unconstrained",
-                            sp.thres=0,
-                            adfun.only=TRUE,
-                            ignore.random=TRUE,
+                            init_param=init_param,
+                            reparam_s="unconstrained",
+                            sp_thres=0,
+                            adfun_only=TRUE,
+                            ignore_random=TRUE,
                             silent=TRUE)
-    nll_tmb <- adfun$fn(unlist(init.param))
+    nll_tmb <- adfun$fn(unlist(init_param))
     expect_equal(nll_r, nll_tmb)
     
     # Negative s
     s <- runif(1, -0.1, -0.01)
     y <- unlist(Map(evd::rgev, n=1, loc=a, scale=exp(log_b), shape=s))
     
-    init.param=list(a=a, log_b=log_b, s=log(abs(s)), log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
+    init_param=list(a=a, log_b=log_b, s=log(abs(s)), log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
     adfun <- spatialGEV_fit(y, X, random="a",
-                            init.param=init.param,
-                            reparam.s="negative",
-                            sp.thres=0,
-                            adfun.only=TRUE,
-                            ignore.random=TRUE,
+                            init_param=init_param,
+                            reparam_s="negative",
+                            sp_thres=0,
+                            adfun_only=TRUE,
+                            ignore_random=TRUE,
                             silent=TRUE)
-    nll_tmb <- adfun$fn(unlist(init.param))
+    nll_tmb <- adfun$fn(unlist(init_param))
     nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
     expect_equal(nll_r, nll_tmb)
     
@@ -66,15 +66,15 @@ test_that("`model_a` gives the same likelihood as the one calculated in R under 
     s <- 0
     y <- unlist(Map(evd::rgev, n=1, loc=a, scale=exp(log_b), shape=s))
     
-    init.param=list(a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
+    init_param=list(a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
     adfun <- spatialGEV_fit(y, X, random="a",
-                            init.param=init.param,
-                            reparam.s="zero",
-                            sp.thres=0,
-                            adfun.only=TRUE,
-                            ignore.random=TRUE,
+                            init_param=init_param,
+                            reparam_s="zero",
+                            sp_thres=0,
+                            adfun_only=TRUE,
+                            ignore_random=TRUE,
                             silent=TRUE)
-    nll_tmb <- adfun$fn(unlist(init.param[-3]))
+    nll_tmb <- adfun$fn(unlist(init_param))
     nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
     expect_equal(nll_r, nll_tmb)
     

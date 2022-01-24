@@ -84,6 +84,54 @@ namespace SpatialGEV {
     return;
   }
 
+  template <class Type>
+  void nll_accumulator_a(Type &nll, cRefVector_t<Type>& y, 
+		      RefVector_t<Type> a, Type log_b, Type s,
+		      Type n, Type reparam_s, Type s_mean, Type s_sd) {
+    if (reparam_s == 0){ // this is the case we are using Gumbel distribution
+      for(int i=0;i<n;i++) {
+	nll -= gumbel_lpdf<Type>(y[i], a[i], log_b);
+      }
+    } else{ // the case where we are using GEV distribution with nonzerio shape parameter
+      if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
+	nll -= dnorm(s, s_mean, s_sd, true);
+      }
+      if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
+	s = exp(s);
+      } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
+	s = -exp(s);
+      } // if we don't use any reparametrization, then s is unconstrained
+      for(int i=0;i<n;i++) {
+	nll -= gev_lpdf<Type>(y[i], a[i], log_b, s);
+      }
+    } // end else
+    return;
+  }
+
+  template <class Type>
+  void nll_accumulator_ab(Type &nll, cRefVector_t<Type>& y, 
+		      RefVector_t<Type> a, RefVector_t<Type> log_b, Type s,
+		      Type n, Type reparam_s, Type s_mean, Type s_sd) {
+    if (reparam_s == 0){ // this is the case we are using Gumbel distribution
+      for(int i=0;i<n;i++) {
+	nll -= gumbel_lpdf<Type>(y[i], a[i], log_b[i]);
+      }
+    } else{ // the case where we are using GEV distribution with nonzerio shape parameter
+      if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
+	nll -= dnorm(s, s_mean, s_sd, true);
+      }
+      if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
+	s = exp(s);
+      } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
+	s = -exp(s);
+      } // if we don't use any reparametrization, then s is unconstrained
+      for(int i=0;i<n;i++) {
+	nll -= gev_lpdf<Type>(y[i], a[i], log_b[i], s);
+      }
+    } // end else
+    return;
+  }
+
 } // end namespace SpatialGEV
 
 #endif
