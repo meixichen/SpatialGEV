@@ -43,11 +43,5 @@ a_mat <- matrix(a, ncol=sqrt(n_loc))
 # 4. Simulate s
 logs <- -2
 # 5. Simulate wind
-y <- unlist(Map(rgev, n=1, loc=a, scale=exp(logb), shape=exp(logs)))
-y_mat <- matrix(y, ncol=sqrt(n_loc))
-# persp(x=lon, y=lat, z=y_mat, theta=45, phi=35, r=10, expand=1, axes=T,
-#       ticktype="detailed", xlab="lon", ylab="lat", zlab="y", main="Spatial spread of simulated y")
-# filled.contour(x=lon, y=lat, z=y_mat, key.title = title(main="y"), 
-#                main = "Contour plot of wind", xlab="lon", ylab="lat")
-# par(mfrow=c(1,1))
-# hist(y)
+y <- Map(rgev, n=sample(10:30, n_loc, replace=TRUE), 
+	 loc=a, scale=exp(logb), shape=exp(logs))

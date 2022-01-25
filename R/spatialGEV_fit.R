@@ -11,6 +11,7 @@
 #' @param adfun_only Only output the ADfun constructed using TMB?
 #' @param ignore_random Ignore random effect?
 #' @param silent Do not show tracing information?
+#' @param ... Arguments to pass to `INLA::inla.mesh.2d()`.
 #' @return If `adfun_only=TRUE`, an list given by `MakeADFun()` is output.
 #' If `adfun_only=FALSE`, this function outpus a list containing the following:
 #' - An adfun object
@@ -63,10 +64,37 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel=
   mod <- paste(mod, kernel, sep="_")
   n_loc <- length(y)
   n_obs <- sapply(y, length)
-  dd <- as.matrix(stats::dist(X))
-  if (missing(sp_thres)) sp_thres <- 0
+  if (missing(sp_thres)) sp_thres <- -1
   y <- unlist(y)
-  data <- list(model=mod, y = unlist(y), n_obs = n_obs, dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
+
+  #------ Prepare data input for TMB -------------
+  if (kernel %in% c("exp", "matern")){
+    dd <- as.matrix(stats::dist(X))
+    data <- list(model = mod, y = unlist(y), n_obs = n_obs, dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
+  }
+  else if (kernel == "spde"){
+    mesh <- INLA::inla.mesh.2d(X, max.edge=2)
+    spde <- (INLA::inla.spde2.matern(mesh)$param.inla)[c("M0", "M1", "M2")]
+    n_s <- nrow(spde$M0) # number of mesh triangles created by INLA
+    meshidxloc <- as.integer(mesh$idx$loc - 1)
+    data <- list(model = mod, y = unlist(y), n_obs = n_obs, meshidxloc = meshidxloc, 
+		 reparam_s = reparam_s, spde = spde)
+    if (random == "a"){ 
+      init_param_a <- rep(0, n_s)
+      init_param_a[meshidxloc+1] <- init_param$a # expand the vector of initial parameters due to extra location points introduced by mesh
+      init_param$a <- init_param_a
+    }
+    else {
+      init_param_a <- rep(0, n_s)
+      init_param_b <- rep(-1, n_s)
+      init_param_a[meshidxloc+1] <- init_param$a 
+      init_param_b[meshidxloc+1] <- init_param$log_b
+      init_param$a <- init_param_a
+      init_param$log_b <- init_param_b
+    }
+  }
+  else {stop("kernel must be one of 'exp', 'matern', 'spde'!")}
+  #------ End: prepare data input for TMB ----------------
 
   if (missing(s_prior)){
     data$s_mean <- 9999
