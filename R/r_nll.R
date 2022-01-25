@@ -1,6 +1,6 @@
 #' Calculate the negative loglikelihood of the spatial GEV model.
 #'
-#' @param y Vector of `n` independent GEV realizations.
+#' @param y List of `n` locations each with `n_obs[i]` independent GEV realizations.
 #' @param dd An `n x n` distance matrix.
 #' @param a Vector of `n` location paramter
 #' @param log_b A numeric value or a vector of `n` log-transformed scale parameters if considered as a random effect.
@@ -13,17 +13,20 @@
 #' @details This function is used to test if TMB and R output the same negative loglikelihood.
 #' @export
 r_nll <- function(y, dd, a, log_b, s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b) {
+  n <- length(y)
   cov_a <- exp(log_sigma_a)*exp(-dd/exp(log_ell_a))
   nll <- -dmvnorm(a, sigma = cov_a, log = TRUE) 
   if (length(log_b)==1){
-    nll <- nll - sum(mapply(dgev, x = y, loc = a, 
-                            MoreArgs = list(scale = exp(log_b), shape = s, log = TRUE)))
+    for (i in 1:n){
+      nll <- nll - sum(sapply(y[[i]], dgev, loc=a[i], scale=exp(log_b), shape=s, log=TRUE))
+    }
   }
   else { # if b is considered a random effect
     cov_b <- exp(log_sigma_b)*exp(-dd/exp(log_ell_b))
     nll <- nll - dmvnorm(log_b, sigma = cov_b, log = TRUE)
-    nll <- nll - sum(mapply(dgev, x = y, loc = a, scale = exp(log_b), 
-                 MoreArgs = list(shape = s, log = TRUE)))
+    for (i in 1:n){
+      nll <- nll - sum(sapply(y[[i]], dgev, loc=a[i], scale=exp(log_b[i]), shape=s, log=TRUE))
+    }
   }
   nll
 }

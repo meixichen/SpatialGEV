@@ -19,6 +19,7 @@ Type model_ab_exp(objective_function<Type>* obj){
   
   // data inputs
   DATA_VECTOR(y); // response vector: mws. Assumed to be > 0
+  DATA_IVECTOR(n_obs); // number of observations per location
   DATA_MATRIX(dd); // distance matrix
   DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=0, no thresholding is made.
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positve"
@@ -33,7 +34,7 @@ Type model_ab_exp(objective_function<Type>* obj){
   PARAMETER(log_sigma_b); // hyperparameter: log-transformed squared amplitude parameter (scalar) of the exponential covariance function in Sigma_b
   PARAMETER(log_ell_b); // hyperparameter: log-transformed smoothness parameter (scalar) of the exponential covariance function in Sigma_b
 
-  int n = y.size();
+  int n = n_obs.size();
   Type sigma_a = exp(log_sigma_a);
   Type ell_a = exp(log_ell_a);
   Type sigma_b = exp(log_sigma_b);
@@ -47,7 +48,7 @@ Type model_ab_exp(objective_function<Type>* obj){
   
   // calculate the negative log likelihood
   Type nll = Type(0.0); 
-  nll_accumulator_ab<Type>(nll, y, a, log_b, s, n, reparam_s, s_mean, s_sd);
+  nll_accumulator_ab<Type>(nll, y, n_obs, a, log_b, s, n, reparam_s, s_mean, s_sd);
 
   nll += MVNORM(cova)(a);
   nll += MVNORM(covb)(log_b);

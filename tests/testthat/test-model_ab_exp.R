@@ -24,7 +24,7 @@ test_that("`model_ab` gives the same likelihood as the one calculated in R under
     
     # Positive s
     s <- runif(1, 0.05, 0.1)
-    y <- unlist(Map(evd::rgev, n=1, loc=a, scale=exp(log_b), shape=s))
+    y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
     init_param=list(a=a, log_b=log_b, s=log(s), log_sigma_a=log_sigma_a, log_ell_a=log_ell_a,
                     log_sigma_b=log_sigma_b, log_ell_b=log_ell_b)
     adfun <- spatialGEV_fit(y, X, random="ab",
@@ -55,7 +55,7 @@ test_that("`model_ab` gives the same likelihood as the one calculated in R under
     
     # Negative s
     s <- runif(1, -0.1, -0.05)
-    y <- unlist(Map(evd::rgev, n=1, loc=a, scale=exp(log_b), shape=s))
+    y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
     init_param=list(a=a, log_b=log_b, s=log(abs(s)), log_sigma_a=log_sigma_a, log_ell_a=log_ell_a,
                     log_sigma_b=log_sigma_b, log_ell_b=log_ell_b)
     adfun <- spatialGEV_fit(y, X, random="ab",

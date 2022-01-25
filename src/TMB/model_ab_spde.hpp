@@ -21,6 +21,7 @@ Type model_ab_spde(objective_function<Type>* obj){
   
   // data inputs
   DATA_VECTOR(y); // response vector: mws. Assumed to be > 0
+  DATA_IVECTOR(n_obs); // number of observations per location
   DATA_IVECTOR(meshidxloc); // indices of the locations in the mesh matrix
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is zero: 0, constrained to positive: 1 , constrained to be negative: 2, or unconstrained: 3  
   DATA_SCALAR(s_mean); // The mean of the normal prior on s or log(|s|), depending on what reparametrization is used for s. 
@@ -33,7 +34,7 @@ Type model_ab_spde(objective_function<Type>* obj){
   PARAMETER(log_kappa_a); // hyperparameter for the Matern
   PARAMETER(log_kappa_b);
 
-  int n = y.size(); // number of locations
+  int n = n_obs.size(); // number of locations
   Type kappa_a = exp(log_kappa_a); 
   Type kappa_b = exp(log_kappa_b); 
  
@@ -46,9 +47,15 @@ Type model_ab_spde(objective_function<Type>* obj){
   nll += GMRF(Q_b)(log_b);
 
   // calculate the negative log likelihood
+  int start_ind = 0; // index of the first observation of location i in n_obs
+  int end_ind = 0; // index of the last observation of location i in n_obs
   if (reparam_s == 0){ // this is the case we are using Gumbel distribution
     for(int i=0;i<n;i++) {
-      nll -= gumbel_lpdf<Type>(y[i], a[meshidxloc[i]], log_b[meshidxloc[i]]);
+      end_ind += n_obs[i];
+      for(int j=start_ind;j<end_ind;j++){
+        nll -= gumbel_lpdf<Type>(y[j], a[meshidxloc[i]], log_b[meshidxloc[i]]);
+      }
+      start_ind += n_obs[i];
     }
   } else{ // the case where we are using GEV distribution with nonzerio shape parameter
     if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
@@ -59,11 +66,13 @@ Type model_ab_spde(objective_function<Type>* obj){
     } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
       s = -exp(s);
     } // if we don't use any reparametrization, then s is unconstrained
-    
     for(int i=0;i<n;i++) {
-      nll -= gev_lpdf<Type>(y[i], a[meshidxloc[i]], log_b[meshidxloc[i]], s);
+      end_ind += n_obs[i];
+      for(int j=start_ind;j<end_ind;j++){
+        nll -= gev_lpdf<Type>(y[j], a[meshidxloc[i]], log_b[meshidxloc[i]], s);
+      }
+      start_ind += n_obs[i];
     }
-    
   } 
   
   return nll;  

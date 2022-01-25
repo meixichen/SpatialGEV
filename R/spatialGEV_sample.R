@@ -9,17 +9,17 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE){
   # Extract info from model
   rep <- model$report
   random_ind <- rep$env$random #indices of random effects
-  n_obs <- nrow(model$adfun$env$data$dd) # number of locations
+  n_loc <- nrow(model$adfun$env$data$dd) # number of locations
   reparam_s <- model$adfun$env$data$reparam_s # parametrization of s
   ##########################
-  if (length(random_ind) == n_obs) {
+  if (length(random_ind) == n_loc) {
     mod <- "a"
   }
-  else if (length(random_ind) == 2*n_obs){
+  else if (length(random_ind) == 2*n_loc){
     mod <- "ab"
   }
   else {
-    stop("n_obs must divide the length of random effect vector.")
+    stop("n_loc must divide the length of random effect vector.")
   }
   
   # Sample from MVN
@@ -30,7 +30,7 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE){
                                        transpose = TRUE)) # Cholesky decomp
   mean_random <- rep$par.random
   mean_fixed <- rep$par.fixed
-  par_names_random <- paste0(names(mean_random), 1:n_obs) # add location index to the end of each parameter name
+  par_names_random <- paste0(names(mean_random), 1:n_loc) # add location index to the end of each parameter name
   par_names_fixed <- names(mean_fixed) # extract parameter names for the fixed effects
   joint_mean <- c(mean_random, mean_fixed)
   names(joint_mean) <- c(par_names_random, par_names_fixed) # modify parameter names
@@ -54,23 +54,23 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE){
       }
     }
     y_draws <- rep(NULL, n_draw) # <<==== TODO: Should allocate space for y_draws. Tried to preallocate a large matrix but got error message about not enough memory.
-    for (i in 1:n_obs){
+    for (i in 1:n_loc){
       loc_draw <- rep(NA, n_draw)
       for (j in 1:n_draw){
         a_draw <- joint_post_draw[j, i]
         if (mod == "a"){
-          b_draw <- joint_post_draw[j, n_obs+1]
-          s_draw <- s_draw_fun(j, n_obs+2)
+          b_draw <- joint_post_draw[j, n_loc+1]
+          s_draw <- s_draw_fun(j, n_loc+2)
         }
         else {
-          b_draw <- joint_post_draw[j, i+n_obs]
-          s_draw <- s_draw_fun(j, 2*n_obs+1)
+          b_draw <- joint_post_draw[j, i+n_loc]
+          s_draw <- s_draw_fun(j, 2*n_loc+1)
         }
         loc_draw[j] <- rgev(1, loc = a_draw, scale = exp(b_draw), shape = s_draw)
       }
       y_draws <- cbind(y_draws, loc_draw)
     }
-    colnames(y_draws) <- paste0("y", 1:n_obs)
+    colnames(y_draws) <- paste0("y", 1:n_loc)
     output_list[["y_draws"]] <- y_draws
   }
   output_list

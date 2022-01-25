@@ -1,6 +1,6 @@
 #' Fit a hierarchical spatial Gev model.
 #'
-#' @param y Vector of `n` response values. 
+#' @param y List of `n` locations each with `n_obs[i]` independent GEV realizations. 
 #' @param X `n x 2`matrix of longitude and latitude of the corresponding response values.
 #' @param random Either "a" or "ab". This indicates which GEV parameters are considered as random effects.
 #' @param init_param A list of initial parameters of. See details. 
@@ -18,9 +18,8 @@
 #' - An object of class `sdreport` from TMB which contains the point estimates, standard error, and precision matrix for the fixed and random effects
 #' @details 
 #' This function adopts Laplace approximation using TMB model to integrate out the random effects.
-#' Note that `b, s, sigma, ell` are estimated on the log scale.
 #' 
-#' The log-transformed random effects are assumed to follow Gaussian processes with mean 0 and covariance matrix defined by the exponential covariance function:
+#' The random effects are assumed to follow Gaussian processes with mean 0 and covariance matrix defined by the chosen kernel function. E.g., using the exponential kernel function:
 #' ```
 #' cov(i,j) = sigma*exp(-|x_i - x_j|^2/ell)
 #' ```
@@ -33,6 +32,8 @@
 #' init.pram=list(a=rep(1,n),log_b=rep(0,n),s=1,log_sigma_a=0,log_ell_a=0, log_sigma_b=0,log_ell_b=0).
 #' ```
 #' The order of parameters in `init_param` must be: a, log_b, log_s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b.
+#' If the Matern kernel is used, two hyperparameters `phi` and `kappa` are present for each spatial random effect. I.e., need to specify `phi_a/b` and `kappa_a/b` in `init_param`.
+#' If the Matern SPDE approximation is used, one hyperparameter `log_kappa_a/b` needs to be specify for each spatial random effect. 
 #' If reparam_s = "negative" or "postive", the initial value of `s` should be that of log(|s|).
 #' @export
 spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel="exp", sp_thres=0, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
@@ -61,9 +62,11 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel=
   mod <- paste("model", random, sep="_")
   mod <- paste(mod, kernel, sep="_")
   n_loc <- length(y)
+  n_obs <- sapply(y, length)
   dd <- as.matrix(stats::dist(X))
   if (missing(sp_thres)) sp_thres <- 0
-  data <- list(model=mod, y = y, dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
+  y <- unlist(y)
+  data <- list(model=mod, y = unlist(y), n_obs = n_obs, dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
 
   if (missing(s_prior)){
     data$s_mean <- 9999

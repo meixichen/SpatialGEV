@@ -17,6 +17,7 @@ Type model_a_matern(objective_function<Type>* obj){
   
   // data inputs
   DATA_VECTOR(y); // response vector: mws. Assumed to be > 0
+  DATA_IVECTOR(n_obs); // number of observations per location
   DATA_MATRIX(dd); // distance matrix
   DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=0, no thresholding is made.
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is zero: 0, constrained to positive: 1 , constrained to be negative: 2, or unconstrained: 3 
@@ -29,7 +30,7 @@ Type model_a_matern(objective_function<Type>* obj){
   PARAMETER(phi_a); // hyperparameter: Matern range parameter
   PARAMETER(kappa_a); // hyperparameter: Matern smoothness parameter
 
-  int n = y.size();
+  int n = n_obs.size();
   
   // construct the covariance matrix
   matrix<Type> cova(n,n);
@@ -37,7 +38,7 @@ Type model_a_matern(objective_function<Type>* obj){
   
   // calculate the negative log likelihood
   Type nll = Type(0.0); 
-  nll_accumulator_a<Type>(nll, y, a, log_b, s, n, reparam_s, s_mean, s_sd);  
+  nll_accumulator_a<Type>(nll, y, n_obs, a, log_b, s, n, reparam_s, s_mean, s_sd);  
   nll += MVNORM(cova)(a);
   
   return nll;  
