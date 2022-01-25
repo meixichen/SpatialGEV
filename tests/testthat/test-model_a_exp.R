@@ -1,6 +1,6 @@
-context("model_a")
+context("model_a_exp")
 
-test_that("`model_a` gives the same likelihood as the one calculated in R under different parametrizations of shape parameter", {
+test_that("`model_a_exp` gives the same likelihood as the one calculated in R under different parametrizations of shape parameter", {
   n.tests <- 30 # number of test simulations
   
   for (ii in 1:n.tests){
@@ -13,7 +13,7 @@ test_that("`model_a` gives the same likelihood as the one calculated in R under 
     dd <- as.matrix(stats::dist(X))
     log_sigma_a <- runif(1, 0, 1)
     log_ell_a <- rnorm(1, 0.5, 0.1)
-    cov_a <- exp(log_sigma_a)*exp(-dd/exp(log_ell_a))
+    cov_a <- kernel_exp(dd, exp(log_sigma_a), exp(log_ell_a))
     mean_a <- rep(rnorm(1, 1, 1), n)
     a <- mvtnorm::rmvnorm(1, mean_a, cov_a)
     log_b <- runif(1, -3, 0)
@@ -26,12 +26,14 @@ test_that("`model_a` gives the same likelihood as the one calculated in R under 
     adfun <- spatialGEV_fit(y, X, random="a",
                             init_param=init_param,
                             reparam_s="positive",
-                            sp_thres=0,
+                            kernel="exp", sp_thres=-1,
                             adfun_only=TRUE,
                             ignore_random=TRUE,
                             silent=TRUE)
     nll_tmb <- adfun$fn(unlist(init_param))
-    nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
+    nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s, 
+		   hyperparam_a=c(exp(log_sigma_a), exp(log_ell_a)), 
+                   kernel="exp")
     expect_equal(nll_r, nll_tmb)
     
     # Unconstrained s
@@ -39,7 +41,7 @@ test_that("`model_a` gives the same likelihood as the one calculated in R under 
     adfun <- spatialGEV_fit(y, X, random="a",
                             init_param=init_param,
                             reparam_s="unconstrained",
-                            sp_thres=0,
+                            kernel="exp", sp_thres=-1,
                             adfun_only=TRUE,
                             ignore_random=TRUE,
                             silent=TRUE)
@@ -54,12 +56,14 @@ test_that("`model_a` gives the same likelihood as the one calculated in R under 
     adfun <- spatialGEV_fit(y, X, random="a",
                             init_param=init_param,
                             reparam_s="negative",
-                            sp_thres=0,
+                            kernel="exp", sp_thres=-1,
                             adfun_only=TRUE,
                             ignore_random=TRUE,
                             silent=TRUE)
     nll_tmb <- adfun$fn(unlist(init_param))
-    nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
+    nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s, 
+		   hyperparam_a=c(exp(log_sigma_a), exp(log_ell_a)), 
+                   kernel="exp")
     expect_equal(nll_r, nll_tmb)
     
     # s=0
@@ -70,12 +74,14 @@ test_that("`model_a` gives the same likelihood as the one calculated in R under 
     adfun <- spatialGEV_fit(y, X, random="a",
                             init_param=init_param,
                             reparam_s="zero",
-                            sp_thres=0,
+                            kernel="exp", sp_thres=-1,
                             adfun_only=TRUE,
                             ignore_random=TRUE,
                             silent=TRUE)
     nll_tmb <- adfun$fn(unlist(init_param))
-    nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_ell_a=log_ell_a)
+    nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s, 
+		   hyperparam_a=c(exp(log_sigma_a), exp(log_ell_a)), 
+                   kernel="exp")
     expect_equal(nll_r, nll_tmb)
     
   }

@@ -7,7 +7,7 @@
 #' @param reparam_s A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive". See details.
 #' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation.
 #' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE approximation).
-#' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp_thres` will be set to 0. Default is 0, which means not using sparse matrix. Default to 0.
+#' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not using sparse matrix. 
 #' @param adfun_only Only output the ADfun constructed using TMB?
 #' @param ignore_random Ignore random effect?
 #' @param silent Do not show tracing information?
@@ -36,7 +36,7 @@
 #' If the Matern SPDE approximation is used, one hyperparameter `log_kappa_a/b` needs to be specify for each spatial random effect. 
 #' If reparam_s = "negative" or "postive", the initial value of `s` should be that of log(|s|).
 #' @export
-spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel="exp", sp_thres=0, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
+spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel="exp", sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
   
   if (length(y) != nrow(X)){
     stop("The length of y must be the same as the number of rows of X.")

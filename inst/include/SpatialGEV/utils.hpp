@@ -62,11 +62,11 @@ namespace SpatialGEV {
   	       Type sigma, Type ell, Type sp_thres) {
     int i,j;
     int n = dd.rows();
-    if (sp_thres == 0){
+    if (sp_thres == -1){
       cov = -dd/ell;
       cov = cov.array().exp();
       cov *= sigma;
-    } else {
+    }else {
       for (i = 0; i < n; i++){
         cov(i,i) = sigma;
         for (j = 0; j < i; j++){
@@ -95,17 +95,28 @@ namespace SpatialGEV {
   	       Type phi, Type kappa, Type sp_thres) {
     int i,j;
     int n = dd.rows();
-    for (i = 0; i < n; i++){
-      for (j = 0; j < i; j++){
-	if (dd(i,j) >= sp_thres) {
-	  cov(i,j) = 0;
-	  cov(j,i) = 0;
-	} else {
-	  cov(i,j) = matern(dd(i,j), phi, kappa);  
-	  cov(j,i) = cov(i,j);
+    if (sp_thres == -1){
+      for (i = 0; i < n; i++){
+	cov(i,i) = 1;
+	for (j = 0; j < i; j++){
+	    cov(i,j) = matern(dd(i,j), phi, kappa);  
+	    cov(j,i) = cov(i,j);
 	}
       }
-    }
+    }else {
+      for (i = 0; i < n; i++){
+	cov(i,i) = 1;
+	for (j = 0; j < i; j++){
+	  if (dd(i,j) >= sp_thres) {
+	    cov(i,j) = 0;
+	    cov(j,i) = 0;
+	  } else {
+	    cov(i,j) = matern(dd(i,j), phi, kappa);  
+	    cov(j,i) = cov(i,j);
+	  }
+	}
+      }
+    } //end else
     return;
   }
 

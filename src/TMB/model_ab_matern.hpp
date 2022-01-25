@@ -20,7 +20,7 @@ Type model_ab_matern(objective_function<Type>* obj){
   DATA_VECTOR(y); // response vector: mws. Assumed to be > 0
   DATA_IVECTOR(n_obs); // number of observations per location
   DATA_MATRIX(dd); // distance matrix
-  DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=0, no thresholding is made.
+  DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=-1, no thresholding is made.
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is zero: 0, constrained to positive: 1 , constrained to be negative: 2, or unconstrained: 3 
   DATA_SCALAR(s_mean); // The mean of the normal prior on s or log(|s|), depending on what reparametrization is used for s. 
   DATA_SCALAR(s_sd); // The standard deviation of the normal prior on s or log(|s|). If s_sd>9999, a flat prior is imposed.
@@ -28,12 +28,16 @@ Type model_ab_matern(objective_function<Type>* obj){
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER_VECTOR(log_b); // random effect to be integrated out: log-transformed scale parameters of the GEV model  
   PARAMETER(s); // initial shape parameter of the GEV model. IMPORTANT: If reparam_s = "negative" or "postive", the initial input should be log(|s|)
-  PARAMETER(phi_a); // hyperparameter: Matern range parameter for a
-  PARAMETER(kappa_a); // hyperparameter: Matern smoothness parameter for a
-  PARAMETER(phi_b); // hyperparameter: Matern range parameter for b
-  PARAMETER(kappa_b); // hyperparameter: Matern smoothness parameter for b
+  PARAMETER(log_phi_a); // hyperparameter: Matern range parameter for a
+  PARAMETER(log_kappa_a); // hyperparameter: Matern smoothness parameter for a
+  PARAMETER(log_phi_b); // hyperparameter: Matern range parameter for b
+  PARAMETER(log_kappa_b); // hyperparameter: Matern smoothness parameter for b
 
   int n = n_obs.size();
+  Type phi_a = exp(log_phi_a);
+  Type kappa_a = exp(log_kappa_a);
+  Type phi_b = exp(log_phi_b);
+  Type kappa_b = exp(log_kappa_b);
   
   // construct the covariance matrix
   matrix<Type> cova(n,n);
