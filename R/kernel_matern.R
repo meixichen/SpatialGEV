@@ -1,11 +1,14 @@
 #' Matern covariance function
 #'
 #' @param x Distance measure.
-#' @param phi The range parameter with the constraint of `phi > 0`.
-#' @param kappa The smoothness parameter with constraint of `kappa > 0`.
+#' @param sigma Positive parameter. (This is in fact sigma^2)
+#' @param kappa Positive parameter.
+#' @param nu Range parameter default to 1.
 #' @return Matern covariance value.
 #' @export
-kernel_matern <- function(x, phi, kappa){ 
-  if (any(c(phi, kappa)<=0)) stop("phi and kappa need to be positive")
-  ifelse(x>0, (2^(kappa-1) * gamma(kappa))^{-1} * (x/phi)^kappa * besselK(x/phi, kappa), 1)
+kernel_matern <- function(x, sigma, kappa, nu=1){ 
+  if (any(c(sigma, kappa)<=0)) stop("sigma and kappa need to be positive")
+  ifelse(x>0, 
+	 sigma * 2^(1-nu) * (gamma(nu))^{-1} * (kappa*x)^nu * besselK(kappa*x, nu), 
+	 sigma)
 }

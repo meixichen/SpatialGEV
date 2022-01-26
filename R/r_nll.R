@@ -11,7 +11,7 @@
 #' @return Scalar value of the negative loglikelihood.
 #' @details This function is used to test if TMB and R output the same negative loglikelihood.
 #' If `kernel="exp`, `hyperparam_a/b` should be `c(sigma_a/b, ell_a/b)`, where `sigma` is the amplitude hyperparameter and `ell` is the smoothness hyperparameter for the exponential kernel.
-#' If `kernel="matern`, `hyperparam_a/b` should be `c(phi_a/b, kappa_a/b)`, where `phi` is the range hyperparameter and `kappa` is the smoothness hyperparameter for the Matern kernel. 
+#' If `kernel="matern`, `hyperparam_a/b` should be `c(sigma_a/b, kappa_a/b)`, where `sigma` and `kappa` are hyperparameters for the Matern kernel. 
 #' If only `a` is a spatial random effect and `b` is fixed, only `hyperparam_a` needs to be provided.
 #' @export
 r_nll <- function(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, kernel = "exp") {

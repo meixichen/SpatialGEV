@@ -87,31 +87,32 @@ namespace SpatialGEV {
   ///
   /// @param[out] cov Matrix into which to store the output.
   /// @param[in] dd Distance matrix.
-  /// @param[in] phi Range parameter.
-  /// @param[in] kappa Smoothness parameter.
+  /// @param[in] sigma Hyperparameter of the Matern. It is in fact sigma^2.
+  /// @param[in] kappa Hyperparameter of the Matern. Positive.
+  /// @param[in] nu Smoothness parameter of the Matern.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
   void cov_matern(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dd,
-  	       Type phi, Type kappa, Type sp_thres) {
+  	       Type sigma, Type kappa, Type nu, Type sp_thres) {
     int i,j;
     int n = dd.rows();
     if (sp_thres == -1){
       for (i = 0; i < n; i++){
-	cov(i,i) = 1;
+	cov(i,i) = sigma;
 	for (j = 0; j < i; j++){
-	    cov(i,j) = matern(dd(i,j), phi, kappa);  
+	    cov(i,j) = sigma*matern(dd(i,j), 1/kappa, nu);  
 	    cov(j,i) = cov(i,j);
 	}
       }
     }else {
       for (i = 0; i < n; i++){
-	cov(i,i) = 1;
+	cov(i,i) = sigma;
 	for (j = 0; j < i; j++){
 	  if (dd(i,j) >= sp_thres) {
 	    cov(i,j) = 0;
 	    cov(j,i) = 0;
 	  } else {
-	    cov(i,j) = matern(dd(i,j), phi, kappa);  
+	    cov(i,j) = sigma*matern(dd(i,j), 1/kappa, nu);  
 	    cov(j,i) = cov(i,j);
 	  }
 	}

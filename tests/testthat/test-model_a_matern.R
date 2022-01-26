@@ -11,9 +11,9 @@ test_that("`model_a_matern` gives the same likelihood as the one calculated in R
     lat <- seq(0, 10, length.out = n_sqrt)
     X <- expand.grid(x = lon, y = lat)
     dd <- as.matrix(stats::dist(X))
-    log_phi_a <- runif(1, 0, 1)
+    log_sigma_a <- runif(1, 0, 1)
     log_kappa_a <- rnorm(1, 0.5, 0.1)
-    cov_a <- kernel_matern(dd, exp(log_phi_a), exp(log_kappa_a)) 
+    cov_a <- kernel_matern(dd, exp(log_sigma_a), exp(log_kappa_a)) 
     mean_a <- rep(rnorm(1, 1, 1), n)
     a <- mvtnorm::rmvnorm(1, mean_a, cov_a)
     log_b <- runif(1, -3, 0)
@@ -21,7 +21,7 @@ test_that("`model_a_matern` gives the same likelihood as the one calculated in R
     # Positive s
     s <- runif(1, 0.05, 0.1)
     y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
-    init_param=list(a=a, log_b=log_b, s=log(s), log_phi_a=log_phi_a, log_kappa_a=log_kappa_a)
+    init_param=list(a=a, log_b=log_b, s=log(s), log_sigma_a=log_sigma_a, log_kappa_a=log_kappa_a)
     adfun <- spatialGEV_fit(y, X, random="a",
                             init_param=init_param,
                             reparam_s="positive",
@@ -32,12 +32,12 @@ test_that("`model_a_matern` gives the same likelihood as the one calculated in R
                             silent=TRUE)
     nll_tmb <- adfun$fn(unlist(init_param))
     nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s,
-                   hyperparam_a=c(exp(log_phi_a), exp(log_kappa_a)),
+                   hyperparam_a=c(exp(log_sigma_a), exp(log_kappa_a)),
                    kernel="matern") 
     expect_equal(nll_r, nll_tmb)
     
     # Unconstrained s
-    init_param=list(a=a, log_b=log_b, s=s, log_phi_a=log_phi_a, log_kappa_a=log_kappa_a)
+    init_param=list(a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_kappa_a=log_kappa_a)
     adfun <- spatialGEV_fit(y, X, random="a",
                             init_param=init_param,
                             reparam_s="unconstrained",
@@ -52,7 +52,7 @@ test_that("`model_a_matern` gives the same likelihood as the one calculated in R
     # Negative s
     s <- runif(1, -0.1, -0.05)
     y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
-    init_param=list(a=a, log_b=log_b, s=log(abs(s)), log_phi_a=log_phi_a, log_kappa_a=log_kappa_a)
+    init_param=list(a=a, log_b=log_b, s=log(abs(s)), log_sigma_a=log_sigma_a, log_kappa_a=log_kappa_a)
     adfun <- spatialGEV_fit(y, X, random="a",
                             init_param=init_param,
                             reparam_s="negative",
@@ -63,14 +63,14 @@ test_that("`model_a_matern` gives the same likelihood as the one calculated in R
                             silent=TRUE)
     nll_tmb <- adfun$fn(unlist(init_param))
     nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s,
-                   hyperparam_a=c(exp(log_phi_a), exp(log_kappa_a)),
+                   hyperparam_a=c(exp(log_sigma_a), exp(log_kappa_a)),
                    kernel="matern") 
     expect_equal(nll_r, nll_tmb)
     
     # s=0
     s <- 0
     y <- unlist(Map(evd::rgev, n=1, loc=a, scale=exp(log_b), shape=s))
-    init_param=list(a=a, log_b=log_b, s=s, log_phi_a=log_phi_a, log_kappa_a=log_kappa_a)
+    init_param=list(a=a, log_b=log_b, s=s, log_sigma_a=log_sigma_a, log_kappa_a=log_kappa_a)
     adfun <- spatialGEV_fit(y, X, random="a",
                             init_param=init_param,
                             reparam_s="zero",
@@ -81,7 +81,7 @@ test_that("`model_a_matern` gives the same likelihood as the one calculated in R
                             silent=TRUE)
     nll_tmb <- adfun$fn(unlist(init_param))
     nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s,
-                   hyperparam_a=c(exp(log_phi_a), exp(log_kappa_a)),
+                   hyperparam_a=c(exp(log_sigma_a), exp(log_kappa_a)),
                    kernel="matern") 
     expect_equal(nll_r, nll_tmb)
   }

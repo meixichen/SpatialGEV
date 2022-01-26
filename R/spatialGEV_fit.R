@@ -33,7 +33,7 @@
 #' init.pram=list(a=rep(1,n),log_b=rep(0,n),s=1,log_sigma_a=0,log_ell_a=0, log_sigma_b=0,log_ell_b=0).
 #' ```
 #' The order of parameters in `init_param` must be: a, log_b, log_s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b.
-#' If the Matern kernel is used, two hyperparameters `phi` and `kappa` are present for each spatial random effect. I.e., need to specify `phi_a/b` and `kappa_a/b` in `init_param`.
+#' If the Matern kernel is used, two hyperparameters `sigma` and `kappa` are present for each spatial random effect. I.e., need to specify `sigma_a/b` and `kappa_a/b` in `init_param`.
 #' If the Matern SPDE approximation is used, one hyperparameter `log_kappa_a/b` needs to be specify for each spatial random effect. 
 #' If reparam_s = "negative" or "postive", the initial value of `s` should be that of log(|s|).
 #' @export
@@ -71,6 +71,7 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel=
   if (kernel %in% c("exp", "matern")){
     dd <- as.matrix(stats::dist(X))
     data <- list(model = mod, y = unlist(y), n_obs = n_obs, dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
+    if (kernel == "matern") data$nu <- 1
   }
   else if (kernel == "spde"){
     mesh <- INLA::inla.mesh.2d(X, max.edge=2)
