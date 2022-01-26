@@ -33,8 +33,7 @@
 #' init.pram=list(a=rep(1,n),log_b=rep(0,n),s=1,log_sigma_a=0,log_ell_a=0, log_sigma_b=0,log_ell_b=0).
 #' ```
 #' The order of parameters in `init_param` must be: a, log_b, log_s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b.
-#' If the Matern kernel is used, two hyperparameters `sigma` and `kappa` are present for each spatial random effect. I.e., need to specify `sigma_a/b` and `kappa_a/b` in `init_param`.
-#' If the Matern SPDE approximation is used, one hyperparameter `log_kappa_a/b` needs to be specify for each spatial random effect. 
+#' If the Matern or SPDE kernel is used, two hyperparameters `sigma` and `kappa` are present for each spatial random effect. I.e., need to specify `sigma_a/b` and `kappa_a/b` in `init_param`.
 #' If reparam_s = "negative" or "postive", the initial value of `s` should be that of log(|s|).
 #' @export
 spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel="exp", sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
@@ -79,7 +78,7 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel=
     n_s <- nrow(spde$M0) # number of mesh triangles created by INLA
     meshidxloc <- as.integer(mesh$idx$loc - 1)
     data <- list(model = mod, y = unlist(y), n_obs = n_obs, meshidxloc = meshidxloc, 
-		 reparam_s = reparam_s, spde = spde)
+		 reparam_s = reparam_s, spde = spde, nu = 1)
     if (random == "a"){ 
       init_param_a <- rep(0, n_s)
       init_param_a[meshidxloc+1] <- init_param$a # expand the vector of initial parameters due to extra location points introduced by mesh

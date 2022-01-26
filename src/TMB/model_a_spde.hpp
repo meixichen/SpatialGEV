@@ -22,6 +22,7 @@ Type model_a_spde(objective_function<Type>* obj){
   DATA_IVECTOR(n_obs); // number of observations per location
   DATA_IVECTOR(meshidxloc); // indices of the locations in the mesh matrix
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is zero: 0, constrained   to positive: 1 , constrained to be negative: 2, or unconstrained: 3
+  DATA_SCALAR(nu); // Smoothness parameter for the Matern cov.
   DATA_SCALAR(s_mean); // The mean of the normal prior on s or log(|s|), depending on what reparametrization is used for s. 
   DATA_SCALAR(s_sd); // The standard deviation of the normal prior on s or log(|s|). If s_sd>9999, a flat prior is imposed.
   DATA_STRUCT(spde, spde_t); // take the returned object by INLA::inla.spde2.matern in R
@@ -29,16 +30,19 @@ Type model_a_spde(objective_function<Type>* obj){
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER(log_b); // log-transformed scale parameters of the GEV model  
   PARAMETER(s); // initial shape parameter of the GEV model. IMPORTANT: If reparam_s = "negative" or "postive", the initial input should be log(|s|)
-  PARAMETER(log_kappa); // hyperparameter for the Matern spde
+  PARAMETER(log_sigma_a); // hyperparameter for the Matern SPDE for a
+  PARAMETER(log_kappa_a); // as above
 
   int n = n_obs.size(); // number of locations
-  Type kappa = exp(log_kappa);
+  Type sigma_a = exp(log_sigma_a);
+  Type kappa_a = exp(log_kappa_a);
   
   Type nll = Type(0.0); 
   
   // spde approx
-  SparseMatrix<Type> Q = Q_spde(spde, kappa);
-  nll = GMRF(Q)(a);
+  SparseMatrix<Type> Q = Q_spde(spde, kappa_a);
+  Type sigma_marg_a = exp(lgamma(nu)) / (exp(lgamma(nu + 1)) * 4 * M_PI * pow(kappa_a, 2*nu)); // marginal variance for a
+  nll = SCALE(GMRF(Q), sigma_a/sigma_marg_a)(a);
   
   // calculate the negative log likelihood
   int start_ind = 0; // index of the first observation of location i in n_obs
