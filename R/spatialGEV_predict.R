@@ -1,6 +1,6 @@
 #' Draw from the posterior predictive distributions at new locations based on a fitted spatialGEV model
 #'
-#' @param model A fitted spatial GEV model returned by `spatialGEV_fit`
+#' @param model A fitted spatial GEV model object of class `spatialGEVfit`
 #' @param X_new A `n_test x 2` matrix containing the coordinates of the new locations
 #' @param X_obs A `n_train x 2` matrix containing the coordinates of the observed locations for model fitting
 #' @param n_draw Number of draws from the posterior predictive distribution
@@ -88,5 +88,7 @@ spatialGEV_predict <- function(model, X_new, X_obs, n_draw){
       pred_y_draws[i, ] <- new_y
     }
   }
-  pred_y_draws
+  out <- pred_y_draws
+  class(out) <- "spatialGEVpred"
+  out
 }
