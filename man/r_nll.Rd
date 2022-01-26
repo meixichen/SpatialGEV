@@ -4,10 +4,10 @@
 \alias{r_nll}
 \title{Calculate the negative loglikelihood of the spatial GEV model.}
 \usage{
-r_nll(y, dd, a, log_b, s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b)
+r_nll(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, kernel = "exp")
 }
 \arguments{
-\item{y}{Vector of \code{n} independent GEV realizations.}
+\item{y}{List of \code{n} locations each with \code{n_obs[i]} independent GEV realizations.}
 
 \item{dd}{An \verb{n x n} distance matrix.}
 
@@ -17,13 +17,11 @@ r_nll(y, dd, a, log_b, s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b)
 
 \item{s}{Shape parameter}
 
-\item{log_sigma_a}{The squared variance parameter (scalar) on the diagonal of the covariance matrix of \code{a ~ GP} with the constraint of \code{sigma_a > 0}.}
+\item{hyperparam_a}{A vector of hyperparameters for a. See details.}
 
-\item{log_ell_a}{The parameter (scalar) that controls the impact of the distance bewteen two locations on the covariance with the constraint of \code{ell_a > 0}.}
+\item{hyperparam_b}{A vector of hyperparameters for b. Must be provided if \code{log_b} is a vector. See details.}
 
-\item{log_sigma_b}{The squared variance parameter (scalar) on the diagonal of the covariance matrix of \code{logb ~ GP} with the constraint of \code{sigma_b > 0}.}
-
-\item{log_ell_b}{The parameter (scalar) that controls the impact of the distance bewteen two locations on the covariance with the constraint of \code{ell_b > 0}.}
+\item{kernel}{"exp" or "matern". Kernel function used to compute the covariance matrix for spatial random effects. Default is "exp".}
 }
 \value{
 Scalar value of the negative loglikelihood.
@@ -33,4 +31,7 @@ Calculate the negative loglikelihood of the spatial GEV model.
 }
 \details{
 This function is used to test if TMB and R output the same negative loglikelihood.
+If \verb{kernel="exp}, \code{hyperparam_a/b} should be \code{c(sigma_a/b, ell_a/b)}, where \code{sigma} is the amplitude hyperparameter and \code{ell} is the smoothness hyperparameter for the exponential kernel.
+If \verb{kernel="matern}, \code{hyperparam_a/b} should be \code{c(sigma_a/b, kappa_a/b)}, where \code{sigma} and \code{kappa} are hyperparameters for the Matern kernel.
+If only \code{a} is a spatial random effect and \code{b} is fixed, only \code{hyperparam_a} needs to be provided.
 }

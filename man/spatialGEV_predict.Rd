@@ -7,11 +7,11 @@
 spatialGEV_predict(model, X_new, X_obs, n_draw)
 }
 \arguments{
-\item{model}{A fitted spatial GEV model returned by \code{spatialGEV_fit}}
+\item{model}{A fitted spatial GEV model object of class \code{spatialGEVfit}}
 
 \item{X_new}{A \verb{n_test x 2} matrix containing the coordinates of the new locations}
 
-\item{X_obs}{A \verb{n_obs x 2} matrix containing the coordinates of the observed locations for model fitting}
+\item{X_obs}{A \verb{n_train x 2} matrix containing the coordinates of the observed locations for model fitting}
 
 \item{n_draw}{Number of draws from the posterior predictive distribution}
 }

@@ -4,21 +4,17 @@
 \alias{kernel_exp}
 \title{Exponential covariance function}
 \usage{
-kernel_exp(X1, X2, sigma, ell, dist_method = "euclidean")
+kernel_exp(x, sigma, ell)
 }
 \arguments{
-\item{X1}{A \verb{n1 x d} matrix}
-
-\item{X2}{A \verb{n2 x d} matrix}
+\item{x}{Distance measure.}
 
 \item{sigma}{The amplitude parameter (scalar) with the constraint of \code{sigma > 0}}
 
 \item{ell}{The smoothness parameter (scalar) with the constraint of \code{ell > 0}.}
-
-\item{dist_method}{A distance measure to be used. See \code{help(dist)}}
 }
 \value{
-An \verb{n1 x n2} covariance matrix calculated using exponential kernel function.
+Exponential covariance value.
 }
 \description{
 Exponential covariance function

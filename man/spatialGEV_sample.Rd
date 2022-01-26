@@ -4,10 +4,10 @@
 \alias{spatialGEV_sample}
 \title{Get posterior draws from a fitted spatial GEV model.}
 \usage{
-spatialGEV_sample(model, n_draw, observation = TRUE)
+spatialGEV_sample(model, n_draw, observation = FALSE)
 }
 \arguments{
-\item{model}{A fitted spatial GEV model returned by \code{spatialGEV_fit}}
+\item{model}{A fitted spatial GEV model object of class \code{spatialGEVfit}}
 
 \item{n_draw}{Number of draws from the posterior distribution}
 
