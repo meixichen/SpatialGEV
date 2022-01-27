@@ -4,7 +4,7 @@
 \alias{kernel_exp}
 \title{Exponential covariance function}
 \usage{
-kernel_exp(x, sigma, ell)
+kernel_exp(x, sigma, ell, X1 = NULL, X2 = NULL)
 }
 \arguments{
 \item{x}{Distance measure.}
@@ -12,10 +12,19 @@ kernel_exp(x, sigma, ell)
 \item{sigma}{The amplitude parameter (scalar) with the constraint of \code{sigma > 0}}
 
 \item{ell}{The smoothness parameter (scalar) with the constraint of \code{ell > 0}.}
+
+\item{X1}{A \verb{n1 x 2} matrix containing the coordinates of location set 1.
+If \code{x} is not provided, \code{X1} and \code{X2} should be provided for calculating their distance.}
+
+\item{X2}{A \verb{n2 x 2} coordinate matrix.}
 }
 \value{
-Exponential covariance value.
+A matrix or a scalar of exponential covariance depending on the type of \code{x} or whether \code{X1} and \code{X2} are used instead.
 }
 \description{
 Exponential covariance function
+}
+\details{
+Let x = dist(x_i, x_j).\preformatted{cov(i,j) = sigma*exp(-x^2/ell)
+}
 }

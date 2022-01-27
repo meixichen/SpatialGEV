@@ -7,6 +7,8 @@
 #' @return An `n_draw x n_test` matrix containing the draws from the posterior predictive distributions at `n_test` new locations
 #' @export
 spatialGEV_predict <- function(model, X_new, X_obs, n_draw){
+  kernel <- model$kernel
+  if (!(kernel %in% c("exp", "matern"))) stop("Currently only support kernel = 'exp' or 'matern'.")
   # extract info from model
   n_test <- nrow(X_new)
   rep <- model$report
@@ -52,12 +54,20 @@ spatialGEV_predict <- function(model, X_new, X_obs, n_draw){
       a <- parameter_draw[i, 1:n_train]
       b <- exp(parameter_draw[i, n_train+1])
       s <- s_draw_fun(i, n_train+2)
-      sigma_a <- exp(parameter_draw[i, total_param-1])
-      ell_a <- exp(parameter_draw[i, total_param])
+      hyperparam1 <- exp(parameter_draw[i, total_param-1])
+      hyperparam2 <- exp(parameter_draw[i, total_param])
       # Construct conditional distribution function for a
-      a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a, X.new = X_new, X.obs = as.matrix(X_obs), 
-                                   kernel = kernel_exp, sigma = sigma_a, ell = ell_a)
-      new_a <- a_sim_fun(1)
+      if (kernel == "exp"){
+        a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a, 
+	  			     X.new = X_new, X.obs = as.matrix(X_obs), 
+                                     kernel = kernel_exp, sigma = hyperparam1, ell = hyperparam2)
+      }
+      else{
+        a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a,
+                                     X.new = X_new, X.obs = as.matrix(X_obs),
+                                     kernel = kernel_matern, sigma = hyperparam1, kappa = hyperparam2)
+      }
+      new_a <- a_sim_fun(1) # sample parameter a one time
       new_y <- t(apply(X = new_a, MARGIN = 1, FUN = function(row){
         unlist(Map(rgev, n=1, loc=row, scale=b, shape=s))  
       })) # a `1 x n_test` matrix
@@ -69,16 +79,27 @@ spatialGEV_predict <- function(model, X_new, X_obs, n_draw){
       a <- parameter_draw[i, 1:n_train]
       logb <- parameter_draw[i, (n_train+1):(2*n_train)]
       s <- s_draw_fun(i, 2*n_train + 1)
-      sigma_a <- exp(parameter_draw[i, total_param-3])
-      ell_a <- exp(parameter_draw[i, total_param-2])
-      sigma_b <- exp(parameter_draw[i, total_param-1])
-      ell_b <- exp(parameter_draw[i, total_param])
+      hyperparam_a1 <- exp(parameter_draw[i, total_param-3])
+      hyperparam_a2 <- exp(parameter_draw[i, total_param-2])
+      hyperparam_b1 <- exp(parameter_draw[i, total_param-1])
+      hyperparam_b2 <- exp(parameter_draw[i, total_param])
       # Construct conditional distribution function for a and logb
-      a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a, X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
-                                   kernel = kernel_exp, sigma = sigma_a, ell = ell_a)
-      logb_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = logb, X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
-                                      kernel = kernel_exp, sigma = sigma_b, ell = ell_b)
-      
+      if (kernel == "exp"){
+	a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a, 
+				     X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
+				     kernel = kernel_exp, sigma = hyperparam_a1, ell = hyperparam_a2)
+	logb_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = logb, 
+					X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
+					kernel = kernel_exp, sigma = hyperparam_b1, ell = hyperparam_b2)
+      }
+      else{
+	a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a, 
+				     X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
+				     kernel = kernel_matern, sigma = hyperparam_a1, kappa = hyperparam_a2)
+	logb_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = logb, 
+					X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
+					kernel = kernel_matern, sigma = hyperparam_b1, kappa = hyperparam_b2)
+      }
       new_a <- a_sim_fun(1) # 1 x n_test matrix
       new_logb <- logb_sim_fun(1) # 1 x n_test matrix
       new_ab <- cbind(new_a, exp(new_logb)) # A `1 x (2*n_test)` matrix constructed by putting the matrix of exp(logb) to the right of the matrix of a
@@ -88,7 +109,7 @@ spatialGEV_predict <- function(model, X_new, X_obs, n_draw){
       pred_y_draws[i, ] <- new_y
     }
   }
-  out <- pred_y_draws
+  out <- list(pred_y_draws=pred_y_draws, X_new=X_new, X_obs=X_obs)
   class(out) <- "spatialGEVpred"
   out
 }

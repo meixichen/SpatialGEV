@@ -82,3 +82,38 @@ summary.spatialGEVsam <- function(object, ...){
   }
   out
 }
+
+#' Print method for spatialGEVpred
+#'
+#' @param object Object of class `spatialGEVpred` returned by `spatialGEV_predict`.
+#' @param ... Additional arguments for `print`.
+#' @return Information about the prediction.
+#' @export
+
+print.spatialGEVpred <- function(object, ...){
+  # Dimension info
+  dim_pred <- dim(object$pred_y_draws)
+  cat(dim_pred[1], "posterior predictive samples have been draw for", dim_pred[2], "test locations.\n")
+  cat("The number of training locations is", dim(object$X_obs)[1], ".\n")
+  cat("Use summary() to obtain summary statistics of the posterior predictive samples. \n")
+}
+
+#' Summary method for spatialGEVpred
+#'
+#' @param object Object of class `spatialGEVpred` returned by `spatialGEV_predict`.
+#' @param ... Additional arguments for `summary`.
+#' @return Summary statistics of the posterior predictive samples.
+#' @export
+
+summary.spatialGEVpred <- function(object, ...){
+  # Summary of all parameters
+  y_draws <- object[["pred_y_draws"]]
+  out <- t(apply(y_draws, 2, quantile, 
+	             probs=c(0.025, 0.25, 0.5, 0.75, 0.975)))
+  out <- cbind(out, apply(y_draws, 2, mean))
+  colnames(out)[ncol(out)] <- "mean"
+  out
+}
+
+
+

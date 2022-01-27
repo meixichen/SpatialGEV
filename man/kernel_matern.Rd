@@ -4,7 +4,7 @@
 \alias{kernel_matern}
 \title{Matern covariance function}
 \usage{
-kernel_matern(x, sigma, kappa, nu = 1)
+kernel_matern(x, sigma, kappa, nu = 1, X1 = NULL, X2 = NULL)
 }
 \arguments{
 \item{x}{Distance measure.}
@@ -14,10 +14,19 @@ kernel_matern(x, sigma, kappa, nu = 1)
 \item{kappa}{Positive parameter.}
 
 \item{nu}{Range parameter default to 1.}
+
+\item{X1}{A \verb{n1 x 2} matrix containing the coordinates of location set 1.
+If \code{x} is not provided, \code{X1} and \code{X2} should be provided for calculating their distance.}
+
+\item{X2}{A \verb{n2 x 2} coordinate matrix.}
 }
 \value{
-Matern covariance value.
+A matrix or a scalar of Matern covariance depending on the type of \code{x} or whether \code{X1} and \code{X2} are used instead.
 }
 \description{
 Matern covariance function
+}
+\details{
+Let x = dist(x_i, x_j).\preformatted{cov(i,j) = sigma * 2^(1-nu)/gamma(nu) * (kappa*x)^nu * K_v(kappa*x)
+}
 }

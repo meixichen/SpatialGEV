@@ -2,9 +2,9 @@
 % Please edit documentation in R/sim_cond_normal.R
 \name{sim_cond_normal}
 \alias{sim_cond_normal}
-\title{Create a function to simulate from the conditional normal distribution of new data given old data}
+\title{Create a helper function to simulate from the conditional normal distribution of new data given old data}
 \usage{
-sim_cond_normal(joint.mean, a, X.new, X.obs, kernel = kernel_exp, sigma, ell)
+sim_cond_normal(joint.mean, a, X.new, X.obs, kernel, ...)
 }
 \arguments{
 \item{joint.mean}{The length \code{n} mean vector of the MVN distribution. By default mu1 is the first \code{m} elements of \code{joint.mean}}
@@ -15,20 +15,17 @@ sim_cond_normal(joint.mean, a, X.new, X.obs, kernel = kernel_exp, sigma, ell)
 
 \item{X.obs}{A matrix containing the coordinates of observed locations}
 
-\item{kernel}{A function that returns a matrix containing the similarity between the two arguments}
+\item{kernel}{A function (kernel function) that returns a matrix containing the similarity between the two arguments. Currently only supports \code{kernel_exp} and \code{kernel_matern}}
 
-\item{sigma}{Parameter of kernel function}
-
-\item{ell}{Parameter of kernel function}
+\item{...}{Hyperparameters to pass to the kernel function}
 }
 \value{
 A function that takes in one argument \code{n} as the number of samples to draw from the condition normal distribution
-of \code{X.new} given \code{X.old}: either from \code{rmvnorm} for MVN or \code{rnorm} for univariate normal. The old and new data are assumed
-to follow a joint multivariate normal distribution.
+of \code{X.new} given \code{X.old}: either from \code{rmvnorm} for MVN or \code{rnorm} for univariate normal. The old and new data are assumed to follow a joint multivariate normal distribution.
 }
 \description{
-Create a function to simulate from the conditional normal distribution of new data given old data
+Create a helper function to simulate from the conditional normal distribution of new data given old data
 }
 \details{
-The notations are consistent to the notations on the MVN wikipedia page
+This serves as a helper function for \code{spatialGEV_predict}. The notations are consistent to the notations on the MVN wikipedia page
 }
