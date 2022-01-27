@@ -1,7 +1,12 @@
 #require(SpatialGEV)
 require(INLA)
 require(TMB)
-source("simulation-data.R")
+locs <- simulatedData$locs
+a <- simulatedData$a
+logb <- simulatedData$logb
+logs <- simulatedData$logs
+y <- simulatedData$y
+n_loc <- length(y)
 #------ Without SPDE ---------
 start <- Sys.time()
 cat("Fitting the model without spde approx...\n")

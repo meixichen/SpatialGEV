@@ -37,5 +37,5 @@ logs <- -2
 y <- Map(rgev, n=sample(10:30, n_loc, replace=TRUE), 
 	 loc=a, scale=exp(logb), shape=exp(logs))
 
-simulatedData <- list(lon = locs$x, lat = locs$y, a = a, logb = logb, y = y)
+simulatedData <- list(locs=locs, a = a, logb = logb, logs=logs, y = y)
 save(simulatedData, file="simulatedData.RData")
