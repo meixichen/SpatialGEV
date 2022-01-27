@@ -21,6 +21,9 @@ print.spatialGEVfit <- function(object, ...){
   } else {
     cat("The model has not converged and the convergence message output by nlminb is: \n",
         object$fit$message)}
+  
+  # Kernel info
+  cat("The model uses a", object$kernel, "kernel. \n")
 
   # Parameter info
   cat("Number of fixed effects in the model is", length(object$fit$par), ". \n")
@@ -33,6 +36,23 @@ print.spatialGEVfit <- function(object, ...){
   cat(mes)
 }
 
+#' Print method for spatialGEVsam
+#' 
+#' @param object Object of class `spatialGEVsam` returned by `spatialGEV_sample`.
+#' @param ... Additional arguments for `print`.
+#' @return Information about the object including dimension and direction to use `summary` on the object.
+#' @export 
+
+print.spatialGEVsam <- function(object,...){
+  # Dimension info
+  dim_param <- dim(object[["parameter_draws"]])
+  cat("The samples contains", dim_param[1], "draws of", dim_param[2], "parameters. \n")
+  if ("y_draws" %in% names(object)){
+    dim_y <- dim(object[["y_draws"]])
+    cat("The samples contains", dim_y[1], "draws of response at", dim_y[2], "locations. \n")
+  }
+  cat("Use summary() to obtain summary statistics of the samples. \n")
+}
 
 #' Summary method for spatialGEVsam
 #'

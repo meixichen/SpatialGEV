@@ -131,7 +131,7 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel=
     fit <- nlminb(adfun$par, adfun$fn, adfun$gr)
     report <- TMB::sdreport(adfun, getJointPrecision = TRUE)
     t_taken <- as.numeric(difftime(Sys.time(), start_t, unit="secs"))
-    out <- list(adfun=adfun, fit=fit, report=report, time=t_taken)
+    out <- list(adfun=adfun, fit=fit, report=report, time=t_taken, kernel=kernel)
     class(out) <- "spatialGEVfit"
     out 
   }
