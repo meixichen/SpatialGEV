@@ -1,7 +1,7 @@
 set.seed(123)
-require(evd)
-require(mvtnorm)
-require(mclust)
+#require(evd)
+#require(mvtnorm)
+#require(mclust)
 # 1. Simulate location coordinates
 lon <- seq(0, 10, length.out = 20)
 lat <- seq(0, 10, length.out = 20)
@@ -34,8 +34,8 @@ logb_mat <- matrix(logb, ncol=sqrt(n_loc))
 logs <- -2
 
 # 5. Simulate data
-y <- unlist(Map(rgev, n=1, loc=a, scale=exp(logb), shape=exp(logs)))
-y_mat <- matrix(y, ncol=sqrt(n_loc))
+y <- Map(rgev, n=sample(10:30, n_loc, replace=TRUE), 
+	 loc=a, scale=exp(logb), shape=exp(logs))
 
-simulatedData <- data.frame(lon = locs$x, lat = locs$y, a = a, logb = logb, y = y)
+simulatedData <- list(lon = locs$x, lat = locs$y, a = a, logb = logb, y = y)
 save(simulatedData, file="simulatedData.RData")
