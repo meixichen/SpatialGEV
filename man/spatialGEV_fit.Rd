@@ -10,8 +10,8 @@ spatialGEV_fit(
   random,
   init_param,
   reparam_s,
-  s_prior,
   kernel = "exp",
+  s_prior = NULL,
   sp_thres = -1,
   adfun_only = FALSE,
   ignore_random = FALSE,
@@ -21,23 +21,24 @@ spatialGEV_fit(
 \arguments{
 \item{y}{List of \code{n} locations each with \code{n_obs[i]} independent GEV realizations.}
 
-\item{X}{\verb{n x 2}matrix of longitude and latitude of the corresponding response values.}
+\item{X}{\verb{n x 2} matrix of longitude and latitude of the corresponding response values.}
 
 \item{random}{Either "a" or "ab". This indicates which GEV parameters are considered as random effects.}
 
-\item{init_param}{A list of initial parameters of. See details.}
+\item{init_param}{A list of initial parameters. See details.}
 
 \item{reparam_s}{A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive". See details.}
 
-\item{s_prior}{Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation.}
-
 \item{kernel}{Kernel function for spatial random effects covariance matrix. Can be "exp" (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE approximation).}
 
-\item{sp_thres}{Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to \code{sp_thres} will be set to 0. Default is -1, which means not using sparse matrix.}
+\item{s_prior}{Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a uniform prior is put on s.}
 
-\item{adfun_only}{Only output the ADfun constructed using TMB?}
+\item{sp_thres}{Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to \code{sp_thres} will be set to 0. Default is -1, which means not using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad convergence.}
 
-\item{ignore_random}{Ignore random effect?}
+\item{adfun_only}{Only output the ADfun constructed using TMB? If TRUE, model fitting is not performed and only a TMB tamplate \code{adfun} is returned.
+This can be used when the user would like to use a different optimizer other than the default \code{nlminb}. E.g., call \code{optim(adfun$par, adfun$fn, adfun$gr)} for optimization.}
+
+\item{ignore_random}{Ignore random effect? If TRUE, spatial random effects are not integrated out in the model. This can be helpful for checking the marginal likelihood.}
 
 \item{silent}{Do not show tracing information?}
 
@@ -61,14 +62,30 @@ This function adopts Laplace approximation using TMB model to integrate out the 
 The random effects are assumed to follow Gaussian processes with mean 0 and covariance matrix defined by the chosen kernel function. E.g., using the exponential kernel function:\preformatted{cov(i,j) = sigma*exp(-|x_i - x_j|^2/ell)
 }
 
-Therefore, when specifying the initial parameters, below are some parameters that need to specify.
-Must specify: \code{a}, \code{log_b}, \code{s}, \code{log_sigma_a}, \code{log_ell_a}.
-Optional: \code{log_sigma_b}, \code{log_ell_b}.
-If the scale parameter b is considered a random effect, its corresponding GP hyperparameters \code{log_sigma_b} and \code{log_ell_b} need to be specified.
-For example, if assume both a and log_b~GP, need to specify\preformatted{init.pram=list(a=rep(1,n),log_b=rep(0,n),s=1,log_sigma_a=0,log_ell_a=0, log_sigma_b=0,log_ell_b=0).
+When specifying the initial parameters to be passed to \code{init_param}, care must be taken to count the number of parameters. Described below is how to specify \code{init_param} under different settings of \code{random} and \code{kernel}. Note that the order of the parameters must match the descriptions below.
+\enumerate{
+\item random = "a", kernel = "exp":
+\code{a} should be a vector and the rest are scalars. \code{log_sigma_a} and \code{log_ell_a} are hyperparameters in the exponential kernel for the Gaussian process describing the spatial variation of \code{a}.
+}\preformatted{init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
+                  log_sigma_a = 0, log_ell_a = 0)
+}
+\enumerate{
+\item random = "ab", kernel = "exp": If
+When the scale parameter \code{b} is considered a random effect, its corresponding GP hyperparameters \code{log_sigma_b} and \code{log_ell_b} need to be specified.
+}\preformatted{init_parami = list(a = rep(1,n_locations),log_b = rep(0,n_locations), s=1,
+               log_sigma_a = 0,log_ell_a = 0, 
+               log_sigma_b = 0,log_ell_b = 0).
+}
+\enumerate{
+\item random = "ab", kernel = "matern" or "spde":
+When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are \code{log_sigma_a/b} and \code{log_kappa_a/b} each spatial random effect.
+}\preformatted{init_param = list(a = rep(1,n_locations),log_b = rep(0,n_locations), s=1,
+               log_sigma_a = 0,log_kappa_a = 0, 
+               log_sigma_b = 0,log_kappa_b = 0).
 }
 
-The order of parameters in \code{init_param} must be: a, log_b, log_s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b.
-If the Matern or SPDE kernel is used, two hyperparameters \code{sigma} and \code{kappa} are present for each spatial random effect. I.e., need to specify \code{sigma_a/b} and \code{kappa_a/b} in \code{init_param}.
-If reparam_s = "negative" or "postive", the initial value of \code{s} should be that of log(|s|).
+\code{raparam_s} allows the user to reparametrize the GEV shape parameter \code{s}. For example, if the data is believed to be right-skewed and lower bounded, this means \code{s>0} and one should use \code{reparam_s = "positive"};
+if the data is believed to be left-skewed and upper bounded, this means \code{s<0} and one should use \code{reparam_s="negative"}.
+When \code{reparam_s = "zero"}, the data likelihood is a Gumbel distribution. In this case the data has no upper nor lower bound. Finally, specify \code{reparam_s = "unconstrained"} if no sign constraint should be imposed on \code{s}.
+Note that reparam_s = "negative" or "postive", the initial value of \code{s} in \code{init_param}should be that of log(|s|).
 }

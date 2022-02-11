@@ -1,15 +1,16 @@
 #' Fit a hierarchical spatial Gev model.
 #'
 #' @param y List of `n` locations each with `n_obs[i]` independent GEV realizations. 
-#' @param X `n x 2`matrix of longitude and latitude of the corresponding response values.
+#' @param X `n x 2` matrix of longitude and latitude of the corresponding response values.
 #' @param random Either "a" or "ab". This indicates which GEV parameters are considered as random effects.
-#' @param init_param A list of initial parameters of. See details. 
+#' @param init_param A list of initial parameters. See details. 
 #' @param reparam_s A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive". See details.
-#' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation.
 #' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE approximation).
-#' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not using sparse matrix. 
-#' @param adfun_only Only output the ADfun constructed using TMB?
-#' @param ignore_random Ignore random effect?
+#' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a uniform prior is put on s.
+#' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad convergence. 
+#' @param adfun_only Only output the ADfun constructed using TMB? If TRUE, model fitting is not performed and only a TMB tamplate `adfun` is returned. 
+#' This can be used when the user would like to use a different optimizer other than the default `nlminb`. E.g., call `optim(adfun$par, adfun$fn, adfun$gr)` for optimization.
+#' @param ignore_random Ignore random effect? If TRUE, spatial random effects are not integrated out in the model. This can be helpful for checking the marginal likelihood. 
 #' @param silent Do not show tracing information?
 #' @param ... Arguments to pass to `INLA::inla.mesh.2d()`.
 #' @return If `adfun_only=TRUE`, an list given by `MakeADFun()` is output.
@@ -24,19 +25,35 @@
 #' ```
 #' cov(i,j) = sigma*exp(-|x_i - x_j|^2/ell)
 #' ```
-#' Therefore, when specifying the initial parameters, below are some parameters that need to specify.
-#' Must specify: `a`, `log_b`, `s`, `log_sigma_a`, `log_ell_a`.
-#' Optional: `log_sigma_b`, `log_ell_b`.
-#' If the scale parameter b is considered a random effect, its corresponding GP hyperparameters `log_sigma_b` and `log_ell_b` need to be specified.
-#' For example, if assume both a and log_b~GP, need to specify 
+#' When specifying the initial parameters to be passed to `init_param`, care must be taken to count the number of parameters. Described below is how to specify `init_param` under different settings of `random` and `kernel`. Note that the order of the parameters must match the descriptions below.
+#'
+#' 1. random = "a", kernel = "exp": 
+#' `a` should be a vector and the rest are scalars. `log_sigma_a` and `log_ell_a` are hyperparameters in the exponential kernel for the Gaussian process describing the spatial variation of `a`.  
 #' ```
-#' init.pram=list(a=rep(1,n),log_b=rep(0,n),s=1,log_sigma_a=0,log_ell_a=0, log_sigma_b=0,log_ell_b=0).
+#' init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
+#'                   log_sigma_a = 0, log_ell_a = 0)
 #' ```
-#' The order of parameters in `init_param` must be: a, log_b, log_s, log_sigma_a, log_ell_a, log_sigma_b, log_ell_b.
-#' If the Matern or SPDE kernel is used, two hyperparameters `sigma` and `kappa` are present for each spatial random effect. I.e., need to specify `sigma_a/b` and `kappa_a/b` in `init_param`.
-#' If reparam_s = "negative" or "postive", the initial value of `s` should be that of log(|s|).
+#' 2. random = "ab", kernel = "exp": If
+#' When the scale parameter `b` is considered a random effect, its corresponding GP hyperparameters `log_sigma_b` and `log_ell_b` need to be specified.
+#' ```
+#' init_parami = list(a = rep(1,n_locations),log_b = rep(0,n_locations), s=1,
+#'                log_sigma_a = 0,log_ell_a = 0, 
+#'                log_sigma_b = 0,log_ell_b = 0).
+#' ```
+#' 3. random = "ab", kernel = "matern" or "spde": 
+#' When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are `log_sigma_a/b` and `log_kappa_a/b` each spatial random effect. 
+#' ``` 
+#' init_param = list(a = rep(1,n_locations),log_b = rep(0,n_locations), s=1,
+#'                log_sigma_a = 0,log_kappa_a = 0, 
+#'                log_sigma_b = 0,log_kappa_b = 0).
+#' ```
+#'
+#' `raparam_s` allows the user to reparametrize the GEV shape parameter `s`. For example, if the data is believed to be right-skewed and lower bounded, this means `s>0` and one should use `reparam_s = "positive"`; 
+#' if the data is believed to be left-skewed and upper bounded, this means `s<0` and one should use `reparam_s="negative"`. 
+#' When `reparam_s = "zero"`, the data likelihood is a Gumbel distribution. In this case the data has no upper nor lower bound. Finally, specify `reparam_s = "unconstrained"` if no sign constraint should be imposed on `s`.
+#' Note that reparam_s = "negative" or "postive", the initial value of `s` in `init_param`should be that of log(|s|).
 #' @export
-spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel="exp", sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
+spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", s_prior= NULL, sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
   
   if (length(y) != nrow(X)){
     stop("The length of y must be the same as the number of rows of X.")
@@ -96,7 +113,7 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, s_prior, kernel=
   else {stop("kernel must be one of 'exp', 'matern', 'spde'!")}
   #------ End: prepare data input for TMB ----------------
 
-  if (missing(s_prior)){
+  if (missing(s_prior) | is.null(s_prior)){
     data$s_mean <- 9999
     data$s_sd <- 9999
   }
