@@ -13,11 +13,13 @@
 #' @param ignore_random Ignore random effect? If TRUE, spatial random effects are not integrated out in the model. This can be helpful for checking the marginal likelihood. 
 #' @param silent Do not show tracing information?
 #' @param ... Arguments to pass to `INLA::inla.mesh.2d()`.
-#' @return If `adfun_only=TRUE`, an list given by `MakeADFun()` is output.
-#' If `adfun_only=FALSE`, this function outpus a list containing the following:
+#' @return If `adfun_only=TRUE`, this function outputs a list returned by `TMB::MakeADFun()`. 
+#' This list contains components `par, fn, gr` and can be passed to an R optimizer.
+#' If `adfun_only=FALSE`, this function outputs an object of class `spatialGEVfit`, a list containing the following:
 #' - An adfun object
 #' - A fit object given by calling `nlminb()` on the adfun
 #' - An object of class `sdreport` from TMB which contains the point estimates, standard error, and precision matrix for the fixed and random effects
+#' - Other helpful information about the model
 #' @details 
 #' This function adopts Laplace approximation using TMB model to integrate out the random effects.
 #' 
@@ -148,7 +150,8 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", s_
     fit <- nlminb(adfun$par, adfun$fn, adfun$gr)
     report <- TMB::sdreport(adfun, getJointPrecision = TRUE)
     t_taken <- as.numeric(difftime(Sys.time(), start_t, unit="secs"))
-    out <- list(adfun=adfun, fit=fit, report=report, time=t_taken, kernel=kernel)
+    out <- list(adfun=adfun, fit=fit, report=report, 
+		time=t_taken, kernel=kernel, X_obs=X)
     class(out) <- "spatialGEVfit"
     out 
   }

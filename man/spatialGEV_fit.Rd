@@ -45,12 +45,14 @@ This can be used when the user would like to use a different optimizer other tha
 \item{...}{Arguments to pass to \code{INLA::inla.mesh.2d()}.}
 }
 \value{
-If \code{adfun_only=TRUE}, an list given by \code{MakeADFun()} is output.
-If \code{adfun_only=FALSE}, this function outpus a list containing the following:
+If \code{adfun_only=TRUE}, this function outputs a list returned by \code{TMB::MakeADFun()}.
+This list contains components \verb{par, fn, gr} and can be passed to an R optimizer.
+If \code{adfun_only=FALSE}, this function outputs an object of class \code{spatialGEVfit}, a list containing the following:
 \itemize{
 \item An adfun object
 \item A fit object given by calling \code{nlminb()} on the adfun
 \item An object of class \code{sdreport} from TMB which contains the point estimates, standard error, and precision matrix for the fixed and random effects
+\item Other helpful information about the model
 }
 }
 \description{

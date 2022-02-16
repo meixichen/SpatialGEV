@@ -14,7 +14,7 @@ spatialGEV_sample(model, n_draw, observation = FALSE)
 \item{observation}{whether to draw from the posterior distribution of the GEV observation?}
 }
 \value{
-A list of matrices containing the joint posterior draws of the parameters and optionally the GEV observations
+An object of class \code{spatialGEVsam}, which is a list of matrices containing the joint posterior draws of the parameters and optionally the GEV observations.
 }
 \description{
 Get posterior draws from a fitted spatial GEV model.

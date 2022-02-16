@@ -2,11 +2,14 @@
 #'
 #' @param model A fitted spatial GEV model object of class `spatialGEVfit`
 #' @param X_new A `n_test x 2` matrix containing the coordinates of the new locations
-#' @param X_obs A `n_train x 2` matrix containing the coordinates of the observed locations for model fitting
 #' @param n_draw Number of draws from the posterior predictive distribution
-#' @return An `n_draw x n_test` matrix containing the draws from the posterior predictive distributions at `n_test` new locations
+#' @return An object of class `spatialGEVpred`, which is a list of the following components: 
+#' - An `n_draw x n_test` matrix `pred_y_draws` containing the draws from the posterior predictive distributions at `n_test` new locations
+#' - An `n_loc x 2` matrix `X_new` containing the coordinates of the test data
+#' - An `n_loc x 2` matrix `X_obs` containing the coordinates of the observed data
 #' @export
-spatialGEV_predict <- function(model, X_new, X_obs, n_draw){
+spatialGEV_predict <- function(model, X_new, n_draw){
+  X_obs <- model$X_obs
   kernel <- model$kernel
   if (!(kernel %in% c("exp", "matern"))) stop("Currently only support kernel = 'exp' or 'matern'.")
   # extract info from model

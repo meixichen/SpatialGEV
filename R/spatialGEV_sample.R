@@ -3,7 +3,7 @@
 #' @param model A fitted spatial GEV model object of class `spatialGEVfit`
 #' @param n_draw Number of draws from the posterior distribution
 #' @param observation whether to draw from the posterior distribution of the GEV observation?
-#' @return A list of matrices containing the joint posterior draws of the parameters and optionally the GEV observations
+#' @return An object of class `spatialGEVsam`, which is a list of matrices containing the joint posterior draws of the parameters and optionally the GEV observations.
 #' @export
 spatialGEV_sample <- function(model, n_draw, observation=FALSE){
   # Extract info from model

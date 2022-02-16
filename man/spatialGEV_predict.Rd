@@ -4,19 +4,22 @@
 \alias{spatialGEV_predict}
 \title{Draw from the posterior predictive distributions at new locations based on a fitted spatialGEV model}
 \usage{
-spatialGEV_predict(model, X_new, X_obs, n_draw)
+spatialGEV_predict(model, X_new, n_draw)
 }
 \arguments{
 \item{model}{A fitted spatial GEV model object of class \code{spatialGEVfit}}
 
 \item{X_new}{A \verb{n_test x 2} matrix containing the coordinates of the new locations}
 
-\item{X_obs}{A \verb{n_train x 2} matrix containing the coordinates of the observed locations for model fitting}
-
 \item{n_draw}{Number of draws from the posterior predictive distribution}
 }
 \value{
-An \verb{n_draw x n_test} matrix containing the draws from the posterior predictive distributions at \code{n_test} new locations
+An object of class \code{spatialGEVpred}, which is a list of the following components:
+\itemize{
+\item An \verb{n_draw x n_test} matrix \code{pred_y_draws} containing the draws from the posterior predictive distributions at \code{n_test} new locations
+\item An \verb{n_loc x 2} matrix \code{X_new} containing the coordinates of the test data
+\item An \verb{n_loc x 2} matrix \code{X_obs} containing the coordinates of the observed data
+}
 }
 \description{
 Draw from the posterior predictive distributions at new locations based on a fitted spatialGEV model
