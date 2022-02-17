@@ -22,11 +22,6 @@ Imports:
     TMB (>= 1.7.16),
     mvtnorm,
     evd,
-    fields,
-    scales,
-    viridisLite,
-    maps,
-    graphics,
     stats
 LinkingTo: 
     TMB

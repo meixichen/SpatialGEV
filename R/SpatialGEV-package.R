@@ -1,11 +1,6 @@
 #' @keywords internal
 #' @import mvtnorm
 #' @import evd
-#' @importFrom scales alpha
-#' @importFrom fields color.scale image.plot
-#' @importFrom viridisLite viridis
-#' @importFrom maps map
-#' @importFrom graphics points
 #' @importFrom stats dist nlminb rnorm runif quantile
 #' @rawNamespace useDynLib(SpatialGEV, .registration=TRUE);useDynLib(SpatialGEV_TMBExports)
 "_PACKAGE"
