@@ -32,19 +32,20 @@
 #' @export
 spatialGEV_sample <- function(model, n_draw, observation=FALSE){
   # Extract info from model
+  kernel <- model$kernel
   rep <- model$report
   random_ind <- rep$env$random #indices of random effects
-  n_loc <- nrow(model$adfun$env$data$dd) # number of locations
+  n_loc <- length(model$adfun$env$data$n_obs) # number of locations
   reparam_s <- model$adfun$env$data$reparam_s # parametrization of s
   ##########################
   if (length(random_ind) == n_loc) {
     mod <- "a"
   }
-  else if (length(random_ind) == 2*n_loc){
+  else if (length(random_ind) >= 2*n_loc){
     mod <- "ab"
   }
   else {
-    stop("n_loc must divide the length of random effect vector.")
+    stop("Cannot identify which GEV parameters are random.")
   }
   
   # Sample from MVN
@@ -55,6 +56,21 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE){
                                        transpose = TRUE)) # Cholesky decomp
   mean_random <- rep$par.random
   mean_fixed <- rep$par.fixed
+  # Extract locations of the data if using SPDE (b/c there are additional boundary locations
+  # included for fitting purpose
+  if (kernel == "spde"){ 
+    meshidxloc <- model$meshidxloc
+    if (mod == "a") { 
+      mean_random <- mean_random[meshidxloc]
+      ind2rm <- setdiff(1:length(random_ind), meshidx) 
+      joint_cov <- joint_cov[-ind2rm, -ind2rm]
+    }
+    else {
+      ind2rm <- setdiff(1:length(random_ind), c(meshidxloc, length(random_ind)/2 + meshidxloc))
+      mean_random <- mean_random[-ind2rm]
+      joint_cov <- joint_cov[-ind2rm, -ind2rm] 
+    }
+  }
   par_names_random <- paste0(names(mean_random), 1:n_loc) # add location index to the end of each parameter name
   par_names_fixed <- names(mean_fixed) # extract parameter names for the fixed effects
   joint_mean <- c(mean_random, mean_fixed)

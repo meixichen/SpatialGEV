@@ -6,8 +6,8 @@
 #' @return An object of class `spatialGEVpred`, which is a list of the following components: 
 #' - An `n_draw x n_test` matrix `pred_y_draws` containing the draws from the posterior predictive 
 #' distributions at `n_test` new locations
-#' - An `n_loc x 2` matrix `X_new` containing the coordinates of the test data
-#' - An `n_loc x 2` matrix `X_obs` containing the coordinates of the observed data
+#' - An `n_test x 2` matrix `X_new` containing the coordinates of the test data
+#' - An `n_train x 2` matrix `X_obs` containing the coordinates of the observed data
 #' @examples 
 #' \dontrun{
 #' set.seed(123)
@@ -17,7 +17,7 @@
 #' logs <- simulatedData$logs
 #' y <- simulatedData$y
 #' locs <- simulatedData$locs
-#' n_loc = nrow(locs)
+#' n_loc <- nrow(locs)
 #' n_test <- 20
 #' test_ind <- sample(1:n_loc, n_test)
 #'
@@ -44,31 +44,26 @@
 #' }
 #' @export
 spatialGEV_predict <- function(model, X_new, n_draw){
+  # extract info from model
   X_obs <- model$X_obs
   kernel <- model$kernel
-  if (!(kernel %in% c("exp", "matern"))) stop("Currently only support kernel = 'exp' or 'matern'.")
-  # extract info from model
-  n_test <- nrow(X_new)
-  rep <- model$report
-  joint_mean <- c(rep$par.random, rep$par.fixed)
-  random_ind <- rep$env$random #indices of random effects
-  fixed_ind <- (1:length(joint_mean))[-random_ind] #indices of fixed effects
-  n_train <- nrow(model$adfun$env$data$dd) # number of locations
   reparam_s <- model$adfun$env$data$reparam_s # parametrization of s
+  n_test <- nrow(X_new)
+  n_train <- length(model$adfun$env$data$n_obs) 
+  random_ind <- model$rep$env$random # indices of random effects
   if (length(random_ind) == n_train) {
     mod <- "a"
   }
-  else if (length(random_ind) == 2*n_train){
+  else if (length(random_ind) >= 2*n_train){
     mod <- "ab"
   }
   else {
-    stop("n_train must divide the length of random effect vector.")
+    stop("Cannot identify which GEV parameters are random.")
   }
-  # Sample from MVN
-  jointPrec_mat <- rep$jointPrecision
-  C <- chol(jointPrec_mat)
-  joint_cov <- backsolve(r = C, x = backsolve(r = C, x = diag(nrow(jointPrec_mat)), transpose = TRUE))
-  parameter_draw <- mvtnorm::rmvnorm(n_draw, joint_mean, joint_cov)
+
+
+  # get parameter draws 
+  parameter_draw <- spatialGEV_sample(model, n_draw, observation=FALSE)$parameter_draws
   
   s_draw_fun <- function(j, s_ind){ 
     # `j` points to the j-th draw and `s_ind` is the index of s in the parameter vector of the model

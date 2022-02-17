@@ -18,8 +18,8 @@ An object of class \code{spatialGEVpred}, which is a list of the following compo
 \itemize{
 \item An \verb{n_draw x n_test} matrix \code{pred_y_draws} containing the draws from the posterior predictive
 distributions at \code{n_test} new locations
-\item An \verb{n_loc x 2} matrix \code{X_new} containing the coordinates of the test data
-\item An \verb{n_loc x 2} matrix \code{X_obs} containing the coordinates of the observed data
+\item An \verb{n_test x 2} matrix \code{X_new} containing the coordinates of the test data
+\item An \verb{n_train x 2} matrix \code{X_obs} containing the coordinates of the observed data
 }
 }
 \description{
@@ -34,7 +34,7 @@ logb <- simulatedData$logb
 logs <- simulatedData$logs
 y <- simulatedData$y
 locs <- simulatedData$locs
-n_loc = nrow(locs)
+n_loc <- nrow(locs)
 n_test <- 20
 test_ind <- sample(1:n_loc, n_test)
 

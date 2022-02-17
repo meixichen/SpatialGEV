@@ -33,7 +33,8 @@
 #' - A fit object given by calling `nlminb()` on the adfun
 #' - An object of class `sdreport` from TMB which contains the point estimates, standard error, 
 #' and precision matrix for the fixed and random effects
-#' - Other helpful information about the model
+#' - Other helpful information about the model: kernel, data coordinates matrix, and optionally
+#' a vector `meshidxloc` if `kernel="spde" (See details). 
 #' 
 #' @details 
 #' This function adopts Laplace approximation using TMB model to integrate out the random effects.
@@ -87,6 +88,13 @@
 #' 
 #' Note that when reparam_s = "negative" or "postive", the initial value of `s` in `init_param`
 #' should be that of log(|s|).
+#' 
+#' When the SPDE kernel is used, a mesh on the spatial domain is created using 
+#' `INLA::inla.mesh.2d()', which extends the spatial domain by adding additional triangles in the
+#' mesh to avoid boundary effects in estimation. As a result, the number of `a` and `b`  will be
+#' greater than the number of locations due to these additional triangles: each of them also has
+#' their own `a` and `b` values. Therefore, the fit function will return a vector `meshidxloc` to 
+#' indicate the positions of the observed coordinates in the random effects vector.
 #' @examples
 #' \dontrun{
 #' library(SpatialGEV)
@@ -207,6 +215,9 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", s_
     t_taken <- as.numeric(difftime(Sys.time(), start_t, unit="secs"))
     out <- list(adfun=adfun, fit=fit, report=report, 
 		time=t_taken, kernel=kernel, X_obs=X)
+    if (kernel == "spde"){
+      out$meshidxloc <- meshidxloc
+    }
     class(out) <- "spatialGEVfit"
     out 
   }

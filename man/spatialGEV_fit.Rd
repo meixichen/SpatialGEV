@@ -65,7 +65,8 @@ If \code{adfun_only=FALSE}, this function outputs an object of class \code{spati
 \item A fit object given by calling \code{nlminb()} on the adfun
 \item An object of class \code{sdreport} from TMB which contains the point estimates, standard error,
 and precision matrix for the fixed and random effects
-\item Other helpful information about the model
+\item Other helpful information about the model: kernel, data coordinates matrix, and optionally
+a vector \code{meshidxloc} if `kernel="spde" (See details).
 }
 }
 \description{
@@ -121,6 +122,10 @@ constraint should be imposed on \code{s}.
 
 Note that when reparam_s = "negative" or "postive", the initial value of \code{s} in \code{init_param}
 should be that of log(|s|).
+
+When the SPDE kernel is used, a mesh on the spatial domain is created using
+\verb{INLA::inla.mesh.2d()', which extends the spatial domain by adding additional triangles in the mesh to avoid boundary effects in estimation. As a result, the number of }a\code{and}b\verb{ will be greater than the number of locations due to these additional triangles: each of them also has their own}a\code{and}b\verb{values. Therefore, the fit function will return a vector}meshidxloc` to
+indicate the positions of the observed coordinates in the random effects vector.
 }
 \examples{
 \dontrun{
