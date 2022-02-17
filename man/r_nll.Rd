@@ -2,7 +2,7 @@
 % Please edit documentation in R/r_nll.R
 \name{r_nll}
 \alias{r_nll}
-\title{Calculate the negative loglikelihood of the spatial GEV model.}
+\title{Calculate the negative marginal loglikelihood of the GEV-GP  model.}
 \usage{
 r_nll(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, kernel = "exp")
 }
@@ -13,25 +13,64 @@ r_nll(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, kernel = "exp")
 
 \item{a}{Vector of \code{n} location paramter}
 
-\item{log_b}{A numeric value or a vector of \code{n} log-transformed scale parameters if considered as a random effect.}
+\item{log_b}{A numeric value or a vector of \code{n} log-transformed scale parameters if considered
+as a random effect.}
 
 \item{s}{Shape parameter}
 
 \item{hyperparam_a}{A vector of hyperparameters for a. See details.}
 
-\item{hyperparam_b}{A vector of hyperparameters for b. Must be provided if \code{log_b} is a vector. See details.}
+\item{hyperparam_b}{A vector of hyperparameters for b. Must be provided if \code{log_b} is a vector.
+See details.}
 
-\item{kernel}{"exp" or "matern". Kernel function used to compute the covariance matrix for spatial random effects. Default is "exp".}
+\item{kernel}{"exp" or "matern". Kernel function used to compute the covariance matrix for
+spatial random effects. Default is "exp".}
 }
 \value{
-Scalar value of the negative loglikelihood.
+Scalar value of the negative marginal loglikelihood:\preformatted{-logL(Data; spatial_random_effects, fixed_hyperparameters)
+}
 }
 \description{
-Calculate the negative loglikelihood of the spatial GEV model.
+Calculate the negative marginal loglikelihood of the GEV-GP  model.
 }
 \details{
 This function is used to test if TMB and R output the same negative loglikelihood.
-If \verb{kernel="exp}, \code{hyperparam_a/b} should be \code{c(sigma_a/b, ell_a/b)}, where \code{sigma} is the amplitude hyperparameter and \code{ell} is the smoothness hyperparameter for the exponential kernel.
-If \verb{kernel="matern}, \code{hyperparam_a/b} should be \code{c(sigma_a/b, kappa_a/b)}, where \code{sigma} and \code{kappa} are hyperparameters for the Matern kernel.
-If only \code{a} is a spatial random effect and \code{b} is fixed, only \code{hyperparam_a} needs to be provided.
+If \verb{kernel="exp}, \code{hyperparam_a/b} should be \code{c(sigma_a/b, ell_a/b)}, where \code{sigma} is the
+amplitude hyperparameter and \code{ell} is the smoothness hyperparameter for the exponential kernel.
+If \verb{kernel="matern}, \code{hyperparam_a/b} should be \code{c(sigma_a/b, kappa_a/b)}, where \code{sigma} and
+\code{kappa} are hyperparameters for the Matern kernel.
+If only \code{a} is a spatial random effect and \code{b} is fixed, only \code{hyperparam_a} needs to be
+provided.
+}
+\examples{
+\dontrun{
+library(SpatialGEV)
+a <- simulatedData$a
+logb <- simulatedData$logb
+logs <- simulatedData$logs
+y <- simulatedData$y
+locs <- simulatedData$locs
+n_loc = nrow(locs)
+log_sigma_a = -1; log_ell_a = 5
+log_sigma_b = -2; log_ell_b = 10
+# Negative marginal log-likelihood produced in R using the exponential kernel
+nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s,
+               hyperparam_a=c(exp(log_sigma_a), exp(log_ell_a)),
+               hyperparam_b=c(exo(log_sigma_b), exp(log_ell_b)),
+               kernel="exp")
+# Negative marg loglik produced by TMB template
+adfun <- spatialGEV_fit(y, X, random="ab",
+                        init_param=list(a=a, log_b=log_b, s=log(s), 
+                                        log_sigma_a=log_sigma_a, 
+                                        log_ell_a=log_ell_a,
+                                        log_sigma_b=log_sigma_b, 
+                                        log_ell_b=log_ell_b)
+                        reparam_s="positive",
+                        kernel="exp",
+                        adfun_only=TRUE,
+                        ignore_random=TRUE,
+                        silent=TRUE)
+nll_tmb <- adfun$fn(unlist(init_param))
+testthat::expect_equal(nll_r, nll_tmb)
+}
 }

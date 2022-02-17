@@ -1,12 +1,47 @@
-#' Draw from the posterior predictive distributions at new locations based on a fitted spatialGEV model
+#' Draw from the posterior predictive distributions at new locations based on a fitted GEV-GP model
 #'
 #' @param model A fitted spatial GEV model object of class `spatialGEVfit`
 #' @param X_new A `n_test x 2` matrix containing the coordinates of the new locations
 #' @param n_draw Number of draws from the posterior predictive distribution
 #' @return An object of class `spatialGEVpred`, which is a list of the following components: 
-#' - An `n_draw x n_test` matrix `pred_y_draws` containing the draws from the posterior predictive distributions at `n_test` new locations
+#' - An `n_draw x n_test` matrix `pred_y_draws` containing the draws from the posterior predictive 
+#' distributions at `n_test` new locations
 #' - An `n_loc x 2` matrix `X_new` containing the coordinates of the test data
 #' - An `n_loc x 2` matrix `X_obs` containing the coordinates of the observed data
+#' @examples 
+#' \dontrun{
+#' set.seed(123)
+#' library(SpatialGEV)
+#' a <- simulatedData$a
+#' logb <- simulatedData$logb
+#' logs <- simulatedData$logs
+#' y <- simulatedData$y
+#' locs <- simulatedData$locs
+#' n_loc = nrow(locs)
+#' n_test <- 20
+#' test_ind <- sample(1:n_loc, n_test)
+#'
+#' # Obtain coordinate matrices and data lists
+#' locs_test <- locs[test_ind,]
+#' y_test <- y[test_ind]
+#' locs_train <- locs[-test_ind,]
+#' y_train <- y[-test_ind]
+#'
+#' # Fit the GEV-GP model to the training set
+#' train_fit <- spatialGEV_fit(y = y_train, X = locs_train, random = "ab",
+#'                             init_param = list(a = rep(0, n_loc-n_test), 
+#'	              				log_b = rep(0, n_loc-n_test),
+#'						s = 0,
+#'						log_sigma_a = 1, 
+#'                                              log_kappa_a = -2,
+#'						log_sigma_b = 1, 
+#'                                              log_kappa_b = -2),
+#'		       	       reparam_s = "positive", 
+#'			       kernel = "matern",
+#'			       silent = TRUE)
+#' pred <- spatialGEV_predict(model = train_fit, X_new = locs_test, n_draw = 5000)
+#' summary(pred)
+#' }
 #' @export
 spatialGEV_predict <- function(model, X_new, n_draw){
   X_obs <- model$X_obs

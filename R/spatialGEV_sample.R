@@ -1,9 +1,34 @@
-#' Get posterior draws from a fitted spatial GEV model.
+#' Get posterior parameter draws from a fitted GEV-GP model.
 #'
 #' @param model A fitted spatial GEV model object of class `spatialGEVfit`
 #' @param n_draw Number of draws from the posterior distribution
 #' @param observation whether to draw from the posterior distribution of the GEV observation?
-#' @return An object of class `spatialGEVsam`, which is a list of matrices containing the joint posterior draws of the parameters and optionally the GEV observations.
+#' @return An object of class `spatialGEVsam`, which is a list of matrices containing the 
+#' joint posterior draws of the parameters and optionally the GEV observations.
+#' @examples 
+#' \dontrun{
+#' library(SpatialGEV)
+#' a <- simulatedData$a
+#' logb <- simulatedData$logb
+#' logs <- simulatedData$logs
+#' y <- simulatedData$y
+#' locs <- simulatedData$locs
+#' n_loc = nrow(locs)
+#' fit <- spatialGEV_fit(y = y, X = locs, random = "ab",
+#'                       init_param = list(a = rep(0, n_loc), 
+#'                                         log_b = rep(0, n_loc), 
+#'                                         s = 0,
+#'                                         log_sigma_a = 0, 
+#'                                         log_kappa_a = 0,
+#'                                         log_sigma_b = 0, 
+#'                                         log_kappa_b = 0),
+#'                       reparam_s = "positive",
+#'                       kernel = "matern",
+#'                       silent = TRUE) 
+#' sam <- spatialGEV_sample(model = fit, n_draw = 5000, observation = TRUE)
+#' print(sam)
+#' summary(sam)
+#' }
 #' @export
 spatialGEV_sample <- function(model, n_draw, observation=FALSE){
   # Extract info from model

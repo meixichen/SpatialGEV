@@ -1,59 +1,114 @@
-#' Fit a hierarchical spatial Gev model.
+#' Fit a GEV-GP model.
 #'
 #' @param y List of `n` locations each with `n_obs[i]` independent GEV realizations. 
 #' @param X `n x 2` matrix of longitude and latitude of the corresponding response values.
-#' @param random Either "a" or "ab". This indicates which GEV parameters are considered as random effects.
+#' @param random Either "a" or "ab". This indicates which GEV parameters are considered as 
+#' random effects.
 #' @param init_param A list of initial parameters. See details. 
-#' @param reparam_s A flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positive". See details.
-#' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE approximation).
-#' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a uniform prior is put on s.
-#' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad convergence. 
-#' @param adfun_only Only output the ADfun constructed using TMB? If TRUE, model fitting is not performed and only a TMB tamplate `adfun` is returned. 
-#' This can be used when the user would like to use a different optimizer other than the default `nlminb`. E.g., call `optim(adfun$par, adfun$fn, adfun$gr)` for optimization.
-#' @param ignore_random Ignore random effect? If TRUE, spatial random effects are not integrated out in the model. This can be helpful for checking the marginal likelihood. 
+#' @param reparam_s A flag indicating whether the shape parameter is "zero", "unconstrained", 
+#' constrained to be "negative", or constrained to be "positive". See details.
+#' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" 
+#' (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE approximation).
+#' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal 
+#' prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a 
+#' uniform prior is put on s.
+#' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance 
+#' value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not 
+#' using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad 
+#' convergence. 
+#' @param adfun_only Only output the ADfun constructed using TMB? If TRUE, model fitting is not 
+#' performed and only a TMB tamplate `adfun` is returned. 
+#' This can be used when the user would like to use a different optimizer other than the default 
+#' `nlminb`. E.g., call `optim(adfun$par, adfun$fn, adfun$gr)` for optimization.
+#' @param ignore_random Ignore random effect? If TRUE, spatial random effects are not integrated 
+#' out in the model. This can be helpful for checking the marginal likelihood. 
 #' @param silent Do not show tracing information?
-#' @param ... Arguments to pass to `INLA::inla.mesh.2d()`.
+#' @param ... Arguments to pass to `INLA::inla.mesh.2d()`. This is used specifically for when
+#' `kernel="spde"`, in which case a mesh needs to be constructed on the spatial domain.
 #' @return If `adfun_only=TRUE`, this function outputs a list returned by `TMB::MakeADFun()`. 
 #' This list contains components `par, fn, gr` and can be passed to an R optimizer.
-#' If `adfun_only=FALSE`, this function outputs an object of class `spatialGEVfit`, a list containing the following:
+#' If `adfun_only=FALSE`, this function outputs an object of class `spatialGEVfit`, a list 
+#; containing the following:
 #' - An adfun object
 #' - A fit object given by calling `nlminb()` on the adfun
-#' - An object of class `sdreport` from TMB which contains the point estimates, standard error, and precision matrix for the fixed and random effects
+#' - An object of class `sdreport` from TMB which contains the point estimates, standard error, 
+#' and precision matrix for the fixed and random effects
 #' - Other helpful information about the model
+#' 
 #' @details 
 #' This function adopts Laplace approximation using TMB model to integrate out the random effects.
 #' 
-#' The random effects are assumed to follow Gaussian processes with mean 0 and covariance matrix defined by the chosen kernel function. E.g., using the exponential kernel function:
+#' The random effects are assumed to follow Gaussian processes with mean 0 and covariance matrix 
+#' defined by the chosen kernel function. E.g., using the exponential kernel function:
 #' ```
 #' cov(i,j) = sigma*exp(-|x_i - x_j|^2/ell)
 #' ```
-#' When specifying the initial parameters to be passed to `init_param`, care must be taken to count the number of parameters. Described below is how to specify `init_param` under different settings of `random` and `kernel`. Note that the order of the parameters must match the descriptions below.
+#' When specifying the initial parameters to be passed to `init_param`, care must be taken to 
+#' count the number of parameters. Described below is how to specify `init_param` under different 
+#' settings of `random` and `kernel`. Note that the order of the parameters must match the 
+#' descriptions below.
 #'
-#' 1. random = "a", kernel = "exp": 
-#' `a` should be a vector and the rest are scalars. `log_sigma_a` and `log_ell_a` are hyperparameters in the exponential kernel for the Gaussian process describing the spatial variation of `a`.  
+#' - random = "a", kernel = "exp": 
+#' `a` should be a vector and the rest are scalars. `log_sigma_a` and `log_ell_a` are hyperparameters 
+#' in the exponential kernel for the Gaussian process describing the spatial variation of `a`.  
 #' ```
 #' init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
 #'                   log_sigma_a = 0, log_ell_a = 0)
 #' ```
-#' 2. random = "ab", kernel = "exp": If
-#' When the scale parameter `b` is considered a random effect, its corresponding GP hyperparameters `log_sigma_b` and `log_ell_b` need to be specified.
+#'
+#' - random = "ab", kernel = "exp": If
+#' When the scale parameter `b` is considered a random effect, its corresponding GP hyperparameters 
+#' `log_sigma_b` and `log_ell_b` need to be specified.
 #' ```
-#' init_parami = list(a = rep(1,n_locations),log_b = rep(0,n_locations), s=1,
-#'                log_sigma_a = 0,log_ell_a = 0, 
-#'                log_sigma_b = 0,log_ell_b = 0).
+#' init_param = list(a = rep(1,n_locations),
+#'                   log_b = rep(0,n_locations), s=1,
+#'                   log_sigma_a = 0,log_ell_a = 0, 
+#'                   log_sigma_b = 0,log_ell_b = 0).
 #' ```
-#' 3. random = "ab", kernel = "matern" or "spde": 
-#' When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are `log_sigma_a/b` and `log_kappa_a/b` each spatial random effect. 
+#' 
+#' - random = "ab", kernel = "matern" or "spde": 
+#' When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are `log_sigma_a/b` 
+#' and `log_kappa_a/b` for each spatial random effect. 
 #' ``` 
-#' init_param = list(a = rep(1,n_locations),log_b = rep(0,n_locations), s=1,
-#'                log_sigma_a = 0,log_kappa_a = 0, 
-#'                log_sigma_b = 0,log_kappa_b = 0).
+#' init_param = list(a = rep(1,n_locations),
+#'                   log_b = rep(0,n_locations), s=1,
+#'                   log_sigma_a = 0,log_kappa_a = 0, 
+#'                   log_sigma_b = 0,log_kappa_b = 0).
 #' ```
 #'
-#' `raparam_s` allows the user to reparametrize the GEV shape parameter `s`. For example, if the data is believed to be right-skewed and lower bounded, this means `s>0` and one should use `reparam_s = "positive"`; 
-#' if the data is believed to be left-skewed and upper bounded, this means `s<0` and one should use `reparam_s="negative"`. 
-#' When `reparam_s = "zero"`, the data likelihood is a Gumbel distribution. In this case the data has no upper nor lower bound. Finally, specify `reparam_s = "unconstrained"` if no sign constraint should be imposed on `s`.
-#' Note that reparam_s = "negative" or "postive", the initial value of `s` in `init_param`should be that of log(|s|).
+#' `raparam_s` allows the user to reparametrize the GEV shape parameter `s`. For example, 
+#' - if the data is believed to be right-skewed and lower bounded, this means `s>0` and one should
+#' use `reparam_s = "positive"`; 
+#' - if the data is believed to be left-skewed and upper bounded, this means `s<0` and one should 
+#' use `reparam_s="negative"`. 
+#' - When `reparam_s = "zero"`, the data likelihood is a Gumbel distribution. In this case the data
+#' has no upper nor lower bound. Finally, specify `reparam_s = "unconstrained"` if no sign 
+#' constraint should be imposed on `s`.
+#' 
+#' Note that when reparam_s = "negative" or "postive", the initial value of `s` in `init_param`
+#' should be that of log(|s|).
+#' @examples
+#' \dontrun{
+#' library(SpatialGEV)
+#' a <- simulatedData$a
+#' logb <- simulatedData$logb
+#' logs <- simulatedData$logs
+#' y <- simulatedData$y
+#' locs <- simulatedData$locs
+#' n_loc = nrow(locs)
+#' fit <- spatialGEV_fit(y = y, X = locs, random = "ab",
+#'                       init_param = list(a = rep(0, n_loc), 
+#'                                         log_b = rep(0, n_loc), 
+#'                                         s = 0,
+#'                                         log_sigma_a = 0, 
+#'                                         log_kappa_a = 0,
+#'                                         log_sigma_b = 0, 
+#'                                         log_kappa_b = 0),
+#'                       reparam_s = "positive",
+#'                       kernel = "matern",
+#'                       silent = TRUE) 
+#' print(fit)
+#' }
 #' @export
 spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", s_prior= NULL, sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
   

@@ -21,7 +21,8 @@ If \code{x} is not provided, \code{X1} and \code{X2} should be provided for calc
 \item{X2}{A \verb{n2 x 2} coordinate matrix.}
 }
 \value{
-A matrix or a scalar of Matern covariance depending on the type of \code{x} or whether \code{X1} and \code{X2} are used instead.
+A matrix or a scalar of Matern covariance depending on the type of \code{x} or
+whether \code{X1} and \code{X2} are used instead.
 }
 \description{
 Matern covariance function
@@ -29,4 +30,12 @@ Matern covariance function
 \details{
 Let x = dist(x_i, x_j).\preformatted{cov(i,j) = sigma * 2^(1-nu)/gamma(nu) * (kappa*x)^nu * K_v(kappa*x)
 }
+}
+\examples{
+X1 <- cbind(runif(10, 1, 10), runif(10, 10, 20))
+X2 <- cbind(runif(5, 1, 10), runif(5, 10, 20))
+
+kernel_matern(sigma=2, ell=1, X1=X1, X2=X2)
+
+kernel_matern(as.matrix(stats::dist(X1)), sigma=2, ell=1)
 }
