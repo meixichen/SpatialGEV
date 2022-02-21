@@ -40,3 +40,9 @@ For example, if \code{sp.resolution=1}, then \code{cell_lon=55.5} and \code{cell
 square whose left boundary is 55, right boundary is 56, upper boundary is 23, and lower boundary
 is 22.
 }
+\examples{
+longitude <- runif(20, -90, 80)
+latitude <- runif(20, 40, 60)
+grid_locs <- grid_location(longitude, latitude, sp.resolution=0.5)
+cbind(longitude, latitude, grid_locs)
+}
