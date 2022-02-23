@@ -20,6 +20,7 @@ Encoding: UTF-8
 LazyData: true
 Imports: 
     TMB (>= 1.7.16),
+    INLA,
     mvtnorm,
     evd,
     stats
