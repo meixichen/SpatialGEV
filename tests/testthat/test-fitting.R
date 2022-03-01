@@ -14,13 +14,16 @@ test_that("spatialGEV_fit/sample/predict works fine", {
 					  log_sigma_a = 1, log_kappa_a = -2),
                         kernel="matern", reparam_s = "positive", silent = T)
   print(fit)
+  expect_equal(fit$fit$convergence, 0)
 
   # Test if sampling works
+  cat("Sampling...\n")
   samps <- spatialGEV_sample(model=fit, n_draw=50, observation=T)
   print(samps)
   samps_summary <- summary(samps)
 
   # Test if prediction works
+  cat("Predicting...\n")
   n_test <- 20                                # number of test locations
   test_ind <- sample(1:400, n_test)           # indices of the test locations
   locs_test <- locs[test_ind,]                # coordinates of the test locations
@@ -33,7 +36,9 @@ test_that("spatialGEV_fit/sample/predict works fine", {
 						log_sigma_a = 1, log_kappa_a = -2),
 			      kernel="matern", reparam_s = "positive", silent = T)
   pred <- spatialGEV_predict(model = train_fit, X_new = as.matrix(locs_test),
-                             X_obs = as.matrix(locs_train), n_draw = 50)
+                             n_draw = 50)
   print(pred)
   pred_summary <- summary(pred)
+  success <- 0
+  expect_equal(success, 0) 
 })
