@@ -47,6 +47,7 @@ spatialGEV_predict <- function(model, X_new, n_draw){
   # extract info from model
   X_obs <- model$X_obs
   kernel <- model$kernel
+  nu <- model$nu # Matern hyperparameter
   reparam_s <- model$adfun$env$data$reparam_s # parametrization of s
   n_test <- nrow(X_new)
   n_train <- length(model$adfun$env$data$n_obs) 
@@ -95,10 +96,11 @@ spatialGEV_predict <- function(model, X_new, n_draw){
 	  			     X.new = X_new, X.obs = as.matrix(X_obs), 
                                      kernel = kernel_exp, sigma = hyperparam1, ell = hyperparam2)
       }
-      else{
+      else{ 
         a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a,
                                      X.new = X_new, X.obs = as.matrix(X_obs),
-                                     kernel = kernel_matern, sigma = hyperparam1, kappa = hyperparam2)
+                                     kernel = kernel_matern, sigma = hyperparam1, 
+				     kappa = hyperparam2, nu = nu)
       }
       new_a <- a_sim_fun(1) # sample parameter a one time
       new_y <- t(apply(X = new_a, MARGIN = 1, FUN = function(row){
@@ -128,10 +130,12 @@ spatialGEV_predict <- function(model, X_new, n_draw){
       else{
 	a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a, 
 				     X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
-				     kernel = kernel_matern, sigma = hyperparam_a1, kappa = hyperparam_a2)
+				     kernel = kernel_matern, sigma = hyperparam_a1, 
+				     kappa = hyperparam_a2, nu = nu)
 	logb_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = logb, 
 					X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
-					kernel = kernel_matern, sigma = hyperparam_b1, kappa = hyperparam_b2)
+					kernel = kernel_matern, sigma = hyperparam_b1, 
+					kappa = hyperparam_b2, nu = nu)
       }
       new_a <- a_sim_fun(1) # 1 x n_test matrix
       new_logb <- logb_sim_fun(1) # 1 x n_test matrix

@@ -4,8 +4,8 @@
 #' @param a A vector of length `n-m`, the values of mu2 to condition on
 #' @param X.new A matrix containing the coordiantes of new locations
 #' @param X.obs A matrix containing the coordinates of observed locations
-#' @param kernel A function (kernel function) that returns a matrix containing the similarity between the two arguments. Currently only supports `kernel_exp` and `kernel_matern`
-#' @param ... Hyperparameters to pass to the kernel function
+#' @param kernel A function (kernel function) that returns a matrix containing the similarity between the two arguments. 
+#' @param ... Hyperparameters to pass to the kernel function. 
 #' @return A function that takes in one argument `n` as the number of samples to draw from the condition normal distribution
 #' of `X.new` given `X.old`: either from `rmvnorm` for MVN or `rnorm` for univariate normal. The old and new data are assumed to follow a joint multivariate normal distribution. 
 #' @details This serves as a helper function for `spatialGEV_predict`. The notations are consistent to the notations on the MVN wikipedia page
