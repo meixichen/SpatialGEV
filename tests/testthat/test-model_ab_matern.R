@@ -95,5 +95,28 @@ test_that("`model_ab_matern` gives the same likelihood as the one calculated in 
 		   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
                    kernel="matern") 
     expect_equal(nll_r, nll_tmb)
+    
+    # Test a different value of nu
+    nu <- 0.5
+    s <- runif(1, 0.05, 0.1)
+    y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
+    init_param=list(a=a, log_b=log_b, s=log(s), log_sigma_a=log_sigma_a, log_kappa_a=log_kappa_a,
+                    log_sigma_b=log_sigma_b, log_kappa_b=log_kappa_b)
+    adfun <- spatialGEV_fit(y, X, random="ab",
+                            init_param=init_param,
+                            reparam_s="positive",
+                            sp_thres=-1,
+                            kernel="matern",
+			    nu=nu,
+                            adfun_only=TRUE,
+                            ignore_random=TRUE,
+                            silent=TRUE)
+    nll_tmb <- adfun$fn(unlist(init_param))
+    nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s,
+                   hyperparam_a=c(exp(log_sigma_a), exp(log_kappa_a)),
+                   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
+                   kernel="matern", nu=nu)
+    expect_equal(nll_r, nll_tmb)
+
   }
 })

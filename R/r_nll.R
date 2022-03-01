@@ -10,7 +10,8 @@
 #' @param hyperparam_b A vector of hyperparameters for b. Must be provided if `log_b` is a vector. 
 #' See details.
 #' @param kernel "exp" or "matern". Kernel function used to compute the covariance matrix for 
-#' spatial random effects. Default is "exp". 
+#' spatial random effects. Default is "exp".
+#' @param ... Additional arguments to pass to the kernel function, e.g. `nu` for the matern.
 #' @return Scalar value of the negative marginal loglikelihood:
 #' ```
 #' -logL(Data; spatial_random_effects, fixed_hyperparameters)
@@ -54,12 +55,12 @@
 #' testthat::expect_equal(nll_r, nll_tmb)
 #' }
 #' @export
-r_nll <- function(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, kernel = "exp") {
+r_nll <- function(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, kernel = "exp", ...) {
   n <- length(y)
   if (kernel == "exp"){
-    cov_a <- kernel_exp(dd, hyperparam_a[1], hyperparam_a[2])
+    cov_a <- kernel_exp(dd, hyperparam_a[1], hyperparam_a[2], ...)
   }else if (kernel == "matern"){
-    cov_a <- kernel_matern(dd, hyperparam_a[1], hyperparam_a[2])
+    cov_a <- kernel_matern(dd, hyperparam_a[1], hyperparam_a[2], ...)
   }else{
     stop("Argument kernel must be `exp` or `matern`.")
   }
@@ -72,9 +73,9 @@ r_nll <- function(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, kernel = "exp"
   else { # if b is considered a random effect
     if (missing(hyperparam_b)){stop("b is a spatial random effect. Must provide `hyperparam_b`.")}
     if (kernel == "exp"){
-      cov_b <- kernel_exp(dd, hyperparam_b[1], hyperparam_b[2])
+      cov_b <- kernel_exp(dd, hyperparam_b[1], hyperparam_b[2], ...)
     }else{
-      cov_b <- kernel_matern(dd, hyperparam_b[1], hyperparam_b[2])
+      cov_b <- kernel_matern(dd, hyperparam_b[1], hyperparam_b[2], ...)
     }
     nll <- nll - dmvnorm(log_b, sigma = cov_b, log = TRUE)
     for (i in 1:n){
