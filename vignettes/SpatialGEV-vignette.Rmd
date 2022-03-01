@@ -285,4 +285,158 @@ plot(sapply(y_test, function(x){quantile(x, probs=0.75)}), pred_summary[,"75%"],
 abline(0, 1, col="blue", lty="dashed")
 ```
 
+## Case study: Yearly maximum snowfall data in Ontario, Canada
+In this section, we show how to use the ***SpatialGEV*** package to analyze a real dataset. The data used here are the 1987-2021 monthly total snowfall data obtained from Environment and Natural Resources, Government of Canada. The link to download the raw data is https://climate-change.canada.ca/climate-data/#/monthly-climate-summaries. This dataset is automatically loaded with the package and is named `ONsnow`.
+```{r snow-grid, message=FALSE}
+library(SpatialGEV)
+library(dplyr)
+summary(ONsnow)
+```
+
+### Data preprocessing
+We first grid the data using cells of length $0.5^{\circ}$. By doing this, weather stations that are apart by less than $0.5^{\circ}$ in longitude/latitude are grouped together in the same grid cell. From now on, we refer to each grid cell as a location.
+```{r}
+grid_locs <- grid_location(ONsnow$LONGITUDE, ONsnow$LATITUDE,
+                           sp.resolution = 0.5)
+data_grid <- cbind(grid_locs, ONsnow)
+data_grid[1:5,]
+```
+
+For each location, we find the maximum snowfall amount each year and only keep locations where there are at least two years of records.
+```{r}
+# Yearly max for each location
+all_locs <- data_grid %>% 
+  select(cell_ind, cell_lon, cell_lat) %>%
+  distinct() 
+yearly_max_records <- data_grid %>% 
+  group_by(cell_ind, LOCAL_YEAR) %>% 
+  slice(YEARLY_MAX_SNOWFALL = which.max(TOTAL_SNOWFALL)) %>%
+  select(cell_ind, LOCAL_YEAR, LOCAL_MONTH, TOTAL_SNOWFALL) %>% 
+  rename(YEARLY_MAX_SNOWFALL = TOTAL_SNOWFALL) %>%
+  filter(YEARLY_MAX_SNOWFALL > 0) %>% # Remove records of 0s 
+  left_join(all_locs, by="cell_ind")
+
+# Coordinates of the locations
+locs <- yearly_max_records %>% ungroup() %>% 
+  select(cell_ind, cell_lon, cell_lat) %>% 
+  distinct()
+n_loc <- nrow(locs)
+
+# Make data into a list in which each vector contains data from one location
+Y <- vector(mode="list", length=n_loc)
+for (i in 1:n_loc){
+  id <- locs$cell_ind[i]
+  Y[[i]] <- yearly_max_records %>% 
+    ungroup() %>%
+    filter(cell_ind==id) %>% 
+    pull(YEARLY_MAX_SNOWFALL)
+}
+
+# Only keep locations with at least 2 years of records
+chosen_loc_ind <- which(sapply(Y, length) >= 2)
+Y <- Y[chosen_loc_ind]
+locs <- locs %>% select(cell_lon, cell_lat) %>% slice(chosen_loc_ind)
+n_loc <- nrow(locs)
+```
+
+Now we fit the GEV-GP model to the data using the exponential kernel function. Both $a$ and $b$ are treated as spatial random effects. $s$ is constrained to be positive. Note that here we have specified a $\mathcal{N}(-5,5)$ prior on the log-transformed shape parameter. This is because we found that the shape parameter is estimated close to 0 and such a prior ensures model fitting procedure is numerically stable.
+```{r snow-fitting, cache=TRUE}
+fit <- spatialGEV_fit(Y, locs, random="ab",
+                      init_param = list(a=rep(55, n_loc),
+                                        log_b=rep(3, n_loc),
+                                        s=-4,
+                                        log_sigma_a=2, log_ell_a=5,
+                                        log_sigma_b=1, log_ell_b=5),
+                      reparam_s="positive",
+                      s_prior=c(-5, 5),
+                      kernel="exp", 
+                      silent=TRUE)
+print(fit)
+```
+
+Next, 1000 samples are drawn from the joint posterior distribution of all parameters. 
+```{r snow-sampling, cache=TRUE}
+sam <- spatialGEV_sample(fit, n_draw=1000, observation=T)
+sam_summary <- summary(sam)
+a_summary <- sam_summary$param_summary[1:n_loc,]
+logb_summary <- sam_summary$param_summary[(n_loc+1):(2*n_loc),]
+y_summary <- sam_summary$y_summary
+```
+
+Plotted below are the spatial distributions of the posterior mean values $a_{\tx{pos}}$ and $\log(b)_{\tx{pos}}$, along with the lengths of the 95% credible intervals for all parameters at different locations.
+```{r snow-plots, fig.width=12, fig.height=4, out.width= "100%"}
+library(ggplot2)
+library(ggpubr)
+df_pos <- data.frame(lon = locs$cell_lon, lat = locs$cell_lat,
+                   a_means=a_summary[,"mean"], logb_means=logb_summary[,"mean"],
+                   a_sds=a_summary[,"97.5%"]-a_summary[,"2.5%"],
+                   logb_sds=logb_summary[,"97.5%"]-logb_summary[,"2.5%"])
+mean_a_map <- ggplot(df_pos, aes(lon, lat, fill= a_means)) +
+  geom_tile()+
+  ggtitle("Mean of a")+
+  xlab("Longitude")+ylab("Latitude")+
+  scale_fill_gradient(low="yellow", high="red",
+                      name="Mean",
+                      aesthetics="fill",
+                      na.value="white") +
+  scale_x_continuous(sec.axis = dup_axis(name="")) +
+  scale_y_continuous(sec.axis = dup_axis(name=""))+
+  theme_bw()+
+  theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), panel.border = element_blank(), 
+        panel.background = element_blank(),
+        text = element_text(size=12))
+mean_b_map <- ggplot(df_pos, aes(lon, lat, fill= logb_means)) +
+  geom_tile() +
+  ggtitle("Mean of log(b)")+
+  xlab("Longitude")+ylab("Latitude")+
+  scale_fill_gradient2(low="blue", mid="cyan", high="purple",
+                       name="Mean",
+                       aesthetics="fill",
+                       na.value="white") +
+  scale_x_continuous(sec.axis = dup_axis(name="")) +
+  scale_y_continuous(sec.axis = dup_axis(name=""))+
+  theme_bw()+
+  theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), panel.border = element_blank(), 
+        panel.background = element_blank(),
+        text = element_text(size=12))
+
+sd_a_map <- ggplot(df_pos, aes(lon, lat, fill= a_sds)) +
+  geom_tile()+
+  ggtitle("95% CI length of a")+
+  xlab("Longitude")+ylab("Latitude")+
+  scale_fill_gradient(low="yellow", high="red",
+                      name="Length",
+                      aesthetics="fill",
+                      na.value="white") +
+  scale_x_continuous(sec.axis = dup_axis(name="")) +
+  scale_y_continuous(sec.axis = dup_axis(name=""))+
+  theme_bw()+
+  theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), panel.border = element_blank(), 
+        panel.background = element_blank(),
+        text = element_text(size=12))
+sd_b_map <- ggplot(df_pos, aes(lon, lat, fill= logb_sds)) +
+  geom_tile() +
+  ggtitle("95% CI length of log(b)")+
+  xlab("Longitude")+ylab("Latitude")+
+  scale_fill_gradient2(low="blue", mid="cyan", high="purple",
+                       name="Length",
+                       aesthetics="fill",
+                       na.value="white") +
+  scale_x_continuous(sec.axis = dup_axis(name="")) +
+  scale_y_continuous(sec.axis = dup_axis(name=""))+
+  theme_bw()+
+  theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), panel.border = element_blank(), 
+        panel.background = element_blank(),
+        text = element_text(size=12))
+ggarrange(mean_a_map, sd_a_map,
+          nrow=1, ncol=2)
+ggarrange(mean_b_map, sd_b_map,
+          nrow=1, ncol=2)
+
+```
+
 ## References
