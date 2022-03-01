@@ -50,7 +50,7 @@ namespace SpatialGEV {
     // return pow(t - Type(1.0)/s) + (s + Type(1.0))/s + log(t);
   }
   
-  /// Compute the variance matrix for the exponential kernel.
+  /// Compute the variance matrix for the squared exponential kernel.
   ///
   /// @param[out] cov Matrix into which to store the output.
   /// @param[in] dd Distance matrix.
@@ -63,21 +63,21 @@ namespace SpatialGEV {
     int i,j;
     int n = dd.rows();
     if (sp_thres == -1){
-      cov = -dd/ell;
+      cov = -dd^2 / (2 * ell^2);
       cov = cov.array().exp();
       cov *= sigma;
     }else {
       for (i = 0; i < n; i++){
-        cov(i,i) = sigma;
-        for (j = 0; j < i; j++){
-          if (dd(i,j) >= sp_thres) {
-            cov(i,j) = 0;
-            cov(j,i) = 0;
-          } else {
-            cov(i,j) = sigma*exp(-dd(i,j)/ell);  
-            cov(j,i) = cov(i,j);
-          }
-        }
+	cov(i,i) = sigma;
+	for (j = 0; j < i; j++){
+	  if (dd(i,j) >= sp_thres) {
+	    cov(i,j) = 0;
+	    cov(j,i) = 0;
+	  } else {
+	    cov(i,j) = sigma*exp(-dd(i,j)^2 / (2*ell^2));  
+	    cov(j,i) = cov(i,j);
+	  }
+	}
       }
     }
     return;

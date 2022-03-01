@@ -8,7 +8,10 @@
 #' @param reparam_s A flag indicating whether the shape parameter is "zero", "unconstrained", 
 #' constrained to be "negative", or constrained to be "positive". See details.
 #' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" 
-#' (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE approximation).
+#' (squared exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE 
+#' approximation).
+#' @param nu Hyperparameter of the Matern kernel. Default is 1. When `nu=0.5`, the Matern kernel
+#' corresponds to the absolute exponential kernel.
 #' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal 
 #' prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a 
 #' uniform prior is put on s.
@@ -23,8 +26,9 @@
 #' @param ignore_random Ignore random effect? If TRUE, spatial random effects are not integrated 
 #' out in the model. This can be helpful for checking the marginal likelihood. 
 #' @param silent Do not show tracing information?
-#' @param ... Arguments to pass to `INLA::inla.mesh.2d()`. This is used specifically for when
-#' `kernel="spde"`, in which case a mesh needs to be constructed on the spatial domain.
+#' @param ... Arguments to pass to `INLA::inla.mesh.2d()`. See details `?inla.mesh.2d()`.
+#' This is used specifically for when `kernel="spde"`, in which case a mesh needs to be 
+#' constructed on the spatial domain.
 #' @return If `adfun_only=TRUE`, this function outputs a list returned by `TMB::MakeADFun()`. 
 #' This list contains components `par, fn, gr` and can be passed to an R optimizer.
 #' If `adfun_only=FALSE`, this function outputs an object of class `spatialGEVfit`, a list 
@@ -40,7 +44,7 @@
 #' This function adopts Laplace approximation using TMB model to integrate out the random effects.
 #' 
 #' The random effects are assumed to follow Gaussian processes with mean 0 and covariance matrix 
-#' defined by the chosen kernel function. E.g., using the exponential kernel function:
+#' defined by the chosen kernel function. E.g., using the squared exponential kernel function:
 #' ```
 #' cov(i,j) = sigma*exp(-|x_i - x_j|^2/ell)
 #' ```
@@ -50,8 +54,9 @@
 #' descriptions below.
 #'
 #' - random = "a", kernel = "exp": 
-#' `a` should be a vector and the rest are scalars. `log_sigma_a` and `log_ell_a` are hyperparameters 
-#' in the exponential kernel for the Gaussian process describing the spatial variation of `a`.  
+#' `a` should be a vector and the rest are scalars. `log_sigma_a` and `log_ell_a` are 
+#' hyperparameters in the exponential kernel for the Gaussian process describing the spatial 
+#' variation of `a`.  
 #' ```
 #' init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
 #'                   log_sigma_a = 0, log_ell_a = 0)
@@ -118,7 +123,7 @@
 #' print(fit)
 #' }
 #' @export
-spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", s_prior= NULL, sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE){
+spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", nu=1, s_prior= NULL, sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE, ...){
   
   if (length(y) != nrow(X)){
     stop("The length of y must be the same as the number of rows of X.")
@@ -152,15 +157,24 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", s_
   if (kernel %in% c("exp", "matern")){
     dd <- as.matrix(stats::dist(X))
     data <- list(model = mod, y = unlist(y), n_obs = n_obs, dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
-    if (kernel == "matern") data$nu <- 1
+    if (kernel == "matern") data$nu <- nu
   }
   else if (kernel == "spde"){
-    mesh <- INLA::inla.mesh.2d(X, max.edge=2)
+    mesh_args <- list(...)
+    if (all(is.null(mesh_args$max.edge), 
+	    is.null(mesh_args$max.n.strict), 
+	    is.null(mesh_args$max.n))){ 
+      # if none of the above is specified, use our default
+      mesh <- INLA::inla.mesh.2d(X, max.edge=2)
+    } 
+    else{
+      mesh <- INLA::inla.mesh.2d(X, ...)
+    }
     spde <- (INLA::inla.spde2.matern(mesh)$param.inla)[c("M0", "M1", "M2")]
     n_s <- nrow(spde$M0) # number of mesh triangles created by INLA
     meshidxloc <- as.integer(mesh$idx$loc - 1)
     data <- list(model = mod, y = unlist(y), n_obs = n_obs, meshidxloc = meshidxloc, 
-		 reparam_s = reparam_s, spde = spde, nu = 1)
+		 reparam_s = reparam_s, spde = spde, nu = nu)
     if (random == "a"){ 
       init_param_a <- rep(0, n_s)
       init_param_a[meshidxloc+1] <- init_param$a # expand the vector of initial parameters due to extra location points introduced by mesh
@@ -217,6 +231,10 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", s_
 		time=t_taken, kernel=kernel, X_obs=X)
     if (kernel == "spde"){
       out$meshidxloc <- meshidxloc
+      out$nu <- nu
+    }
+    else if (kernel == "matern"){
+      out$nu <- nu
     }
     class(out) <- "spatialGEVfit"
     out 

@@ -1,4 +1,4 @@
-#' Exponential covariance function
+#' Squared exponential covariance function
 #'
 #' @param x Distance measure.
 #' @param sigma The amplitude parameter (scalar) with the constraint of `sigma > 0`
@@ -10,7 +10,7 @@
 #' whether `X1` and `X2` are used instead. 
 #' @details Let x = dist(x_i, x_j). 
 #' ```
-#' cov(i,j) = sigma*exp(-x^2/ell)
+#' cov(i,j) = sigma*exp(-x^2/(2*ell^2))
 #' ```
 #' @examples
 #' X1 <- cbind(runif(10, 1, 10), runif(10, 10, 20))
@@ -30,5 +30,5 @@ kernel_exp <- function(x, sigma, ell, X1=NULL, X2=NULL){
     x <- as.matrix(stats::dist(rbind(X1, X2), method="euclidean"))
     x <- x[1:n1, (n1+1):(n1+n2)]
   }
-  sigma*exp(-x/ell)
+  sigma*exp(-x^2 / (2*ell^2))
 }
