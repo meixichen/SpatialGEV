@@ -4,16 +4,16 @@
 \alias{sim_cond_normal}
 \title{Create a helper function to simulate from the conditional normal distribution of new data given old data}
 \usage{
-sim_cond_normal(joint.mean, a, X.new, X.obs, kernel, ...)
+sim_cond_normal(joint.mean, a, locs_new, locs_obs, kernel, ...)
 }
 \arguments{
 \item{joint.mean}{The length \code{n} mean vector of the MVN distribution. By default mu1 is the first \code{m} elements of \code{joint.mean}}
 
 \item{a}{A vector of length \code{n-m}, the values of mu2 to condition on}
 
-\item{X.new}{A matrix containing the coordiantes of new locations}
+\item{locs_new}{A matrix containing the coordiantes of new locations}
 
-\item{X.obs}{A matrix containing the coordinates of observed locations}
+\item{locs_obs}{A matrix containing the coordinates of observed locations}
 
 \item{kernel}{A function (kernel function) that returns a matrix containing the similarity between the two arguments.}
 
@@ -21,7 +21,7 @@ sim_cond_normal(joint.mean, a, X.new, X.obs, kernel, ...)
 }
 \value{
 A function that takes in one argument \code{n} as the number of samples to draw from the condition normal distribution
-of \code{X.new} given \code{X.old}: either from \code{rmvnorm} for MVN or \code{rnorm} for univariate normal. The old and new data are assumed to follow a joint multivariate normal distribution.
+of \code{locs_new} given \code{locs_obs}: either from \code{rmvnorm} for MVN or \code{rnorm} for univariate normal. The old and new data are assumed to follow a joint multivariate normal distribution.
 }
 \description{
 Create a helper function to simulate from the conditional normal distribution of new data given old data

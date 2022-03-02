@@ -1,13 +1,16 @@
 #' Draw from the posterior predictive distributions at new locations based on a fitted GEV-GP model
 #'
 #' @param model A fitted spatial GEV model object of class `spatialGEVfit`
-#' @param X_new A `n_test x 2` matrix containing the coordinates of the new locations
+#' @param locs_new A `n_test x 2` matrix containing the coordinates of the new locations
 #' @param n_draw Number of draws from the posterior predictive distribution
+#' @param X_a_new `n_test x r1` design matrix for a at the new locations. If not provided, the 
+#' default is a column matrix of all 1s.
+#' @param X_b_new `n_test x r2` design matrix for log(b) at the new locations 
 #' @return An object of class `spatialGEVpred`, which is a list of the following components: 
 #' - An `n_draw x n_test` matrix `pred_y_draws` containing the draws from the posterior predictive 
 #' distributions at `n_test` new locations
-#' - An `n_test x 2` matrix `X_new` containing the coordinates of the test data
-#' - An `n_train x 2` matrix `X_obs` containing the coordinates of the observed data
+#' - An `n_test x 2` matrix `locs_new` containing the coordinates of the test data
+#' - An `n_train x 2` matrix `locs_obs` containing the coordinates of the observed data
 #' @examples 
 #' \dontrun{
 #' set.seed(123)
@@ -28,8 +31,10 @@
 #' y_train <- y[-test_ind]
 #'
 #' # Fit the GEV-GP model to the training set
-#' train_fit <- spatialGEV_fit(y = y_train, X = locs_train, random = "ab",
-#'                             init_param = list(a = rep(0, n_loc-n_test), 
+#' train_fit <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
+#'                             init_param = list(beta_a = mean(a),
+#'                                              beta_b = mean(logb),   
+#'                                              a = rep(0, n_loc-n_test), 
 #'	              				log_b = rep(0, n_loc-n_test),
 #'						s = 0,
 #'						log_sigma_a = 1, 
@@ -39,17 +44,19 @@
 #'		       	       reparam_s = "positive", 
 #'			       kernel = "matern",
 #'			       silent = TRUE)
-#' pred <- spatialGEV_predict(model = train_fit, X_new = locs_test, n_draw = 5000)
+#' pred <- spatialGEV_predict(model = train_fit, locs_new = locs_test, n_draw = 5000)
 #' summary(pred)
 #' }
 #' @export
-spatialGEV_predict <- function(model, X_new, n_draw){
+spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NULL){
   # extract info from model
-  X_obs <- model$X_obs
+  locs_obs <- model$locs_obs
+  X_a <- model$X_a
+  X_b <- model$X_b
   kernel <- model$kernel
   nu <- model$nu # Matern hyperparameter
   reparam_s <- model$adfun$env$data$reparam_s # parametrization of s
-  n_test <- nrow(X_new)
+  n_test <- nrow(locs_new)
   n_train <- length(model$adfun$env$data$n_obs) 
   random_ind <- model$rep$env$random # indices of random effects
   if (length(random_ind) == n_train) {
@@ -83,22 +90,30 @@ spatialGEV_predict <- function(model, X_new, n_draw){
   }
   total_param <- ncol(parameter_draw)
   pred_y_draws <- matrix(NA, nrow = n_draw, ncol = n_test)
+  s_ind <- which(colnames(parameter_draw)=="s")
+
+  # Sampling depends on model type
+  if (is.null(X_a_new)) X_a_new <- matrix(1, nrow=n_test, ncol=1) # Default design matrix for a
+  if (ncol(X_a_new) != ncol(X_a)) stop("Dimensions of X_a_new and X_a must match.") 
+  beta_a_ind <- grep("beta_a", colnames(parameter_draw)) # indices of betas for a
   if (mod == "a"){
     for (i in 1:n_draw){
       a <- parameter_draw[i, 1:n_train]
       b <- exp(parameter_draw[i, n_train+1])
-      s <- s_draw_fun(i, n_train+2)
+      beta_a <- parameter_draw[i, beta_a_ind]
+      s <- s_draw_fun(i, s_ind)
       hyperparam1 <- exp(parameter_draw[i, total_param-1])
       hyperparam2 <- exp(parameter_draw[i, total_param])
+      X_all <- rbind(X_a, X_a_new)
       # Construct conditional distribution function for a
       if (kernel == "exp"){
-        a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a, 
-	  			     X.new = X_new, X.obs = as.matrix(X_obs), 
+        a_sim_fun <- sim_cond_normal(X_all%*%beta_a, a = a, 
+	  			     locs_new = locs_new, locs_obs = as.matrix(locs_obs), 
                                      kernel = kernel_exp, sigma = hyperparam1, ell = hyperparam2)
       }
       else{ 
-        a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a,
-                                     X.new = X_new, X.obs = as.matrix(X_obs),
+        a_sim_fun <- sim_cond_normal(X_all%*%beta_a, a = a,
+                                     locs_new = locs_new, locs_obs = as.matrix(locs_obs),
                                      kernel = kernel_matern, sigma = hyperparam1, 
 				     kappa = hyperparam2, nu = nu)
       }
@@ -109,31 +124,38 @@ spatialGEV_predict <- function(model, X_new, n_draw){
       pred_y_draws[i, ] <- new_y
     }
   }
-  else {
+  else { # if model is ab 
+    if (is.null(X_b_new)) X_b_new <- matrix(1, nrow=n_test, ncol=1) # Default design matrix for a
+    if (ncol(X_b_new) != ncol(X_b)) stop("Dimensions of X_b_new and X_b must match.") 
+    beta_b_ind <- grep("beta_b", colnames(parameter_draw)) # indices of betas for b
     for (i in 1:n_draw){
       a <- parameter_draw[i, 1:n_train]
       logb <- parameter_draw[i, (n_train+1):(2*n_train)]
-      s <- s_draw_fun(i, 2*n_train + 1)
+      beta_a <- parameter_draw[i, beta_a_ind]
+      beta_b <- parameter_draw[i, beta_b_ind]
+      s <- s_draw_fun(i, s_ind)
       hyperparam_a1 <- exp(parameter_draw[i, total_param-3])
       hyperparam_a2 <- exp(parameter_draw[i, total_param-2])
       hyperparam_b1 <- exp(parameter_draw[i, total_param-1])
       hyperparam_b2 <- exp(parameter_draw[i, total_param])
+      X_all_a <- rbind(X_a, X_a_new)
+      X_all_b <- rbind(X_b, X_b_new)
       # Construct conditional distribution function for a and logb
       if (kernel == "exp"){
-	a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a, 
-				     X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
+	a_sim_fun <- sim_cond_normal(X_all_a%*%beta_a, a = a, 
+				     locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
 				     kernel = kernel_exp, sigma = hyperparam_a1, ell = hyperparam_a2)
-	logb_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = logb, 
-					X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
+	logb_sim_fun <- sim_cond_normal(X_all_b%*%beta_b, a = logb, 
+					locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
 					kernel = kernel_exp, sigma = hyperparam_b1, ell = hyperparam_b2)
       }
       else{
-	a_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = a, 
-				     X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
+	a_sim_fun <- sim_cond_normal(X_all_a%*%beta_a, a = a, 
+				     locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
 				     kernel = kernel_matern, sigma = hyperparam_a1, 
 				     kappa = hyperparam_a2, nu = nu)
-	logb_sim_fun <- sim_cond_normal(rep(0, (n_train+n_test)), a = logb, 
-					X.new = as.matrix(X_new), X.obs = as.matrix(X_obs), 
+	logb_sim_fun <- sim_cond_normal(X_all_b%*%beta_b, a = logb, 
+					locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
 					kernel = kernel_matern, sigma = hyperparam_b1, 
 					kappa = hyperparam_b2, nu = nu)
       }
@@ -146,7 +168,7 @@ spatialGEV_predict <- function(model, X_new, n_draw){
       pred_y_draws[i, ] <- new_y
     }
   }
-  out <- list(pred_y_draws=pred_y_draws, X_new=X_new, X_obs=X_obs)
+  out <- list(pred_y_draws=pred_y_draws, locs_new=locs_new, locs_obs=locs_obs)
   class(out) <- "spatialGEVpred"
   out
 }

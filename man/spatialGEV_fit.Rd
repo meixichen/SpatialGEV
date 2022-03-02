@@ -6,11 +6,13 @@
 \usage{
 spatialGEV_fit(
   y,
-  X,
+  locs,
   random,
   init_param,
   reparam_s,
   kernel = "exp",
+  X_a = NULL,
+  X_b = NULL,
   nu = 1,
   s_prior = NULL,
   sp_thres = -1,
@@ -23,7 +25,7 @@ spatialGEV_fit(
 \arguments{
 \item{y}{List of \code{n} locations each with \code{n_obs[i]} independent GEV realizations.}
 
-\item{X}{\verb{n x 2} matrix of longitude and latitude of the corresponding response values.}
+\item{locs}{\verb{n x 2} matrix of longitude and latitude of the corresponding response values.}
 
 \item{random}{Either "a" or "ab". This indicates which GEV parameters are considered as
 random effects.}
@@ -36,6 +38,11 @@ constrained to be "negative", or constrained to be "positive". See details.}
 \item{kernel}{Kernel function for spatial random effects covariance matrix. Can be "exp"
 (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE
 approximation described in Lindgren el al. 2011).}
+
+\item{X_a}{\verb{n x r} design matrix for a, where \code{r-1} is the number of covariates. If not
+provided, a \verb{n x 1} column matrix of 1s is used.}
+
+\item{X_b}{\verb{n x r} design matrix for log(b). Does not need to be provided if b is fixed.}
 
 \item{nu}{Hyperparameter of the Matern kernel. Default is 1.}
 
@@ -99,14 +106,15 @@ descriptions below.
 \code{a} should be a vector and the rest are scalars. \code{log_sigma_a} and \code{log_ell_a} are
 hyperparameters in the exponential kernel for the Gaussian process describing the spatial
 variation of \code{a}.
-}\preformatted{init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
+}\preformatted{init_param = list(beta_a = rep(0, n_covariates), a = rep(1,n_locations), log_b = 0, s = 1,
                   log_sigma_a = 0, log_ell_a = 0)
 }
 \itemize{
 \item random = "ab", kernel = "exp": If
 When the scale parameter \code{b} is considered a random effect, its corresponding GP hyperparameters
 \code{log_sigma_b} and \code{log_ell_b} need to be specified.
-}\preformatted{init_param = list(a = rep(1,n_locations),
+}\preformatted{init_param = list(beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
+                  a = rep(1,n_locations),
                   log_b = rep(0,n_locations), s=1,
                   log_sigma_a = 0,log_ell_a = 0, 
                   log_sigma_b = 0,log_ell_b = 0).
@@ -115,7 +123,8 @@ When the scale parameter \code{b} is considered a random effect, its correspondi
 \item random = "ab", kernel = "matern" or "spde":
 When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are \code{log_sigma_a/b}
 and \code{log_kappa_a/b} for each spatial random effect.
-}\preformatted{init_param = list(a = rep(1,n_locations),
+}\preformatted{init_param = list(beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
+                  a = rep(1,n_locations),
                   log_b = rep(0,n_locations), s=1,
                   log_sigma_a = 0,log_kappa_a = 0, 
                   log_sigma_b = 0,log_kappa_b = 0).
@@ -148,8 +157,11 @@ logs <- simulatedData$logs
 y <- simulatedData$y
 locs <- simulatedData$locs
 n_loc = nrow(locs)
-fit <- spatialGEV_fit(y = y, X = locs, random = "ab",
-                      init_param = list(a = rep(0, n_loc), 
+# No covariates are included, only intercept is inlcuded.
+fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
+                      init_param = list(beta_a = 0,
+                                        beta_b = 0,
+                                        a = rep(0, n_loc), 
                                         log_b = rep(0, n_loc), 
                                         s = 0,
                                         log_sigma_a = 0, 
@@ -158,12 +170,15 @@ fit <- spatialGEV_fit(y = y, X = locs, random = "ab",
                                         log_kappa_b = 0),
                       reparam_s = "positive",
                       kernel = "matern",
+                      X_a = matrix(1, nrow=n_loc, ncol=1),
+                      X_b = matrix(1, nrow=n_loc, ncol=1),
                       silent = TRUE) 
 print(fit)
 
 # Using the SPDE kernel (SPDE approximation to the Matern kernel)
-fit_spde <- spatialGEV_fit(y = y, X = locs, random = "ab",
-                           init_param = list(a = rep(0, n_loc), 
+fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "ab",
+                           init_param = list(beta_a = 0,
+                                             beta_b = 0,
                                              log_b = rep(0, n_loc), 
                                              s = 0,
                                              log_sigma_a = 0, 
@@ -172,6 +187,8 @@ fit_spde <- spatialGEV_fit(y = y, X = locs, random = "ab",
                                              log_kappa_b = 0),
                            reparam_s = "positive",
                            kernel = "spde",
+                           X_a = matrix(1, nrow=n_loc, ncol=1),
+                           X_b = matrix(1, nrow=n_loc, ncol=1),
                            adfun_only = TRUE) 
 library(INLA)
 plot(fit_spde$mesh) # Plot the mesh

@@ -4,7 +4,21 @@
 \alias{r_nll}
 \title{Calculate the negative marginal loglikelihood of the GEV-GP  model.}
 \usage{
-r_nll(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, kernel = "exp", ...)
+r_nll(
+  y,
+  dd,
+  a,
+  log_b,
+  s,
+  hyperparam_a,
+  hyperparam_b,
+  kernel = "exp",
+  beta_a = NULL,
+  beta_b = NULL,
+  X_a = NULL,
+  X_b = NULL,
+  ...
+)
 }
 \arguments{
 \item{y}{List of \code{n} locations each with \code{n_obs[i]} independent GEV realizations.}
@@ -25,6 +39,15 @@ See details.}
 
 \item{kernel}{"exp" or "matern". Kernel function used to compute the covariance matrix for
 spatial random effects. Default is "exp".}
+
+\item{beta_a}{Numeric. Coefficients for mean of GP(a).}
+
+\item{beta_b}{Numeric. Coefficients for mean of GP(log_b).}
+
+\item{X_a}{Design matrix for a. If not provided, this will a \verb{n_loc x 1} column matrix of 1s.}
+
+\item{X_b}{Design matrix for log(b). If not provided and logb is a random effect,
+this will a \verb{n_loc x 1} column matrix of 1s.}
 
 \item{...}{Additional arguments to pass to the kernel function, e.g. \code{nu} for the matern.}
 }
@@ -52,17 +75,19 @@ logb <- simulatedData$logb
 logs <- simulatedData$logs
 y <- simulatedData$y
 locs <- simulatedData$locs
-n_loc = nrow(locs)
-log_sigma_a = -1; log_ell_a = 5
-log_sigma_b = -2; log_ell_b = 10
+n_loc <- nrow(locs)
+log_sigma_a <- -1; log_ell_a <- 5
+log_sigma_b <- -2; log_ell_b <- 10
+beta_a <- mean(a); beta_b <- mean(logb)
 # Negative marginal log-likelihood produced in R using the exponential kernel
 nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s,
                hyperparam_a=c(exp(log_sigma_a), exp(log_ell_a)),
                hyperparam_b=c(exo(log_sigma_b), exp(log_ell_b)),
-               kernel="exp")
+               kernel="exp", beta_a=beta_a, beta_b=beta_b)
 # Negative marg loglik produced by TMB template
 adfun <- spatialGEV_fit(y, X, random="ab",
-                        init_param=list(a=a, log_b=log_b, s=log(s), 
+                        init_param=list(beta_a=beta_a, beta_b=beta_b,
+                                        a=a, log_b=log_b, s=log(s), 
                                         log_sigma_a=log_sigma_a, 
                                         log_ell_a=log_ell_a,
                                         log_sigma_b=log_sigma_b, 

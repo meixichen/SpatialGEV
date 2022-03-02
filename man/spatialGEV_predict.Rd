@@ -4,22 +4,27 @@
 \alias{spatialGEV_predict}
 \title{Draw from the posterior predictive distributions at new locations based on a fitted GEV-GP model}
 \usage{
-spatialGEV_predict(model, X_new, n_draw)
+spatialGEV_predict(model, locs_new, n_draw, X_a_new = NULL, X_b_new = NULL)
 }
 \arguments{
 \item{model}{A fitted spatial GEV model object of class \code{spatialGEVfit}}
 
-\item{X_new}{A \verb{n_test x 2} matrix containing the coordinates of the new locations}
+\item{locs_new}{A \verb{n_test x 2} matrix containing the coordinates of the new locations}
 
 \item{n_draw}{Number of draws from the posterior predictive distribution}
+
+\item{X_a_new}{\verb{n_test x r1} design matrix for a at the new locations. If not provided, the
+default is a column matrix of all 1s.}
+
+\item{X_b_new}{\verb{n_test x r2} design matrix for log(b) at the new locations}
 }
 \value{
 An object of class \code{spatialGEVpred}, which is a list of the following components:
 \itemize{
 \item An \verb{n_draw x n_test} matrix \code{pred_y_draws} containing the draws from the posterior predictive
 distributions at \code{n_test} new locations
-\item An \verb{n_test x 2} matrix \code{X_new} containing the coordinates of the test data
-\item An \verb{n_train x 2} matrix \code{X_obs} containing the coordinates of the observed data
+\item An \verb{n_test x 2} matrix \code{locs_new} containing the coordinates of the test data
+\item An \verb{n_train x 2} matrix \code{locs_obs} containing the coordinates of the observed data
 }
 }
 \description{
@@ -45,8 +50,10 @@ locs_train <- locs[-test_ind,]
 y_train <- y[-test_ind]
 
 # Fit the GEV-GP model to the training set
-train_fit <- spatialGEV_fit(y = y_train, X = locs_train, random = "ab",
-                            init_param = list(a = rep(0, n_loc-n_test), 
+train_fit <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
+                            init_param = list(beta_a = mean(a),
+                                             beta_b = mean(logb),   
+                                             a = rep(0, n_loc-n_test), 
               				log_b = rep(0, n_loc-n_test),
 					s = 0,
 					log_sigma_a = 1, 
@@ -56,7 +63,7 @@ train_fit <- spatialGEV_fit(y = y_train, X = locs_train, random = "ab",
 	       	       reparam_s = "positive", 
 		       kernel = "matern",
 		       silent = TRUE)
-pred <- spatialGEV_predict(model = train_fit, X_new = locs_test, n_draw = 5000)
+pred <- spatialGEV_predict(model = train_fit, locs_new = locs_test, n_draw = 5000)
 summary(pred)
 }
 }

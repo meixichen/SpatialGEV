@@ -28,9 +28,12 @@ logb <- simulatedData$logb
 logs <- simulatedData$logs
 y <- simulatedData$y
 locs <- simulatedData$locs
-n_loc = nrow(locs)
+n_loc <- nrow(locs)
+beta_a <- mean(a); beta_b <- mean(logb)
 fit <- spatialGEV_fit(y = y, X = locs, random = "ab",
-                      init_param = list(a = rep(0, n_loc), 
+                      init_param = list(beta_a = beta_a,
+                                        beta_b = beta_b,
+                                        a = rep(0, n_loc), 
                                         log_b = rep(0, n_loc), 
                                         s = 0,
                                         log_sigma_a = 0, 

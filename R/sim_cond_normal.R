@@ -2,26 +2,26 @@
 #'
 #' @param joint.mean The length `n` mean vector of the MVN distribution. By default mu1 is the first `m` elements of `joint.mean`
 #' @param a A vector of length `n-m`, the values of mu2 to condition on
-#' @param X.new A matrix containing the coordiantes of new locations
-#' @param X.obs A matrix containing the coordinates of observed locations
+#' @param locs_new A matrix containing the coordiantes of new locations
+#' @param locs_obs A matrix containing the coordinates of observed locations
 #' @param kernel A function (kernel function) that returns a matrix containing the similarity between the two arguments. 
 #' @param ... Hyperparameters to pass to the kernel function. 
 #' @return A function that takes in one argument `n` as the number of samples to draw from the condition normal distribution
-#' of `X.new` given `X.old`: either from `rmvnorm` for MVN or `rnorm` for univariate normal. The old and new data are assumed to follow a joint multivariate normal distribution. 
+#' of `locs_new` given `locs_obs`: either from `rmvnorm` for MVN or `rnorm` for univariate normal. The old and new data are assumed to follow a joint multivariate normal distribution. 
 #' @details This serves as a helper function for `spatialGEV_predict`. The notations are consistent to the notations on the MVN wikipedia page
 #' @export
-sim_cond_normal <- function(joint.mean, a, X.new, X.obs, kernel, ...){
-  if (!is.matrix(X.new) | !is.matrix(X.obs)) stop("X.new and X.obs must be matrices")
+sim_cond_normal <- function(joint.mean, a, locs_new, locs_obs, kernel, ...){
+  if (!is.matrix(locs_new) | !is.matrix(locs_obs)) stop("locs_new and locs_obs must be matrices")
   n <- length(joint.mean)
-  m <- nrow(X.new)
+  m <- nrow(locs_new)
   if (m < 1 | m >= n) stop("Invalid length of mu1")
   mu1 <- joint.mean[1:m]
   mu2 <- joint.mean[(m+1):n]
-  Sig11 <- kernel(X1 = X.new, X2 = X.new, ...)
-  Sig12 <- kernel(X1 = X.new, X2 = X.obs, ...)
+  Sig11 <- kernel(X1 = locs_new, X2 = locs_new, ...)
+  Sig12 <- kernel(X1 = locs_new, X2 = locs_obs, ...)
   if (!is.matrix(Sig12)) Sig12 <- matrix(Sig12, nrow = m)
   Sig21 <- t(Sig12)
-  Sig22 <- kernel(X1 = X.obs, X2 = X.obs, ...)
+  Sig22 <- kernel(X1 = locs_obs, X2 = locs_obs, ...)
   
   # Matrix inversion using cholesky decomposition
   C <- chol(Sig22)

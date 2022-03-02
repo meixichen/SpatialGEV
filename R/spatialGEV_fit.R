@@ -1,7 +1,7 @@
 #' Fit a GEV-GP model.
 #'
 #' @param y List of `n` locations each with `n_obs[i]` independent GEV realizations. 
-#' @param X `n x 2` matrix of longitude and latitude of the corresponding response values.
+#' @param locs `n x 2` matrix of longitude and latitude of the corresponding response values.
 #' @param random Either "a" or "ab". This indicates which GEV parameters are considered as 
 #' random effects.
 #' @param init_param A list of initial parameters. See details. 
@@ -10,6 +10,9 @@
 #' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" 
 #' (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE 
 #' approximation described in Lindgren el al. 2011).
+#' @param X_a `n x r` design matrix for a, where `r-1` is the number of covariates. If not 
+#' provided, a `n x 1` column matrix of 1s is used.
+#' @param X_b `n x r` design matrix for log(b). Does not need to be provided if b is fixed.
 #' @param nu Hyperparameter of the Matern kernel. Default is 1. 
 #' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal 
 #' prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a 
@@ -62,7 +65,7 @@
 #' hyperparameters in the exponential kernel for the Gaussian process describing the spatial 
 #' variation of `a`.  
 #' ```
-#' init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
+#' init_param = list(beta_a = rep(0, n_covariates), a = rep(1,n_locations), log_b = 0, s = 1,
 #'                   log_sigma_a = 0, log_ell_a = 0)
 #' ```
 #'
@@ -70,7 +73,8 @@
 #' When the scale parameter `b` is considered a random effect, its corresponding GP hyperparameters 
 #' `log_sigma_b` and `log_ell_b` need to be specified.
 #' ```
-#' init_param = list(a = rep(1,n_locations),
+#' init_param = list(beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
+#'                   a = rep(1,n_locations),
 #'                   log_b = rep(0,n_locations), s=1,
 #'                   log_sigma_a = 0,log_ell_a = 0, 
 #'                   log_sigma_b = 0,log_ell_b = 0).
@@ -80,7 +84,8 @@
 #' When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are `log_sigma_a/b` 
 #' and `log_kappa_a/b` for each spatial random effect. 
 #' ``` 
-#' init_param = list(a = rep(1,n_locations),
+#' init_param = list(beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
+#'                   a = rep(1,n_locations),
 #'                   log_b = rep(0,n_locations), s=1,
 #'                   log_sigma_a = 0,log_kappa_a = 0, 
 #'                   log_sigma_b = 0,log_kappa_b = 0).
@@ -113,8 +118,11 @@
 #' y <- simulatedData$y
 #' locs <- simulatedData$locs
 #' n_loc = nrow(locs)
-#' fit <- spatialGEV_fit(y = y, X = locs, random = "ab",
-#'                       init_param = list(a = rep(0, n_loc), 
+#' # No covariates are included, only intercept is inlcuded.
+#' fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
+#'                       init_param = list(beta_a = 0,
+#'                                         beta_b = 0,
+#'                                         a = rep(0, n_loc), 
 #'                                         log_b = rep(0, n_loc), 
 #'                                         s = 0,
 #'                                         log_sigma_a = 0, 
@@ -123,12 +131,15 @@
 #'                                         log_kappa_b = 0),
 #'                       reparam_s = "positive",
 #'                       kernel = "matern",
+#'                       X_a = matrix(1, nrow=n_loc, ncol=1),
+#'                       X_b = matrix(1, nrow=n_loc, ncol=1),
 #'                       silent = TRUE) 
 #' print(fit)
 #' 
 #' # Using the SPDE kernel (SPDE approximation to the Matern kernel)
-#' fit_spde <- spatialGEV_fit(y = y, X = locs, random = "ab",
-#'                            init_param = list(a = rep(0, n_loc), 
+#' fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "ab",
+#'                            init_param = list(beta_a = 0,
+#'                                              beta_b = 0,
 #'                                              log_b = rep(0, n_loc), 
 #'                                              s = 0,
 #'                                              log_sigma_a = 0, 
@@ -137,16 +148,20 @@
 #'                                              log_kappa_b = 0),
 #'                            reparam_s = "positive",
 #'                            kernel = "spde",
+#'                            X_a = matrix(1, nrow=n_loc, ncol=1),
+#'                            X_b = matrix(1, nrow=n_loc, ncol=1),
 #'                            adfun_only = TRUE) 
 #' library(INLA)
 #' plot(fit_spde$mesh) # Plot the mesh
 #' points(locs[,1], locs[,2], col="red", pch=16) # Plot the locations
 #' }
 #' @export
-spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", nu=1, s_prior= NULL, sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE, ...){
+spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp", 
+			   X_a=NULL, X_b=NULL, nu=1, s_prior= NULL, sp_thres=-1, 
+			   adfun_only=FALSE, ignore_random=FALSE, silent=FALSE, ...){
   
-  if (length(y) != nrow(X)){
-    stop("The length of y must be the same as the number of rows of X.")
+  if (length(y) != nrow(locs)){
+    stop("The length of y must be the same as the number of rows of locs.")
   }
   if (!(random %in% c("a", "ab"))){
     stop("Argument random must be either 'a' or 'ab'.")
@@ -175,8 +190,14 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", nu
 
   #------ Prepare data input for TMB -------------
   if (kernel %in% c("exp", "matern")){
-    dd <- as.matrix(stats::dist(X))
-    data <- list(model = mod, y = unlist(y), n_obs = n_obs, dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
+    # Default design matrices
+    if (is.null(X_a)) X_a <- matrix(1, nrow=n_loc, ncol=1)
+    if (is.null(X_b)) X_b <- matrix(1, nrow=n_loc, ncol=1)
+    
+    dd <- as.matrix(stats::dist(locs))
+    data <- list(model = mod, y = unlist(y), n_obs = n_obs, 
+		 design_mat_a = X_a, design_mat_b = X_b,
+		 dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
     if (kernel == "matern") data$nu <- nu
   }
   else if (kernel == "spde"){
@@ -185,26 +206,47 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", nu
 	    is.null(mesh_args$max.n.strict), 
 	    is.null(mesh_args$max.n))){ 
       # if none of the above is specified, use our default
-      mesh <- INLA::inla.mesh.2d(X, max.edge=c(1,2))
+      mesh <- INLA::inla.mesh.2d(locs, max.edge=c(1,2))
     } 
     else{
-      mesh <- INLA::inla.mesh.2d(X, ...)
+      mesh <- INLA::inla.mesh.2d(locs, ...)
     }
     spde <- (INLA::inla.spde2.matern(mesh)$param.inla)[c("M0", "M1", "M2")]
     n_s <- nrow(spde$M0) # number of mesh triangles created by INLA
-    meshidxloc <- as.integer(mesh$idx$loc - 1)
-    data <- list(model = mod, y = unlist(y), n_obs = n_obs, meshidxloc = meshidxloc, 
+    meshidxloc <- as.integer(mesh$idx$loc)
+    
+    # Default design matrices
+    if (is.null(X_a)){
+      X_a <- matrix(1, nrow=n_s, ncol=1)
+    }
+    else{ # Expand the current design matrix using 0s due to the additional triangles in the mesh
+      X_a_temp <- matrix(0, nrow=n_s, ncol=ncol(X_a))
+      X_a_temp[,1] <- 1
+      X_a_temp[meshidxloc,] <- X_a
+      X_a <- X_a_temp   
+    }
+    if (is.null(X_b)){
+      X_b <- matrix(1, nrow=n_s, ncol=1)
+    }
+    else{ # Expand the design matrix
+      X_b_temp <- matrix(0, nrow=n_s, ncol=ncol(X_b))
+      X_b_temp[,1] <- 1
+      X_b_temp[meshidxloc,] <- X_b
+      X_b <- X_b_temp   
+    }
+    data <- list(model = mod, y = unlist(y), n_obs = n_obs, 
+		design_mat_a = X_a, design_mat_b = X_b, meshidxloc = meshidxloc-1, 
 		 reparam_s = reparam_s, spde = spde, nu = nu)
     if (random == "a"){ 
       init_param_a <- rep(0, n_s)
-      init_param_a[meshidxloc+1] <- init_param$a # expand the vector of initial parameters due to extra location points introduced by mesh
+      init_param_a[meshidxloc] <- init_param$a # expand the vector of initial parameters due to extra location points introduced by mesh
       init_param$a <- init_param_a
     }
     else {
       init_param_a <- rep(0, n_s)
       init_param_b <- rep(-1, n_s)
-      init_param_a[meshidxloc+1] <- init_param$a 
-      init_param_b[meshidxloc+1] <- init_param$log_b
+      init_param_a[meshidxloc] <- init_param$a 
+      init_param_b[meshidxloc] <- init_param$log_b
       init_param$a <- init_param_a
       init_param$log_b <- init_param_b
     }
@@ -253,7 +295,8 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", nu
     report <- TMB::sdreport(adfun, getJointPrecision = TRUE)
     t_taken <- as.numeric(difftime(Sys.time(), start_t, unit="secs"))
     out <- list(adfun=adfun, fit=fit, report=report, 
-		time=t_taken, random=random, kernel=kernel, X_obs=X)
+		time=t_taken, random=random, kernel=kernel, 
+		locs_obs=locs, X_a=X_a, X_b=X_b)
     if (kernel == "spde"){
       out$mesh <- mesh
       out$meshidxloc <- meshidxloc
