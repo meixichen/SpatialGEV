@@ -11,11 +11,13 @@ spatialGEV_fit(
   init_param,
   reparam_s,
   kernel = "exp",
+  nu = 1,
   s_prior = NULL,
   sp_thres = -1,
   adfun_only = FALSE,
   ignore_random = FALSE,
-  silent = FALSE
+  silent = FALSE,
+  ...
 )
 }
 \arguments{
@@ -32,7 +34,11 @@ random effects.}
 constrained to be "negative", or constrained to be "positive". See details.}
 
 \item{kernel}{Kernel function for spatial random effects covariance matrix. Can be "exp"
-(exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE approximation).}
+(exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE
+approximation described in Lindgren el al. 2011).}
+
+\item{nu}{Hyperparameter of the Matern kernel. Default is 1. When \code{nu=0.5}, the Matern kernel
+corresponds to the absolute exponential kernel.}
 
 \item{s_prior}{Optional. A length 2 vector where the first element is the mean of the normal
 prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a
@@ -53,8 +59,9 @@ out in the model. This can be helpful for checking the marginal likelihood.}
 
 \item{silent}{Do not show tracing information?}
 
-\item{...}{Arguments to pass to \code{INLA::inla.mesh.2d()}. This is used specifically for when
-\code{kernel="spde"}, in which case a mesh needs to be constructed on the spatial domain.}
+\item{...}{Arguments to pass to \code{INLA::inla.mesh.2d()}. See details \code{?inla.mesh.2d()}.
+This is used specifically for when \code{kernel="spde"}, in which case a mesh needs to be
+constructed on the spatial domain.}
 }
 \value{
 If \code{adfun_only=TRUE}, this function outputs a list returned by \code{TMB::MakeADFun()}.
@@ -76,7 +83,7 @@ Fit a GEV-GP model.
 This function adopts Laplace approximation using TMB model to integrate out the random effects.
 
 The random effects are assumed to follow Gaussian processes with mean 0 and covariance matrix
-defined by the chosen kernel function. E.g., using the exponential kernel function:\preformatted{cov(i,j) = sigma*exp(-|x_i - x_j|^2/ell)
+defined by the chosen kernel function. E.g., using the exponential kernel function:\preformatted{cov(i,j) = sigma*exp(-|x_i - x_j|/ell)
 }
 
 When specifying the initial parameters to be passed to \code{init_param}, care must be taken to
@@ -85,8 +92,9 @@ settings of \code{random} and \code{kernel}. Note that the order of the paramete
 descriptions below.
 \itemize{
 \item random = "a", kernel = "exp":
-\code{a} should be a vector and the rest are scalars. \code{log_sigma_a} and \code{log_ell_a} are hyperparameters
-in the exponential kernel for the Gaussian process describing the spatial variation of \code{a}.
+\code{a} should be a vector and the rest are scalars. \code{log_sigma_a} and \code{log_ell_a} are
+hyperparameters in the exponential kernel for the Gaussian process describing the spatial
+variation of \code{a}.
 }\preformatted{init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
                   log_sigma_a = 0, log_ell_a = 0)
 }

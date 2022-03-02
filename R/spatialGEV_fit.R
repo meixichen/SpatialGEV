@@ -8,8 +8,8 @@
 #' @param reparam_s A flag indicating whether the shape parameter is "zero", "unconstrained", 
 #' constrained to be "negative", or constrained to be "positive". See details.
 #' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" 
-#' (squared exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE 
-#' approximation).
+#' (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE 
+#' approximation described in Lindgren el al. 2011).
 #' @param nu Hyperparameter of the Matern kernel. Default is 1. When `nu=0.5`, the Matern kernel
 #' corresponds to the absolute exponential kernel.
 #' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal 
@@ -44,9 +44,9 @@
 #' This function adopts Laplace approximation using TMB model to integrate out the random effects.
 #' 
 #' The random effects are assumed to follow Gaussian processes with mean 0 and covariance matrix 
-#' defined by the chosen kernel function. E.g., using the squared exponential kernel function:
+#' defined by the chosen kernel function. E.g., using the exponential kernel function:
 #' ```
-#' cov(i,j) = sigma*exp(-|x_i - x_j|^2/ell)
+#' cov(i,j) = sigma*exp(-|x_i - x_j|/ell)
 #' ```
 #' When specifying the initial parameters to be passed to `init_param`, care must be taken to 
 #' count the number of parameters. Described below is how to specify `init_param` under different 

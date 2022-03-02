@@ -50,7 +50,7 @@ namespace SpatialGEV {
     // return pow(t - Type(1.0)/s) + (s + Type(1.0))/s + log(t);
   }
  
-  /// Compute the squared exponential kernel function
+  /// Compute the exponential kernel function
   ///
   /// @param[in] x Value to evaluate at
   /// @param[in] sigma Amplitude parameter
@@ -59,10 +59,10 @@ namespace SpatialGEV {
   /// @return A scalar of squared exponential kernel function value
   template <class Type>
   Type kernel_exp(Type x, Type sigma, Type ell) {
-    return sigma*exp(-pow(x, 2) / (Type(2.0) * pow(ell, 2.0)));
+    return sigma * exp(- x / ell);
   }
 
-  /// Compute the variance matrix for the squared exponential kernel.
+  /// Compute the variance matrix for the exponential kernel.
   ///
   /// @param[out] cov Matrix into which to store the output.
   /// @param[in] dd Distance matrix.
@@ -75,13 +75,9 @@ namespace SpatialGEV {
     int i,j;
     int n = dd.rows();
     if (sp_thres == -1){
-      for (i = 0; i < n; i++){
-	cov(i,i) = sigma;
-	for (j = 0; j < i; j++){
-	  cov(i,j) = kernel_exp(dd(i,j), sigma, ell);  
-	  cov(j,i) = cov(i,j);
-	}
-      }
+      cov = - dd / ell;
+      cov = cov.array().exp();
+      cov *= sigma;
     }else {
       for (i = 0; i < n; i++){
 	cov(i,i) = sigma;

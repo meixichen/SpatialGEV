@@ -26,7 +26,7 @@ whether \code{X1} and \code{X2} are used instead.
 Exponential covariance function
 }
 \details{
-Let x = dist(x_i, x_j).\preformatted{cov(i,j) = sigma*exp(-x^2/ell)
+Let x = dist(x_i, x_j).\preformatted{cov(i,j) = sigma*exp(-x/ell)
 }
 }
 \examples{
