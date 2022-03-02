@@ -62,7 +62,7 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE){
     meshidxloc <- model$meshidxloc
     if (mod == "a") { 
       mean_random <- mean_random[meshidxloc]
-      ind2rm <- setdiff(1:length(random_ind), meshidx) 
+      ind2rm <- setdiff(1:length(random_ind), meshidxloc) 
       joint_cov <- joint_cov[-ind2rm, -ind2rm]
     }
     else {

@@ -10,8 +10,7 @@
 #' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" 
 #' (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE 
 #' approximation described in Lindgren el al. 2011).
-#' @param nu Hyperparameter of the Matern kernel. Default is 1. When `nu=0.5`, the Matern kernel
-#' corresponds to the absolute exponential kernel.
+#' @param nu Hyperparameter of the Matern kernel. Default is 1. 
 #' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal 
 #' prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a 
 #' uniform prior is put on s.
@@ -20,15 +19,20 @@
 #' using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad 
 #' convergence. 
 #' @param adfun_only Only output the ADfun constructed using TMB? If TRUE, model fitting is not 
-#' performed and only a TMB tamplate `adfun` is returned. 
+#' performed and only a TMB tamplate `adfun` is returned (along with the created mesh if kernel is 
+#' "spde"). 
 #' This can be used when the user would like to use a different optimizer other than the default 
 #' `nlminb`. E.g., call `optim(adfun$par, adfun$fn, adfun$gr)` for optimization.
 #' @param ignore_random Ignore random effect? If TRUE, spatial random effects are not integrated 
 #' out in the model. This can be helpful for checking the marginal likelihood. 
 #' @param silent Do not show tracing information?
-#' @param ... Arguments to pass to `INLA::inla.mesh.2d()`. See details `?inla.mesh.2d()`.
+#' @param ... Arguments to pass to `INLA::inla.mesh.2d()`. See details `?inla.mesh.2d()` and 
+#' Section 2.1 of Lindgren & Rue (2015) JSS paper.
 #' This is used specifically for when `kernel="spde"`, in which case a mesh needs to be 
-#' constructed on the spatial domain.
+#' constructed on the spatial domain. When no arguments are passed to `inla.mesh.2d()`, a 
+#' default argument is `max.edge=c(1,2)`, which simply specifies the largest allowed triangle edge
+#' length. It is strongly suggested that the user should specify these arguments if they would 
+#' like to use the SPDE kernel. 
 #' @return If `adfun_only=TRUE`, this function outputs a list returned by `TMB::MakeADFun()`. 
 #' This list contains components `par, fn, gr` and can be passed to an R optimizer.
 #' If `adfun_only=FALSE`, this function outputs an object of class `spatialGEVfit`, a list 
@@ -38,7 +42,7 @@
 #' - An object of class `sdreport` from TMB which contains the point estimates, standard error, 
 #' and precision matrix for the fixed and random effects
 #' - Other helpful information about the model: kernel, data coordinates matrix, and optionally
-#' a vector `meshidxloc` if `kernel="spde" (See details). 
+#' the created mesh if `kernel="spde" (See details). 
 #' 
 #' @details 
 #' This function adopts Laplace approximation using TMB model to integrate out the random effects.
@@ -121,6 +125,22 @@
 #'                       kernel = "matern",
 #'                       silent = TRUE) 
 #' print(fit)
+#' 
+#' # Using the SPDE kernel (SPDE approximation to the Matern kernel)
+#' fit_spde <- spatialGEV_fit(y = y, X = locs, random = "ab",
+#'                            init_param = list(a = rep(0, n_loc), 
+#'                                              log_b = rep(0, n_loc), 
+#'                                              s = 0,
+#'                                              log_sigma_a = 0, 
+#'                                              log_kappa_a = 0,
+#'                                              log_sigma_b = 0, 
+#'                                              log_kappa_b = 0),
+#'                            reparam_s = "positive",
+#'                            kernel = "spde",
+#'                            adfun_only = TRUE) 
+#' library(INLA)
+#' plot(fit_spde$mesh) # Plot the mesh
+#' points(locs[,1], locs[,2], col="red", pch=16) # Plot the locations
 #' }
 #' @export
 spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", nu=1, s_prior= NULL, sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE, silent=FALSE, ...){
@@ -165,7 +185,7 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", nu
 	    is.null(mesh_args$max.n.strict), 
 	    is.null(mesh_args$max.n))){ 
       # if none of the above is specified, use our default
-      mesh <- INLA::inla.mesh.2d(X, max.edge=2)
+      mesh <- INLA::inla.mesh.2d(X, max.edge=c(1,2))
     } 
     else{
       mesh <- INLA::inla.mesh.2d(X, ...)
@@ -220,7 +240,12 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", nu
                           silent = silent)
   
   if (adfun_only){
-    adfun
+    if (kernel == "spde"){
+      list(adfun=adfun, mesh=mesh)
+    }
+    else{
+      adfun
+    }
   }
   else{
     start_t <- Sys.time()
@@ -230,6 +255,7 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", nu
     out <- list(adfun=adfun, fit=fit, report=report, 
 		time=t_taken, kernel=kernel, X_obs=X)
     if (kernel == "spde"){
+      out$mesh <- mesh
       out$meshidxloc <- meshidxloc
       out$nu <- nu
     }

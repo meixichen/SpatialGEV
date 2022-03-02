@@ -37,8 +37,7 @@ constrained to be "negative", or constrained to be "positive". See details.}
 (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE
 approximation described in Lindgren el al. 2011).}
 
-\item{nu}{Hyperparameter of the Matern kernel. Default is 1. When \code{nu=0.5}, the Matern kernel
-corresponds to the absolute exponential kernel.}
+\item{nu}{Hyperparameter of the Matern kernel. Default is 1.}
 
 \item{s_prior}{Optional. A length 2 vector where the first element is the mean of the normal
 prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a
@@ -50,7 +49,8 @@ using sparse matrix. Caution: hard thresholding the covariance matrix often resu
 convergence.}
 
 \item{adfun_only}{Only output the ADfun constructed using TMB? If TRUE, model fitting is not
-performed and only a TMB tamplate \code{adfun} is returned.
+performed and only a TMB tamplate \code{adfun} is returned (along with the created mesh if kernel is
+"spde").
 This can be used when the user would like to use a different optimizer other than the default
 \code{nlminb}. E.g., call \code{optim(adfun$par, adfun$fn, adfun$gr)} for optimization.}
 
@@ -59,9 +59,13 @@ out in the model. This can be helpful for checking the marginal likelihood.}
 
 \item{silent}{Do not show tracing information?}
 
-\item{...}{Arguments to pass to \code{INLA::inla.mesh.2d()}. See details \code{?inla.mesh.2d()}.
+\item{...}{Arguments to pass to \code{INLA::inla.mesh.2d()}. See details \code{?inla.mesh.2d()} and
+Section 2.1 of Lindgren & Rue (2015) JSS paper.
 This is used specifically for when \code{kernel="spde"}, in which case a mesh needs to be
-constructed on the spatial domain.}
+constructed on the spatial domain. When no arguments are passed to \code{inla.mesh.2d()}, a
+default argument is \code{max.edge=c(1,2)}, which simply specifies the largest allowed triangle edge
+length. It is strongly suggested that the user should specify these arguments if they would
+like to use the SPDE kernel.}
 }
 \value{
 If \code{adfun_only=TRUE}, this function outputs a list returned by \code{TMB::MakeADFun()}.
@@ -73,7 +77,7 @@ If \code{adfun_only=FALSE}, this function outputs an object of class \code{spati
 \item An object of class \code{sdreport} from TMB which contains the point estimates, standard error,
 and precision matrix for the fixed and random effects
 \item Other helpful information about the model: kernel, data coordinates matrix, and optionally
-a vector \code{meshidxloc} if `kernel="spde" (See details).
+the created mesh if `kernel="spde" (See details).
 }
 }
 \description{
@@ -156,5 +160,21 @@ fit <- spatialGEV_fit(y = y, X = locs, random = "ab",
                       kernel = "matern",
                       silent = TRUE) 
 print(fit)
+
+# Using the SPDE kernel (SPDE approximation to the Matern kernel)
+fit_spde <- spatialGEV_fit(y = y, X = locs, random = "ab",
+                           init_param = list(a = rep(0, n_loc), 
+                                             log_b = rep(0, n_loc), 
+                                             s = 0,
+                                             log_sigma_a = 0, 
+                                             log_kappa_a = 0,
+                                             log_sigma_b = 0, 
+                                             log_kappa_b = 0),
+                           reparam_s = "positive",
+                           kernel = "spde",
+                           adfun_only = TRUE) 
+library(INLA)
+plot(fit_spde$mesh) # Plot the mesh
+points(locs[,1], locs[,2], col="red", pch=16) # Plot the locations
 }
 }
