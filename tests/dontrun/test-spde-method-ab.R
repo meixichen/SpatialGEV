@@ -19,6 +19,10 @@ print(fit_matern)
 ab_matern <- summary(fit_matern$report, "random")
 a_matern <- ab_matern[1:n_loc,1]
 logb_matern <- ab_matern[(n_loc+1):(2*n_loc),1]
+
+cat("Sampling from the Matern model...\n")
+sam_matern <- spatialGEV_sample(fit_matern, 500)
+summary_matern <- summary(sam_matern)
 #----- End: Without SPDE -----------
 
 #----- With SPDE -------------
@@ -33,6 +37,10 @@ n_s <- nrow(ab_spde)/2 # number of triangles in the mesh
 meshidxloc <- fit_spde$meshidxloc # indices of the recorded locations in the mesh
 a_spde <- ab_spde[meshidxloc, 1]
 logb_spde <- ab_spde[(n_s+1):(2*n_s), ][meshidxloc, 1]
+
+cat("Sampling from the SPDE model...\n")
+sam_spde <- spatialGEV_sample(fit_spde, 500)
+summary_spde <- summary(sam_spde)
 #----- End: With SPDE ----------
 
 #----- Plot the results ----------

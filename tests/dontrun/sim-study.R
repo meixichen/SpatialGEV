@@ -35,7 +35,8 @@ filled.contour(x, y, data_mat,
 
 ################ Model fitting using exp #######################
 X <- expand.grid(x,y)
-init_param <- list(a = rep(50, n_loc), log_b = rep(3, n_loc), s = -2,
+init_param <- list(beta_a = 50, beta_b = 20,
+		   a = rep(50, n_loc), log_b = rep(3, n_loc), s = -2,
                    log_sigma_a = 1, log_ell_a = 1, 
                    log_sigma_b = 1, log_ell_b = 1)
 fit_e <- spatialGEV_fit(data, X, random = "ab", 
@@ -43,7 +44,8 @@ fit_e <- spatialGEV_fit(data, X, random = "ab",
 		      reparam_s = "positive", kernel="exp")
 
 ################ Model fitting using Matern ##############
-init_param <- list(a = rep(50, n_loc), log_b = rep(3, n_loc), s = -2,
+init_param <- list(beta_a = 50, beta_b = 20,
+		   a = rep(50, n_loc), log_b = rep(3, n_loc), s = -2,
                    log_sigma_a = 1, log_kappa_a = -1,
                    log_sigma_b = 1, log_kappa_b = -1)
 fit_m <- spatialGEV_fit(data, X, random = "ab",
@@ -51,7 +53,8 @@ fit_m <- spatialGEV_fit(data, X, random = "ab",
                       reparam_s = "positive", kernel="matern")
 
 ################ Model fitting using SPDE #################
-init_param <- list(a = rep(50, n_loc), log_b = rep(3, n_loc), s = -2,
+init_param <- list(beta_a = 50, beta_b = 20,
+		   a = rep(50, n_loc), log_b = rep(3, n_loc), s = -2,
                    log_sigma_a = 1, log_kappa_a = -1,
                    log_sigma_b = 1, log_kappa_b = -1)
 fit_s <- spatialGEV_fit(data, X, random = "ab",
@@ -91,17 +94,3 @@ barplot(c(fit_e$time, fit_m$time, fit_s$time),
 	ylab="Time (sec)")
 
 
-############### Which locations are not estimated well using SPDE? ############
-a_bad <- which((a_s - a) > 2.5)
-b_bad <- which((exp(logb_s) - b) < -1.5)
-
-par(mar=c(5.1, 4.1, 4.1, 9.1))
-plot(X[,1],X[,2], xlab="Longitude", ylab="Latitude",
-     main="Which locations are not estimated well by SPDE")
-points(X[a_bad,1], X[a_bad,2], 
-       col="red", pch=24, cex=2)
-points(X[b_bad,1], X[b_bad,2],
-       col="blue", pch=25, cex=2)
-legend("topright", inset=c(-0.3,0), 
-       legend=c("a","b"), 
-       pch=c(24,25), col=c("red","blue"), title="Bad estimates")
