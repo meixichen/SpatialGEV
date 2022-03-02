@@ -15,9 +15,9 @@ sim_cond_normal(joint.mean, a, X.new, X.obs, kernel, ...)
 
 \item{X.obs}{A matrix containing the coordinates of observed locations}
 
-\item{kernel}{A function (kernel function) that returns a matrix containing the similarity between the two arguments. Currently only supports \code{kernel_exp} and \code{kernel_matern}}
+\item{kernel}{A function (kernel function) that returns a matrix containing the similarity between the two arguments.}
 
-\item{...}{Hyperparameters to pass to the kernel function}
+\item{...}{Hyperparameters to pass to the kernel function.}
 }
 \value{
 A function that takes in one argument \code{n} as the number of samples to draw from the condition normal distribution

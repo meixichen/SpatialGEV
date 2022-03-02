@@ -4,7 +4,7 @@
 \alias{r_nll}
 \title{Calculate the negative marginal loglikelihood of the GEV-GP  model.}
 \usage{
-r_nll(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, kernel = "exp")
+r_nll(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, kernel = "exp", ...)
 }
 \arguments{
 \item{y}{List of \code{n} locations each with \code{n_obs[i]} independent GEV realizations.}
@@ -25,6 +25,8 @@ See details.}
 
 \item{kernel}{"exp" or "matern". Kernel function used to compute the covariance matrix for
 spatial random effects. Default is "exp".}
+
+\item{...}{Additional arguments to pass to the kernel function, e.g. \code{nu} for the matern.}
 }
 \value{
 Scalar value of the negative marginal loglikelihood:\preformatted{-logL(Data; spatial_random_effects, fixed_hyperparameters)

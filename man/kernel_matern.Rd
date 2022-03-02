@@ -30,12 +30,14 @@ Matern covariance function
 \details{
 Let x = dist(x_i, x_j).\preformatted{cov(i,j) = sigma * 2^(1-nu)/gamma(nu) * (kappa*x)^nu * K_v(kappa*x)
 }
+
+Note that when \code{nu=0.5}, the Matern kernel corresponds to the absolute exponential kernel.
 }
 \examples{
 X1 <- cbind(runif(10, 1, 10), runif(10, 10, 20))
 X2 <- cbind(runif(5, 1, 10), runif(5, 10, 20))
 
-kernel_matern(sigma=2, ell=1, X1=X1, X2=X2)
+kernel_matern(sigma=2, kappa=1, X1=X1, X2=X2)
 
-kernel_matern(as.matrix(stats::dist(X1)), sigma=2, ell=1)
+kernel_matern(as.matrix(stats::dist(X1)), sigma=2, kappa=1)
 }
