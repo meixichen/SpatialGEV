@@ -253,7 +253,7 @@ spatialGEV_fit <- function(y, X, random, init_param, reparam_s, kernel="exp", nu
     report <- TMB::sdreport(adfun, getJointPrecision = TRUE)
     t_taken <- as.numeric(difftime(Sys.time(), start_t, unit="secs"))
     out <- list(adfun=adfun, fit=fit, report=report, 
-		time=t_taken, kernel=kernel, X_obs=X)
+		time=t_taken, random=random, kernel=kernel, X_obs=X)
     if (kernel == "spde"){
       out$mesh <- mesh
       out$meshidxloc <- meshidxloc
