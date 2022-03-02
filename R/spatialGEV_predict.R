@@ -59,10 +59,11 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
   n_test <- nrow(locs_new)
   n_train <- length(model$adfun$env$data$n_obs) 
   random_ind <- model$rep$env$random # indices of random effects
-  if (length(random_ind) == n_train) {
+  random <- model$random
+  if (length(random) == 1) {
     mod <- "a"
   }
-  else if (length(random_ind) >= 2*n_train){
+  else if (length(random) == 2){
     mod <- "ab"
   }
   else {

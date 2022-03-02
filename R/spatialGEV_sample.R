@@ -45,7 +45,7 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE){
   if (length(random) == 1) {
     mod <- "a"
   }
-  else if (length(random_ind) == 2){
+  else if (length(random) == 2){
     mod <- "ab"
   }
   else {
