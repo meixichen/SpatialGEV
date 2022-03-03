@@ -105,16 +105,18 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
       s <- s_draw_fun(i, s_ind)
       hyperparam1 <- exp(parameter_draw[i, total_param-1])
       hyperparam2 <- exp(parameter_draw[i, total_param])
+      X_all <- rbind(X_a, X_a_new)
       # Construct conditional distribution function for a
       if (kernel == "exp"){
-        X_all <- rbind(X_a, X_a_new)
         a_sim_fun <- sim_cond_normal(X_all%*%beta_a, a = a, 
 	  			     locs_new = locs_new, locs_obs = as.matrix(locs_obs), 
                                      kernel = kernel_exp, sigma = hyperparam1, ell = hyperparam2)
       }
       else{ 
-        meshidxloc <- model$meshidxloc
-        X_all <- rbind(as.matrix(X_a[meshidxloc,]), X_a_new)
+        if (kernel == "spde"){
+	  meshidxloc <- model$meshidxloc
+          X_all <- rbind(as.matrix(X_a[meshidxloc,]), X_a_new)
+	}
 	a_sim_fun <- sim_cond_normal(X_all%*%beta_a, a = a,
                                      locs_new = locs_new, locs_obs = as.matrix(locs_obs),
                                      kernel = kernel_matern, sigma = hyperparam1, 
@@ -141,10 +143,10 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
       hyperparam_a2 <- exp(parameter_draw[i, total_param-2])
       hyperparam_b1 <- exp(parameter_draw[i, total_param-1])
       hyperparam_b2 <- exp(parameter_draw[i, total_param])
+      X_all_a <- rbind(X_a, X_a_new)
+      X_all_b <- rbind(X_b, X_b_new)
       # Construct conditional distribution function for a and logb
       if (kernel == "exp"){
-        X_all_a <- rbind(X_a, X_a_new)
-        X_all_b <- rbind(X_b, X_b_new)
 	a_sim_fun <- sim_cond_normal(X_all_a%*%beta_a, a = a, 
 				     locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
 				     kernel = kernel_exp, sigma = hyperparam_a1, ell = hyperparam_a2)
@@ -153,9 +155,11 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
 					kernel = kernel_exp, sigma = hyperparam_b1, ell = hyperparam_b2)
       }
       else{
-        meshidxloc <- model$meshidxloc
-        X_all_a <- rbind(as.matrix(X_a[meshidxloc,]), X_a_new)
-        X_all_b <- rbind(as.matrix(X_b[meshidxloc,]), X_b_new)
+        if (kernel == "spde"){
+	  meshidxloc <- model$meshidxloc
+          X_all_a <- rbind(as.matrix(X_a[meshidxloc,]), X_a_new)
+          X_all_b <- rbind(as.matrix(X_b[meshidxloc,]), X_b_new)
+	}
 	a_sim_fun <- sim_cond_normal(X_all_a%*%beta_a, a = a, 
 				     locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
 				     kernel = kernel_matern, sigma = hyperparam_a1, 
