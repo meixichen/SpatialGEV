@@ -8,6 +8,9 @@
 #include "model_ab_exp.hpp"
 #include "model_ab_matern.hpp"
 #include "model_ab_spde.hpp"
+#include "model_abs_exp.hpp"
+#include "model_abs_matern.hpp"
+#include "model_abs_spde.hpp"
 
 template<class Type>
 Type objective_function<Type>::operator() () {
@@ -24,6 +27,12 @@ Type objective_function<Type>::operator() () {
     return model_ab_matern(this);
   } else if(model == "model_ab_spde") {
     return model_ab_spde(this);
+  } else if(model == "model_abs_exp") {
+    return model_abs_exp(this);
+  } else if(model == "model_abs_matern") {
+    return model_abs_matern(this);
+  } else if(model == "model_abs_spde") {
+    return model_abs_spde(this);
   } else {
     error("Unknown model.");
   }

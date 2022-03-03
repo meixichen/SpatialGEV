@@ -225,6 +225,36 @@ namespace SpatialGEV {
     return;
   }
 
+  /// Add negative log-likelihood contributed by the data layer for model_abs.
+  ///
+  /// @param[out] nll negative log-likelihood accumulator.
+  /// @param[in] y Data.
+  /// @param[in] n_obs Vector of number of observations per location 
+  /// @param[in] a GEV location parameter vector.
+  /// @param[in] log_b GEV (log) scale parameter vector.
+  /// @param[in] s GEV shape parameter (possibly transformed).
+  /// @param[in] n Number of locations.
+  /// @param[in] reparam_s Flag indicating reparametrization of s
+  template <class Type>
+  void nll_accumulator_abs(Type &nll, cRefVector_t<Type>& y, vector<int> n_obs, 
+		      RefVector_t<Type> a, RefVector_t<Type> log_b, RefVector_t<Type> s,
+		      Type n, Type reparam_s) {
+    int start_ind = 0; // index of the first observation of location i in n_obs
+    int end_ind = 0; // index of the last observation of location i in n_obs
+    if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
+      s = s.array().exp();
+    } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
+      s = -s.array().exp();
+    } // if we don't use any reparametrization, then s is unconstrained
+    for(int i=0;i<n;i++) {
+      end_ind += n_obs[i];
+      for (int j=start_ind;j<end_ind;j++){
+	nll -= gev_lpdf<Type>(y[j], a[i], log_b[i], s[i]);
+      } 
+      start_ind += n_obs[i];
+    }
+    return;
+  } 
 } // end namespace SpatialGEV
 
 #endif
