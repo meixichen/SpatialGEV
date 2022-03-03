@@ -27,7 +27,7 @@ sim_cond_normal <- function(joint.mean, a, locs_new, locs_obs, kernel, ...){
   C <- chol(Sig22)
   A.t <- backsolve(r = C, x = backsolve(r = C, x = Sig21, transpose = TRUE)) # A.t = Sig22^{-1} * Sig21
   A <- t(A.t) #A = Sig12 * Sig22^{-1}
-  
+
   mu.bar <- mu1 + A %*% (a - mu2)
   Sig.bar <- Sig11 - Sig12 %*% A.t
   
