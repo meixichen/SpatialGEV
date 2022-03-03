@@ -10,29 +10,29 @@ print.spatialGEVfit <- function(object, ...){
   # Time info
   time <- object$time
   ifelse(time <= 600,
-	 print_t <- paste(time, "seconds."),
-	 print_t <- paste(time/60, "minutes."))
+	 print_t <- paste(time, "seconds"),
+	 print_t <- paste(time/60, "minutes"))
   cat("Model fitting took", print_t, "\n")
 
   # Convergence info
   if(object$fit$converge == 0){
-    mes <- "The model has reached relative convergence. \n"
+    mes <- "The model has reached relative convergence \n"
     cat(mes)
   } else {
     cat("The model has not converged and the convergence message output by nlminb is: \n",
         object$fit$message)}
   
   # Kernel info
-  cat("The model uses a", object$kernel, "kernel. \n")
+  cat("The model uses a", object$kernel, "kernel \n")
 
   # Parameter info
-  cat("Number of fixed effects in the model is", length(object$fit$par), ". \n")
-  cat("Number of random effects in the model is", length(object$report$par.random), ". \n")
+  cat("Number of fixed effects in the model is", length(object$fit$par), "\n")
+  cat("Number of random effects in the model is", length(object$report$par.random), "\n")
 
   # Hessian info
   ifelse(object$report$pdHess, 
-	 mes <- "Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples. \n",
-         mes <- "Hessian matrix is NOT positive definite. spatialGEV_sample and spatialGEV_predict cannot be used.")
+	 mes <- "Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples \n",
+         mes <- "Hessian matrix is NOT positive definite. spatialGEV_sample and spatialGEV_predict cannot be used")
   cat(mes)
 }
 
@@ -46,12 +46,12 @@ print.spatialGEVfit <- function(object, ...){
 print.spatialGEVsam <- function(object,...){
   # Dimension info
   dim_param <- dim(object[["parameter_draws"]])
-  cat("The samples contains", dim_param[1], "draws of", dim_param[2], "parameters. \n")
+  cat("The samples contains", dim_param[1], "draws of", dim_param[2], "parameters \n")
   if ("y_draws" %in% names(object)){
     dim_y <- dim(object[["y_draws"]])
-    cat("The samples contains", dim_y[1], "draws of response at", dim_y[2], "locations. \n")
+    cat("The samples contains", dim_y[1], "draws of response at", dim_y[2], "locations \n")
   }
-  cat("Use summary() to obtain summary statistics of the samples. \n")
+  cat("Use summary() to obtain summary statistics of the samples \n")
 }
 
 #' Summary method for spatialGEVsam
@@ -93,9 +93,9 @@ summary.spatialGEVsam <- function(object, ...){
 print.spatialGEVpred <- function(object, ...){
   # Dimension info
   dim_pred <- dim(object$pred_y_draws)
-  cat(dim_pred[1], "posterior predictive samples have been draw for", dim_pred[2], "test locations.\n")
-  cat("The number of training locations is", dim(object$X_obs)[1], ".\n")
-  cat("Use summary() to obtain summary statistics of the posterior predictive samples. \n")
+  cat(dim_pred[1], "posterior predictive samples have been draw for", dim_pred[2], "test locations\n")
+  cat("The number of training locations is", dim(object$locs_obs)[1], "\n")
+  cat("Use summary() to obtain summary statistics of the posterior predictive samples \n")
 }
 
 #' Summary method for spatialGEVpred
