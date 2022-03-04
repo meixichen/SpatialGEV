@@ -20,6 +20,7 @@ spatialGEV_fit(
   adfun_only = FALSE,
   ignore_random = FALSE,
   silent = FALSE,
+  mesh_extra_init = list(a = 0, log_b = -1, s = 0.001),
   ...
 )
 }
@@ -72,11 +73,15 @@ out in the model. This can be helpful for checking the marginal likelihood.}
 
 \item{silent}{Do not show tracing information?}
 
+\item{mesh_extra_init}{A named list of scalars. Used when the SPDE kernel is used. The list
+provides the initial values for a, log(b), and s on the extra triangles created in the mesh.
+The default is \code{list(a=1, log_b=0, s=0.001)}.}
+
 \item{...}{Arguments to pass to \code{INLA::inla.mesh.2d()}. See details \code{?inla.mesh.2d()} and
 Section 2.1 of Lindgren & Rue (2015) JSS paper.
 This is used specifically for when \code{kernel="spde"}, in which case a mesh needs to be
 constructed on the spatial domain. When no arguments are passed to \code{inla.mesh.2d()}, a
-default argument is \code{max.edge=c(1,2)}, which simply specifies the largest allowed triangle edge
+default argument is \code{max.edge=2}, which simply specifies the largest allowed triangle edge
 length. It is strongly suggested that the user should specify these arguments if they would
 like to use the SPDE kernel.}
 }

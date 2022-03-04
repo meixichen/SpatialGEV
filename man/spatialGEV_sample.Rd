@@ -4,7 +4,7 @@
 \alias{spatialGEV_sample}
 \title{Get posterior parameter draws from a fitted GEV-GP model.}
 \usage{
-spatialGEV_sample(model, n_draw, observation = FALSE)
+spatialGEV_sample(model, n_draw, observation = FALSE, loc_ind = NULL)
 }
 \arguments{
 \item{model}{A fitted spatial GEV model object of class \code{spatialGEVfit}}
@@ -12,6 +12,8 @@ spatialGEV_sample(model, n_draw, observation = FALSE)
 \item{n_draw}{Number of draws from the posterior distribution}
 
 \item{observation}{whether to draw from the posterior distribution of the GEV observation?}
+
+\item{loc_ind}{A vector of location indices to sample from. Default is all locations.}
 }
 \value{
 An object of class \code{spatialGEVsam}, which is a list of matrices containing the
@@ -43,7 +45,8 @@ fit <- spatialGEV_fit(y = y, X = locs, random = "ab",
                       reparam_s = "positive",
                       kernel = "matern",
                       silent = TRUE) 
-sam <- spatialGEV_sample(model = fit, n_draw = 5000, observation = TRUE)
+sam <- spatialGEV_sample(model = fit, n_draw = 100, 
+                         observation = TRUE, loc_ind=1:10)
 print(sam)
 summary(sam)
 }
