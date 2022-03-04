@@ -32,7 +32,7 @@ print.spatialGEVfit <- function(object, ...){
   # Hessian info
   ifelse(object$report$pdHess, 
 	 mes <- "Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples \n",
-         mes <- "Hessian matrix is NOT positive definite. spatialGEV_sample and spatialGEV_predict cannot be used")
+         mes <- "Hessian matrix is NOT positive definite. spatialGEV_sample and spatialGEV_predict cannot be used \n")
   cat(mes)
 }
 
