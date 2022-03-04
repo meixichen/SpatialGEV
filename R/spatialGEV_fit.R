@@ -33,11 +33,14 @@
 #' @param ignore_random Ignore random effect? If TRUE, spatial random effects are not integrated 
 #' out in the model. This can be helpful for checking the marginal likelihood. 
 #' @param silent Do not show tracing information?
+#' @param mesh_extra_init A named list of scalars. Used when the SPDE kernel is used. The list 
+#' provides the initial values for a, log(b), and s on the extra triangles created in the mesh. 
+#' The default is `list(a=1, log_b=0, s=0.001)`.
 #' @param ... Arguments to pass to `INLA::inla.mesh.2d()`. See details `?inla.mesh.2d()` and 
 #' Section 2.1 of Lindgren & Rue (2015) JSS paper.
 #' This is used specifically for when `kernel="spde"`, in which case a mesh needs to be 
 #' constructed on the spatial domain. When no arguments are passed to `inla.mesh.2d()`, a 
-#' default argument is `max.edge=c(1,2)`, which simply specifies the largest allowed triangle edge
+#' default argument is `max.edge=2`, which simply specifies the largest allowed triangle edge
 #' length. It is strongly suggested that the user should specify these arguments if they would 
 #' like to use the SPDE kernel. 
 #' @return If `adfun_only=TRUE`, this function outputs a list returned by `TMB::MakeADFun()`. 
@@ -182,7 +185,8 @@
 #' @export
 spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp", 
 			   X_a=NULL, X_b=NULL, X_s=NULL, nu=1, s_prior= NULL, sp_thres=-1, 
-			   adfun_only=FALSE, ignore_random=FALSE, silent=FALSE, ...){
+			   adfun_only=FALSE, ignore_random=FALSE, silent=FALSE, 
+			   mesh_extra_init=list(a=0, log_b=-1, s=0.001), ...){
   
   if (length(y) != nrow(locs)){
     stop("The length of y must be the same as the number of rows of locs.")
@@ -232,7 +236,7 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
 	    is.null(mesh_args$max.n.strict), 
 	    is.null(mesh_args$max.n))){ 
       # if none of the above is specified, use our default
-      mesh <- INLA::inla.mesh.2d(locs, max.edge=c(1,2))
+      mesh <- INLA::inla.mesh.2d(locs, max.edge=2)
     } 
     else{
       mesh <- INLA::inla.mesh.2d(locs, ...)
@@ -266,13 +270,13 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
 	 	 design_mat_a = X_a, design_mat_b = X_b,  meshidxloc = meshidxloc-1, 
 		 reparam_s = reparam_s, spde = spde, nu = nu)
     if (random == "a"){ 
-      init_param_a <- rep(0, n_s)
+      init_param_a <- rep(mesh_extra_init$a, n_s)
       init_param_a[meshidxloc] <- init_param$a # expand the vector of initial parameters due to extra location points introduced by mesh
       init_param$a <- init_param_a
     }
     else if (random == "ab") {
-      init_param_a <- rep(0, n_s)
-      init_param_b <- rep(-1, n_s)
+      init_param_a <- rep(mesh_extra_init$a, n_s)
+      init_param_b <- rep(mesh_extra_init$log_b, n_s)
       init_param_a[meshidxloc] <- init_param$a 
       init_param_b[meshidxloc] <- init_param$log_b
       init_param$a <- init_param_a
@@ -289,9 +293,9 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
 	X_s <- X_s_temp   
       }
       data$design_mat_s <- X_s
-      init_param_a <- rep(0, n_s)
-      init_param_b <- rep(-1, n_s)
-      init_param_s <- ifelse(reparam_s == "unconstrained", rep(1e-3, n_s), rep(-2, n_s))
+      init_param_a <- rep(mesh_extra_init$a, n_s)
+      init_param_b <- rep(mesh_extra_init$log_b, n_s)
+      init_param_s <- rep(mesh_extra_init$s, n_s)
       init_param_a[meshidxloc] <- init_param$a 
       init_param_b[meshidxloc] <- init_param$log_b
       init_param_s[meshidxloc] <- init_param$s
