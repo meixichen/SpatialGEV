@@ -60,14 +60,13 @@ Type model_abs_matern(objective_function<Type>* obj){
   
   // calculate the negative log likelihood
   Type nll = Type(0.0); 
-  nll_accumulator_abs<Type>(nll, y, n_obs, a, log_b, s, n, reparam_s);
-  
   vector<Type> mu_a = a - design_mat_a * beta_a;
   vector<Type> mu_b = log_b - design_mat_b * beta_b;
   vector<Type> mu_s = s - design_mat_s * beta_s;
   nll += MVNORM(cova)(mu_a);
   nll += MVNORM(covb)(mu_b);
   nll += MVNORM(covs)(mu_s);
+  nll_accumulator_abs<Type>(nll, y, n_obs, a, log_b, s, n, reparam_s);
   
   return nll;  
 }
