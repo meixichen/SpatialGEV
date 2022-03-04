@@ -13,6 +13,7 @@ spatialGEV_fit(
   kernel = "exp",
   X_a = NULL,
   X_b = NULL,
+  X_s = NULL,
   nu = 1,
   s_prior = NULL,
   sp_thres = -1,
@@ -27,13 +28,15 @@ spatialGEV_fit(
 
 \item{locs}{\verb{n x 2} matrix of longitude and latitude of the corresponding response values.}
 
-\item{random}{Either "a" or "ab". This indicates which GEV parameters are considered as
-random effects.}
+\item{random}{Either "a", "ab", or "abs", where \code{a} indicates the location parameter,
+\code{b} indicates the scale parameter, \code{s} indicates the shape parameter.  This tells the model
+which GEV parameters are considered as random effects.}
 
 \item{init_param}{A list of initial parameters. See details.}
 
 \item{reparam_s}{A flag indicating whether the shape parameter is "zero", "unconstrained",
-constrained to be "negative", or constrained to be "positive". See details.}
+constrained to be "negative", or constrained to be "positive". If model "abs" is used,
+\code{reparam_s} cannot be zero. See details.}
 
 \item{kernel}{Kernel function for spatial random effects covariance matrix. Can be "exp"
 (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE
@@ -44,11 +47,14 @@ provided, a \verb{n x 1} column matrix of 1s is used.}
 
 \item{X_b}{\verb{n x r} design matrix for log(b). Does not need to be provided if b is fixed.}
 
+\item{X_s}{\verb{n x r} design matrix for g(s), where g() is a transformation function of \code{s}.
+Does not need to be provided if s is fixed.}
+
 \item{nu}{Hyperparameter of the Matern kernel. Default is 1.}
 
 \item{s_prior}{Optional. A length 2 vector where the first element is the mean of the normal
 prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a
-uniform prior is put on s.}
+uniform prior is put on s if s is fixed, or a GP prior is applied if s is a random effect.}
 
 \item{sp_thres}{Optional. Thresholding value to create sparse covariance matrix. Any distance
 value greater than or equal to \code{sp_thres} will be set to 0. Default is -1, which means not
@@ -100,19 +106,23 @@ defined by the chosen kernel function. E.g., using the exponential kernel functi
 When specifying the initial parameters to be passed to \code{init_param}, care must be taken to
 count the number of parameters. Described below is how to specify \code{init_param} under different
 settings of \code{random} and \code{kernel}. Note that the order of the parameters must match the
-descriptions below.
+descriptions below (initial values specified below such as 0 and 1 are only examples).
 \itemize{
 \item random = "a", kernel = "exp":
 \code{a} should be a vector and the rest are scalars. \code{log_sigma_a} and \code{log_ell_a} are
 hyperparameters in the exponential kernel for the Gaussian process describing the spatial
 variation of \code{a}.
-}\preformatted{init_param = list(beta_a = rep(0, n_covariates), a = rep(1,n_locations), log_b = 0, s = 1,
+}\preformatted{init_param = list(beta_a = rep(0, n_covariates), 
+                  a = rep(1,n_locations), log_b = 0, s = 1,
                   log_sigma_a = 0, log_ell_a = 0)
 }
+
+Note that even if \code{reparam_s=="zero"}, an initial value for \code{s} still must be provided, even
+though in this case the value does not matter anymore.
 \itemize{
-\item random = "ab", kernel = "exp": If
-When the scale parameter \code{b} is considered a random effect, its corresponding GP hyperparameters
-\code{log_sigma_b} and \code{log_ell_b} need to be specified.
+\item random = "ab", kernel = "exp":
+When \code{b} is considered a random effect, its corresponding GP hyperparameters \code{log_sigma_b}
+and \code{log_ell_b} need to be specified.
 }\preformatted{init_param = list(beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
                   a = rep(1,n_locations),
                   log_b = rep(0,n_locations), s=1,
@@ -120,14 +130,30 @@ When the scale parameter \code{b} is considered a random effect, its correspondi
                   log_sigma_b = 0,log_ell_b = 0).
 }
 \itemize{
-\item random = "ab", kernel = "matern" or "spde":
-When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are \code{log_sigma_a/b}
-and \code{log_kappa_a/b} for each spatial random effect.
-}\preformatted{init_param = list(beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
+\item random = "abs", kernel = "exp":
+}\preformatted{init_param = list(beta_a = rep(0, n_covariates), 
+                  beta_b = rep(0, n_covariates),
+                  beta_s = rep(0, n_covariates),
                   a = rep(1,n_locations),
-                  log_b = rep(0,n_locations), s=1,
+                  log_b = rep(0,n_locations), 
+                  s = rep(0,n_locations),
+                  log_sigma_a = 0,log_ell_a = 0, 
+                  log_sigma_b = 0,log_ell_b = 0).
+                  log_sigma_s = 0,log_ell_s = 0).
+}
+\itemize{
+\item random = "abs", kernel = "matern" or "spde":
+When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are \code{log_sigma_a/b/s}
+and \code{log_kappa_a/b/s} for each spatial random effect.
+}\preformatted{init_param = list(beta_a = rep(0, n_covariates), 
+                  beta_b = rep(0, n_covariates),
+                  beta_s = rep(0, n_covariates),
+                  a = rep(1,n_locations),
+                  log_b = rep(0,n_locations), 
+                  s = rep(0,n_locations), 
                   log_sigma_a = 0,log_kappa_a = 0, 
                   log_sigma_b = 0,log_kappa_b = 0).
+                  log_sigma_s = 0,log_kappa_s = 0).
 }
 
 \code{raparam_s} allows the user to reparametrize the GEV shape parameter \code{s}. For example,

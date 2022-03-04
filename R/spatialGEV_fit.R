@@ -2,21 +2,25 @@
 #'
 #' @param y List of `n` locations each with `n_obs[i]` independent GEV realizations. 
 #' @param locs `n x 2` matrix of longitude and latitude of the corresponding response values.
-#' @param random Either "a" or "ab". This indicates which GEV parameters are considered as 
-#' random effects.
+#' @param random Either "a", "ab", or "abs", where `a` indicates the location parameter, 
+#' `b` indicates the scale parameter, `s` indicates the shape parameter.  This tells the model
+#' which GEV parameters are considered as random effects.
 #' @param init_param A list of initial parameters. See details. 
 #' @param reparam_s A flag indicating whether the shape parameter is "zero", "unconstrained", 
-#' constrained to be "negative", or constrained to be "positive". See details.
+#' constrained to be "negative", or constrained to be "positive". If model "abs" is used, 
+#' `reparam_s` cannot be zero. See details.
 #' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" 
 #' (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE 
 #' approximation described in Lindgren el al. 2011).
 #' @param X_a `n x r` design matrix for a, where `r-1` is the number of covariates. If not 
 #' provided, a `n x 1` column matrix of 1s is used.
 #' @param X_b `n x r` design matrix for log(b). Does not need to be provided if b is fixed.
+#' @param X_s `n x r` design matrix for g(s), where g() is a transformation function of `s`. 
+#' Does not need to be provided if s is fixed.
 #' @param nu Hyperparameter of the Matern kernel. Default is 1. 
 #' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal 
 #' prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a 
-#' uniform prior is put on s.
+#' uniform prior is put on s if s is fixed, or a GP prior is applied if s is a random effect.
 #' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance 
 #' value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not 
 #' using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad 
@@ -58,20 +62,23 @@
 #' When specifying the initial parameters to be passed to `init_param`, care must be taken to 
 #' count the number of parameters. Described below is how to specify `init_param` under different 
 #' settings of `random` and `kernel`. Note that the order of the parameters must match the 
-#' descriptions below.
+#' descriptions below (initial values specified below such as 0 and 1 are only examples). 
 #'
 #' - random = "a", kernel = "exp": 
 #' `a` should be a vector and the rest are scalars. `log_sigma_a` and `log_ell_a` are 
 #' hyperparameters in the exponential kernel for the Gaussian process describing the spatial 
 #' variation of `a`.  
 #' ```
-#' init_param = list(beta_a = rep(0, n_covariates), a = rep(1,n_locations), log_b = 0, s = 1,
+#' init_param = list(beta_a = rep(0, n_covariates), 
+#'                   a = rep(1,n_locations), log_b = 0, s = 1,
 #'                   log_sigma_a = 0, log_ell_a = 0)
 #' ```
+#' Note that even if `reparam_s=="zero"`, an initial value for `s` still must be provided, even
+#' though in this case the value does not matter anymore.
 #'
-#' - random = "ab", kernel = "exp": If
-#' When the scale parameter `b` is considered a random effect, its corresponding GP hyperparameters 
-#' `log_sigma_b` and `log_ell_b` need to be specified.
+#' - random = "ab", kernel = "exp": 
+#' When `b` is considered a random effect, its corresponding GP hyperparameters `log_sigma_b` 
+#' and `log_ell_b` need to be specified.
 #' ```
 #' init_param = list(beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
 #'                   a = rep(1,n_locations),
@@ -79,16 +86,33 @@
 #'                   log_sigma_a = 0,log_ell_a = 0, 
 #'                   log_sigma_b = 0,log_ell_b = 0).
 #' ```
-#' 
-#' - random = "ab", kernel = "matern" or "spde": 
-#' When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are `log_sigma_a/b` 
-#' and `log_kappa_a/b` for each spatial random effect. 
-#' ``` 
-#' init_param = list(beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
+#'
+#' - random = "abs", kernel = "exp": 
+#' ```
+#' init_param = list(beta_a = rep(0, n_covariates), 
+#'                   beta_b = rep(0, n_covariates),
+#'                   beta_s = rep(0, n_covariates),
 #'                   a = rep(1,n_locations),
-#'                   log_b = rep(0,n_locations), s=1,
+#'                   log_b = rep(0,n_locations), 
+#'                   s = rep(0,n_locations),
+#'                   log_sigma_a = 0,log_ell_a = 0, 
+#'                   log_sigma_b = 0,log_ell_b = 0).
+#'                   log_sigma_s = 0,log_ell_s = 0).
+#' ```
+#' 
+#' - random = "abs", kernel = "matern" or "spde": 
+#' When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are `log_sigma_a/b/s` 
+#' and `log_kappa_a/b/s` for each spatial random effect. 
+#' ``` 
+#' init_param = list(beta_a = rep(0, n_covariates), 
+#'                   beta_b = rep(0, n_covariates),
+#'                   beta_s = rep(0, n_covariates),
+#'                   a = rep(1,n_locations),
+#'                   log_b = rep(0,n_locations), 
+#'                   s = rep(0,n_locations), 
 #'                   log_sigma_a = 0,log_kappa_a = 0, 
 #'                   log_sigma_b = 0,log_kappa_b = 0).
+#'                   log_sigma_s = 0,log_kappa_s = 0).
 #' ```
 #'
 #' `raparam_s` allows the user to reparametrize the GEV shape parameter `s`. For example, 
@@ -157,17 +181,18 @@
 #' }
 #' @export
 spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp", 
-			   X_a=NULL, X_b=NULL, nu=1, s_prior= NULL, sp_thres=-1, 
+			   X_a=NULL, X_b=NULL, X_s=NULL, nu=1, s_prior= NULL, sp_thres=-1, 
 			   adfun_only=FALSE, ignore_random=FALSE, silent=FALSE, ...){
   
   if (length(y) != nrow(locs)){
     stop("The length of y must be the same as the number of rows of locs.")
   }
-  if (!(random %in% c("a", "ab"))){
-    stop("Argument random must be either 'a' or 'ab'.")
+  if (!(random %in% c("a", "ab", "abs"))){
+    stop("Argument random must be either 'a', 'ab', or 'abs'.")
   } 
   if (reparam_s == "zero"){
     reparam_s <- as.integer(0)
+    if (random == "abs") stop("When s is a random effect, reparam_s cannot be zero.")
   }
   else if (reparam_s == "positive"){
     reparam_s <- as.integer(1)
@@ -193,10 +218,11 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
     # Default design matrices
     if (is.null(X_a)) X_a <- matrix(1, nrow=n_loc, ncol=1)
     if (is.null(X_b)) X_b <- matrix(1, nrow=n_loc, ncol=1)
+    if (is.null(X_s)) X_s <- matrix(1, nrow=n_loc, ncol=1)
     
     dd <- as.matrix(stats::dist(locs))
     data <- list(model = mod, y = unlist(y), n_obs = n_obs, 
-		 design_mat_a = X_a, design_mat_b = X_b,
+		 design_mat_a = X_a, design_mat_b = X_b, design_mat_s = X_s,
 		 dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
     if (kernel == "matern") data$nu <- nu
   }
@@ -215,7 +241,7 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
     n_s <- nrow(spde$M0) # number of mesh triangles created by INLA
     meshidxloc <- as.integer(mesh$idx$loc)
     
-    # Default design matrices
+    # Default design matrices to provide to the data list
     if (is.null(X_a)){
       X_a <- matrix(1, nrow=n_s, ncol=1)
     }
@@ -234,15 +260,17 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
       X_b_temp[meshidxloc,] <- X_b
       X_b <- X_b_temp   
     }
+    # It is ok to have the additional element design_mat_b in the list even when it is not used 
+    # in the TMB template
     data <- list(model = mod, y = unlist(y), n_obs = n_obs, 
-		design_mat_a = X_a, design_mat_b = X_b, meshidxloc = meshidxloc-1, 
+	 	 design_mat_a = X_a, design_mat_b = X_b,  meshidxloc = meshidxloc-1, 
 		 reparam_s = reparam_s, spde = spde, nu = nu)
     if (random == "a"){ 
       init_param_a <- rep(0, n_s)
       init_param_a[meshidxloc] <- init_param$a # expand the vector of initial parameters due to extra location points introduced by mesh
       init_param$a <- init_param_a
     }
-    else {
+    else if (random == "ab") {
       init_param_a <- rep(0, n_s)
       init_param_b <- rep(-1, n_s)
       init_param_a[meshidxloc] <- init_param$a 
@@ -250,30 +278,61 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
       init_param$a <- init_param_a
       init_param$log_b <- init_param_b
     }
+    else { # if random == "abs"
+      if (is.null(X_s)){
+	X_s <- matrix(1, nrow=n_s, ncol=1)
+      }
+      else{ # Expand the design matrix
+	X_s_temp <- matrix(0, nrow=n_s, ncol=ncol(X_s))
+	X_s_temp[,1] <- 1
+	X_s_temp[meshidxloc,] <- X_s
+	X_s <- X_s_temp   
+      }
+      data$design_mat_s <- X_s
+      init_param_a <- rep(0, n_s)
+      init_param_b <- rep(-1, n_s)
+      init_param_s <- ifelse(reparam_s == "unconstrained", rep(1e-3, n_s), rep(-2, n_s))
+      init_param_a[meshidxloc] <- init_param$a 
+      init_param_b[meshidxloc] <- init_param$log_b
+      init_param_s[meshidxloc] <- init_param$s
+      init_param$a <- init_param_a
+      init_param$log_b <- init_param_b
+      init_param$s <- init_param_s
+    }
   }
   else {stop("kernel must be one of 'exp', 'matern', 'spde'!")}
   #------ End: prepare data input for TMB ----------------
-
-  if (missing(s_prior) | is.null(s_prior)){
-    data$s_mean <- 9999
-    data$s_sd <- 9999
-  }
-  else{ # specify the mean and sd of normal prior for s
-    data$s_mean <- s_prior[1]
-    data$s_sd <- s_prior[2]
+  
+  # Optionally specify a normal prior on s if s is a fixed effect
+  if (random != "abs"){ 
+    if (missing(s_prior) | is.null(s_prior)){
+      data$s_mean <- 9999
+      data$s_sd <- 9999
+    }
+    else{ # specify the mean and sd of normal prior for s
+      data$s_mean <- s_prior[1]
+      data$s_sd <- s_prior[2]
+    }
   }
   
-  if (random == "ab" & !ignore_random){
-    random <- c("a", "log_b")
-  }
-  else if (ignore_random){
+  if (ignore_random){
     random <- NULL
   }
-  
+  else if (random == "ab" & !ignore_random){ 
+    random <- c("a", "log_b")
+  }
+  else if (random == "abs" & !ignore_random){
+    random <- c("a", "log_b", "s")
+  } 
+  #else random <- "a"
+
+  # If using Gumbel, make sure s is not being estimated
   map <- list()
-  if (reparam_s == "zero") { # if using Gumbel, make sure s is not being estimated
+  if (reparam_s == "zero") { 
     map <- list(s = factor(NA))
   }
+
+  # Build TMB template
   adfun <- TMB::MakeADFun(data = data,
                           parameters = init_param,
                           random = random,

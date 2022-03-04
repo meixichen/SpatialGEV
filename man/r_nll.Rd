@@ -12,11 +12,15 @@ r_nll(
   s,
   hyperparam_a,
   hyperparam_b,
+  hyperparam_s,
   kernel = "exp",
   beta_a = NULL,
   beta_b = NULL,
+  beta_s = NULL,
   X_a = NULL,
   X_b = NULL,
+  X_s = NULL,
+  f_s = function(x) {     x },
   ...
 )
 }
@@ -30,12 +34,15 @@ r_nll(
 \item{log_b}{A numeric value or a vector of \code{n} log-transformed scale parameters if considered
 as a random effect.}
 
-\item{s}{Shape parameter}
+\item{s}{A numeric value or a vector of \code{n} shape parameters}
 
 \item{hyperparam_a}{A vector of hyperparameters for a. See details.}
 
 \item{hyperparam_b}{A vector of hyperparameters for b. Must be provided if \code{log_b} is a vector.
 See details.}
+
+\item{hyperparam_s}{A vector of hyperparameters for f(s), where f() is a transformation function
+for s specifided using the \code{f_s} argument. Must be provided if \code{s} is a vector.}
 
 \item{kernel}{"exp" or "matern". Kernel function used to compute the covariance matrix for
 spatial random effects. Default is "exp".}
@@ -44,10 +51,17 @@ spatial random effects. Default is "exp".}
 
 \item{beta_b}{Numeric. Coefficients for mean of GP(log_b).}
 
+\item{beta_s}{Numeric. Coefficients for mean of GP(s).}
+
 \item{X_a}{Design matrix for a. If not provided, this will a \verb{n_loc x 1} column matrix of 1s.}
 
 \item{X_b}{Design matrix for log(b). If not provided and logb is a random effect,
 this will a \verb{n_loc x 1} column matrix of 1s.}
+
+\item{X_s}{Design matrix for s. If not provided, this will a \verb{n_loc x 1} column matrix of 1s.}
+
+\item{f_s}{A function f() used to transform s such that
+f(s) ~ GP(X_s*beta_s, Sigma(hyperparam_s)). Default is identitfy function: \code{function(x){x}}.}
 
 \item{...}{Additional arguments to pass to the kernel function, e.g. \code{nu} for the matern.}
 }
@@ -60,12 +74,14 @@ Calculate the negative marginal loglikelihood of the GEV-GP  model.
 }
 \details{
 This function is used to test if TMB and R output the same negative loglikelihood.
-If \verb{kernel="exp}, \code{hyperparam_a/b} should be \code{c(sigma_a/b, ell_a/b)}, where \code{sigma} is the
+If \verb{kernel="exp}, \code{hyperparam_a/b/s} should be \code{c(sigma_a/b/s, ell_a/b/s)}, where \code{sigma} is the
 amplitude hyperparameter and \code{ell} is the smoothness hyperparameter for the exponential kernel.
-If \verb{kernel="matern}, \code{hyperparam_a/b} should be \code{c(sigma_a/b, kappa_a/b)}, where \code{sigma} and
+If \verb{kernel="matern}, \code{hyperparam_a/b/s} should be \code{c(sigma_a/b, kappa_a/b/s)}, where \code{sigma} and
 \code{kappa} are hyperparameters for the Matern kernel.
 If only \code{a} is a spatial random effect and \code{b} is fixed, only \code{hyperparam_a} needs to be
 provided.
+
+This function is used as the ground truth for testing hpp model likelihood.
 }
 \examples{
 \dontrun{
