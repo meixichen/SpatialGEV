@@ -359,7 +359,7 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
     t_taken <- as.numeric(difftime(Sys.time(), start_t, unit="secs"))
     out <- list(adfun=adfun, fit=fit, report=report, 
 		time=t_taken, random=random, kernel=kernel, 
-		locs_obs=locs, X_a=X_a, X_b=X_b)
+		locs_obs=locs, X_a=X_a, X_b=X_b, X_s=X_s)
     if (kernel == "spde"){
       out$mesh <- mesh
       out$meshidxloc <- meshidxloc
