@@ -6,6 +6,11 @@
 #' @param X_a_new `n_test x r1` design matrix for a at the new locations. If not provided, the 
 #' default is a column matrix of all 1s.
 #' @param X_b_new `n_test x r2` design matrix for log(b) at the new locations 
+#' @param X_s_new `n_test x r2` design matrix for (possibly transformed) s at the new locations 
+#' @param parameter_draws Optional. A `n_draw x n_parameter` matrix. If `spatialGEV_sample()` has 
+#' already been called, the output matrix of parameter draws can be supplied here to avoid doing
+#' sampling of parameters again. Make sure the number of rows of `parameter_draws` is the same as
+#' `n_draw`.
 #' @return An object of class `spatialGEVpred`, which is a list of the following components: 
 #' - An `n_draw x n_test` matrix `pred_y_draws` containing the draws from the posterior predictive 
 #' distributions at `n_test` new locations
@@ -48,11 +53,13 @@
 #' summary(pred)
 #' }
 #' @export
-spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NULL){
+spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NULL, X_s_new=NULL, 
+			       parameter_draws=NULL){
   # extract info from model
   locs_obs <- model$locs_obs
   X_a <- model$X_a
   X_b <- model$X_b
+  X_s <- model$X_s
   kernel <- model$kernel
   nu <- model$nu # Matern hyperparameter
   reparam_s <- model$adfun$env$data$reparam_s # parametrization of s
@@ -66,51 +73,59 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
   else if (length(random) == 2){
     mod <- "ab"
   }
+  else if (length(random) == 3){
+    mod <- "abs"
+  }
   else {
     stop("Cannot identify which GEV parameters are random.")
   }
 
 
-  # get parameter draws 
-  parameter_draw <- spatialGEV_sample(model, n_draw, observation=FALSE)$parameter_draws
-  
+  # get parameter draws
+  if (is.null(parameter_draws)){ 
+    parameter_draws <- spatialGEV_sample(model, n_draw, observation=FALSE)$parameter_draws
+  }
+  else{
+    if (nrow(parameter_draws) != n_draw) stop("nrow(parameter_draws) must be n_draw.")
+  }
+
   s_draw_fun <- function(j, s_ind){ 
     # `j` points to the j-th draw and `s_ind` is the index of s in the parameter vector of the model
     if (reparam_s == 3){
-      parameter_draw[j, s_ind]
+      parameter_draws[j, s_ind]
     }
     else if (reparam_s == 1){
-      exp(parameter_draw[j, s_ind])
+      exp(parameter_draws[j, s_ind])
     }
     else if (reparam_s == 2){
-      -exp(parameter_draw[j, s_ind])
+      -exp(parameter_draws[j, s_ind])
     }
     else{
       0
     }
   }
-  total_param <- ncol(parameter_draw)
+  total_param <- ncol(parameter_draws)
   pred_y_draws <- matrix(NA, nrow = n_draw, ncol = n_test)
-  s_ind <- which(colnames(parameter_draw)=="s")
+  s_ind <- which(colnames(parameter_draws)=="s")
 
   # Sampling depends on model type
   if (is.null(X_a_new)) X_a_new <- matrix(1, nrow=n_test, ncol=1) # Default design matrix for a
   if (ncol(X_a_new) != ncol(X_a)) stop("Dimensions of X_a_new and X_a must match.") 
-  beta_a_ind <- grep("beta_a", colnames(parameter_draw)) # indices of betas for a
+  beta_a_ind <- grep("beta_a", colnames(parameter_draws)) # indices of betas for a
   if (mod == "a"){
     for (i in 1:n_draw){
-      a <- parameter_draw[i, 1:n_train]
-      b <- exp(parameter_draw[i, n_train+1])
-      beta_a <- parameter_draw[i, beta_a_ind]
+      a <- parameter_draws[i, 1:n_train]
+      b <- exp(parameter_draws[i, n_train+1])
+      beta_a <- parameter_draws[i, beta_a_ind]
       s <- s_draw_fun(i, s_ind)
-      hyperparam1 <- exp(parameter_draw[i, total_param-1])
-      hyperparam2 <- exp(parameter_draw[i, total_param])
       X_all <- rbind(X_a, X_a_new)
       # Construct conditional distribution function for a
       if (kernel == "exp"){
         a_sim_fun <- sim_cond_normal(X_all%*%beta_a, a = a, 
 	  			     locs_new = locs_new, locs_obs = as.matrix(locs_obs), 
-                                     kernel = kernel_exp, sigma = hyperparam1, ell = hyperparam2)
+                                     kernel = kernel_exp, 
+				     sigma = exp(parameter_draws[i,"log_sigma_a"]), 
+				     ell = exp(parameter_draws[i,"log_ell_a"]))
       }
       else{ 
         if (kernel == "spde"){
@@ -119,8 +134,10 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
 	}
 	a_sim_fun <- sim_cond_normal(X_all%*%beta_a, a = a,
                                      locs_new = locs_new, locs_obs = as.matrix(locs_obs),
-                                     kernel = kernel_matern, sigma = hyperparam1, 
-				     kappa = hyperparam2, nu = nu)
+                                     kernel = kernel_matern, 
+				     sigma = exp(parameter_draws[i,"log_sigma_a"]) , 
+				     kappa = exp(parameter_draws[i,"log_kappa_a"]), 
+				     nu = nu)
       }
       new_a <- a_sim_fun(1) # sample parameter a one time
       new_y <- t(apply(X = new_a, MARGIN = 1, FUN = function(row){
@@ -129,32 +146,38 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
       pred_y_draws[i, ] <- new_y
     }
   }
-  else { # if model is ab 
+  else if (mod == "ab"){ 
     if (is.null(X_b_new)) X_b_new <- matrix(1, nrow=n_test, ncol=1) # Default design matrix for a
     if (ncol(X_b_new) != ncol(X_b)) stop("Dimensions of X_b_new and X_b must match.") 
-    beta_b_ind <- grep("beta_b", colnames(parameter_draw)) # indices of betas for b
+    beta_b_ind <- grep("beta_b", colnames(parameter_draws)) # indices of betas for b
     for (i in 1:n_draw){
-      a <- parameter_draw[i, 1:n_train]
-      logb <- parameter_draw[i, (n_train+1):(2*n_train)]
-      beta_a <- parameter_draw[i, beta_a_ind]
-      beta_b <- parameter_draw[i, beta_b_ind]
+      a <- parameter_draws[i, 1:n_train]
+      logb <- parameter_draws[i, (n_train+1):(2*n_train)]
+      beta_a <- parameter_draws[i, beta_a_ind]
+      beta_b <- parameter_draws[i, beta_b_ind]
       s <- s_draw_fun(i, s_ind)
-      hyperparam_a1 <- exp(parameter_draw[i, total_param-3])
-      hyperparam_a2 <- exp(parameter_draw[i, total_param-2])
-      hyperparam_b1 <- exp(parameter_draw[i, total_param-1])
-      hyperparam_b2 <- exp(parameter_draw[i, total_param])
       X_all_a <- rbind(X_a, X_a_new)
       X_all_b <- rbind(X_b, X_b_new)
+      hyperparam_a1 <- exp(parameter_draws[i, "log_sigma_a"])
+      hyperparam_b1 <- exp(parameter_draws[i, "log_sigma_b"])
       # Construct conditional distribution function for a and logb
       if (kernel == "exp"){
+	hyperparam_a2 <- exp(parameter_draws[i, "log_ell_a"])
+	hyperparam_b2 <- exp(parameter_draws[i, "log_ell_b"])
 	a_sim_fun <- sim_cond_normal(X_all_a%*%beta_a, a = a, 
 				     locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
-				     kernel = kernel_exp, sigma = hyperparam_a1, ell = hyperparam_a2)
+				     kernel = kernel_exp, 
+				     sigma = hyperparam_a1, 
+				     ell = hyperparam_a2)
 	logb_sim_fun <- sim_cond_normal(X_all_b%*%beta_b, a = logb, 
 					locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
-					kernel = kernel_exp, sigma = hyperparam_b1, ell = hyperparam_b2)
+					kernel = kernel_exp, 
+					sigma = hyperparam_b1, 
+					ell = hyperparam_b2)
       }
       else{
+	hyperparam_a2 <- exp(parameter_draws[i, "log_kappa_a"])
+	hyperparam_b2 <- exp(parameter_draws[i, "log_kappa_b"])
         if (kernel == "spde"){
 	  meshidxloc <- model$meshidxloc
           X_all_a <- rbind(as.matrix(X_a[meshidxloc,]), X_a_new)
@@ -174,6 +197,82 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
       new_ab <- cbind(new_a, exp(new_logb)) # A `1 x (2*n_test)` matrix constructed by putting the matrix of exp(logb) to the right of the matrix of a
       new_y <- t(apply(X = new_ab, MARGIN = 1, FUN = function(row){
         unlist(Map(rgev, n=1, loc=row[1:n_test], scale=row[(n_test+1):length(row)], shape=s))  
+      })) # a `1 x n_test` matrix
+      pred_y_draws[i, ] <- new_y
+    }
+  }
+  else { # if mod="abs" 
+    if (is.null(X_b_new)) X_b_new <- matrix(1, nrow=n_test, ncol=1) # Default design matrix for b
+    if (ncol(X_b_new) != ncol(X_b)) stop("Dimensions of X_b_new and X_b must match.") 
+    if (is.null(X_s_new)) X_s_new <- matrix(1, nrow=n_test, ncol=1) # Default design matrix for s
+    if (ncol(X_s_new) != ncol(X_s)) stop("Dimensions of X_s_new and X_s must match.") 
+    beta_b_ind <- grep("beta_b", colnames(parameter_draws)) # indices of betas for b
+    beta_s_ind <- grep("beta_s", colnames(parameter_draws)) # indices of betas for s
+    for (i in 1:n_draw){
+      a <- parameter_draws[i, 1:n_train]
+      logb <- parameter_draws[i, (n_train+1):(2*n_train)]
+      beta_a <- parameter_draws[i, beta_a_ind]
+      beta_b <- parameter_draws[i, beta_b_ind]
+      beta_s <- parameter_draws[i, beta_s_ind]
+      s <- s_draw_fun(i, (2*n_train+1):(3*n_train))
+      X_all_a <- rbind(X_a, X_a_new)
+      X_all_b <- rbind(X_b, X_b_new)
+      X_all_s <- rbind(X_s, X_s_new)
+      hyperparam_a1 <- exp(parameter_draws[i, "log_sigma_a"])
+      hyperparam_b1 <- exp(parameter_draws[i, "log_sigma_b"])
+      hyperparam_s1 <- exp(parameter_draws[i, "log_sigma_s"])
+      # Construct conditional distribution function for a and logb
+      if (kernel == "exp"){
+	hyperparam_a2 <- exp(parameter_draws[i, "log_ell_a"])
+	hyperparam_b2 <- exp(parameter_draws[i, "log_ell_b"])
+	hyperparam_s2 <- exp(parameter_draws[i, "log_ell_s"])
+	a_sim_fun <- sim_cond_normal(X_all_a%*%beta_a, a = a, 
+				     locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
+				     kernel = kernel_exp, 
+				     sigma = hyperparam_a1, 
+				     ell = hyperparam_a2)
+	logb_sim_fun <- sim_cond_normal(X_all_b%*%beta_b, a = logb, 
+					locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
+					kernel = kernel_exp, 
+					sigma = hyperparam_b1, 
+					ell = hyperparam_b2)
+	s_sim_fun <- sim_cond_normal(X_all_s%*%beta_s, a = s, 
+				     locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
+				     kernel = kernel_exp, 
+				     sigma = hyperparam_s1, 
+				     ell = hyperparam_s2)
+      }
+      else{
+	hyperparam_a2 <- exp(parameter_draws[i, "log_kappa_a"])
+	hyperparam_b2 <- exp(parameter_draws[i, "log_kappa_b"])
+	hyperparam_s2 <- exp(parameter_draws[i, "log_kappa_s"])
+        if (kernel == "spde"){
+	  meshidxloc <- model$meshidxloc
+          X_all_a <- rbind(as.matrix(X_a[meshidxloc,]), X_a_new)
+          X_all_b <- rbind(as.matrix(X_b[meshidxloc,]), X_b_new)
+          X_all_s <- rbind(as.matrix(X_s[meshidxloc,]), X_s_new)
+	}
+	a_sim_fun <- sim_cond_normal(X_all_a%*%beta_a, a = a, 
+				     locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
+				     kernel = kernel_matern, sigma = hyperparam_a1, 
+				     kappa = hyperparam_a2, nu = nu)
+	logb_sim_fun <- sim_cond_normal(X_all_b%*%beta_b, a = logb, 
+					locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
+					kernel = kernel_matern, sigma = hyperparam_b1, 
+					kappa = hyperparam_b2, nu = nu)
+	s_sim_fun <- sim_cond_normal(X_all_s%*%beta_s, a = s, 
+				     locs_new = as.matrix(locs_new), locs_obs = as.matrix(locs_obs), 
+				     kernel = kernel_matern, 
+				     sigma = hyperparam_s1, 
+				     kappa = hyperparam_s2, nu = nu)
+      }
+      new_a <- a_sim_fun(1) # 1 x n_test matrix
+      new_logb <- logb_sim_fun(1) # 1 x n_test matrix
+      new_s <- s_sim_fun(1) # 1 x n_test matrix
+      new_abs <- cbind(new_a, exp(new_logb), new_s) # A `1 x (3*n_test)` matrix
+      new_y <- t(apply(X = new_abs, MARGIN = 1, FUN = function(row){
+        unlist(Map(rgev, n=1, loc=row[1:n_test], scale=row[(n_test+1):(2*n_test)], 
+		   shape=row[(2*n_test+1):length(row)]))  
       })) # a `1 x n_test` matrix
       pred_y_draws[i, ] <- new_y
     }

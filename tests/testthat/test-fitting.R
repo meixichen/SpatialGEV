@@ -195,7 +195,8 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
 
   # Test if prediction works
   cat("sampling from posterior predictive distribution of model abs...\n")
-  pred_e <- spatialGEV_predict(model = fit_e, locs_new = as.matrix(locs_test), n_draw = 5)
+  pred_e <- spatialGEV_predict(model = fit_e, locs_new = as.matrix(locs_test), 
+			       n_draw = 5, parameter_draws = samps_e$parameter_draws)
 
   #----------- Test SPDE kernel -----------------
 
@@ -208,7 +209,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
 					    log_sigma_a = 1.5, log_kappa_a = -2,
 					    log_sigma_b = 1.5, log_kappa_b = -2,
 					    log_sigma_s = -1, log_kappa_s = -1),
-			  reparam_s = "positive", kernel="spde", silent = F)
+			  reparam_s = "positive", kernel="spde", silent = T)
   expect_equal(fit_s$fit$convergence, 0)
   # Test if sampling works
   cat("Sampling from model abs...\n")
@@ -216,7 +217,8 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
 
   # Test if prediction works
   cat("sampling from posterior predictive distribution of model abs...\n")
-  pred_s <- spatialGEV_predict(model = fit_s, locs_new = as.matrix(locs_test), n_draw = 5)
+  pred_s <- spatialGEV_predict(model = fit_s, locs_new = as.matrix(locs_test),
+			       n_draw = 5, parameter_draws = samps_s$parameter_draws)
 
   #--------- Test Matern  -----------------------
 
@@ -229,7 +231,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
 					    log_sigma_a = 1.5, log_kappa_a = -2,
 					    log_sigma_b = 1.5, log_kappa_b = -2,
 					    log_sigma_s = -1, log_kappa_s = -1),
-			  reparam_s = "positive", kernel="matern", silent = F)
+			  reparam_s = "positive", kernel="matern", silent = T)
   expect_equal(fit_m$fit$convergence, 0)
   
   # Test if sampling works
@@ -238,7 +240,8 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
 
   # Test if prediction works
   cat("sampling from posterior predictive distribution of model abs...\n")
-  pred_m <- spatialGEV_predict(model = fit_m, locs_new = as.matrix(locs_test), n_draw = 5)
+  pred_m <- spatialGEV_predict(model = fit_m, locs_new = as.matrix(locs_test), 
+			       n_draw = 5, parameter_draws = samps_m$parameter_draws)
   
   success <- 0
   expect_equal(success, 0) 
