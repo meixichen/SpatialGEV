@@ -28,12 +28,12 @@ Type model_abs_exp(objective_function<Type>* obj){
   DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=-1, no thresholding is made.
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positve"
   // parameter list
-  PARAMETER_VECTOR(beta_a); // r x 1 mean vector coefficients for a
-  PARAMETER_VECTOR(beta_b); // r x 1 mean vector coefficients for logb
-  PARAMETER_VECTOR(beta_s); // r x 1 mean vector coefficients for s
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER_VECTOR(log_b); // random effect to be integrated out: log-transformed scale parameters of the GEV model  
   PARAMETER_VECTOR(s); // if reparam_s = "negative" or "postive", the initial input should be log(|s|)
+  PARAMETER_VECTOR(beta_a); // r x 1 mean vector coefficients for a
+  PARAMETER_VECTOR(beta_b); // r x 1 mean vector coefficients for logb
+  PARAMETER_VECTOR(beta_s); // r x 1 mean vector coefficients for s
   PARAMETER(log_sigma_a); // hyperparameter: log-transformed squared amplitude parameter (scalar) of the exponential covariance function in Sigma_a
   PARAMETER(log_ell_a); // hyperparameter: log-transformed smoothness parameter (scalar) of the exponential covariance function in Sigma_a
   PARAMETER(log_sigma_b); // hyperparameter: log-transformed squared amplitude parameter (scalar) of the exponential covariance function in Sigma_b

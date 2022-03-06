@@ -33,8 +33,9 @@ test_that("`model_abs_exp` gives the same likelihood as the one calculated in R 
     # Positive s
     beta_s <- mean(log_s)
     y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
-    init_param=list(beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
+    init_param=list(
 		    a=a, log_b=log_b, s=log_s, 
+		    beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
 		    log_sigma_a=log_sigma_a, log_ell_a=log_ell_a,
                     log_sigma_b=log_sigma_b, log_ell_b=log_ell_b,
                     log_sigma_s=log_sigma_s, log_ell_s=log_ell_s)

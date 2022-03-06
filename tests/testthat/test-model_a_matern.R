@@ -22,7 +22,7 @@ test_that("`model_a_matern` gives the same likelihood as the one calculated in R
     # Positive s
     s <- runif(1, 0.05, 0.1)
     y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
-    init_param=list(beta_a=beta_a, a=a, log_b=log_b, s=log(s), 
+    init_param=list(a=a, log_b=log_b, s=log(s), beta_a=beta_a, 
 		    log_sigma_a=log_sigma_a, log_kappa_a=log_kappa_a)
     adfun <- spatialGEV_fit(y, X, random="a",
                             init_param=init_param,

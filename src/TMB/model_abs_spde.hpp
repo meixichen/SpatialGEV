@@ -31,12 +31,12 @@ Type model_abs_spde(objective_function<Type>* obj){
   DATA_SCALAR(nu); // Smoothness parameter for the Matern cov. 
   DATA_STRUCT(spde, spde_t); // take the returned object by INLA::inla.spde2.matern in R
   // parameter list
-  PARAMETER_VECTOR(beta_a); // r x 1 mean vector coefficients for a
-  PARAMETER_VECTOR(beta_b); // r x 1 mean vector coefficients for logb
-  PARAMETER_VECTOR(beta_s); // r x 1 mean vector coefficients for s
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER_VECTOR(log_b); // random effect to be integrated out: log-transformed scale parameters of the GEV model  
   PARAMETER_VECTOR(s); // If reparam_s = "negative" or "positive", the initial input should be log(|s|)
+  PARAMETER_VECTOR(beta_a); // r x 1 mean vector coefficients for a
+  PARAMETER_VECTOR(beta_b); // r x 1 mean vector coefficients for logb
+  PARAMETER_VECTOR(beta_s); // r x 1 mean vector coefficients for s
   PARAMETER(log_sigma_a); // hyperparameter for the Matern SPDE for a
   PARAMETER(log_kappa_a); // as above
   PARAMETER(log_sigma_b); // hyperparameter for the Matern SPDE for log(b)

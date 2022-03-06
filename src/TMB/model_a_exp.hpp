@@ -25,10 +25,10 @@ Type model_a_exp(objective_function<Type>* obj){
   DATA_SCALAR(s_mean); // The mean of the normal prior on s or log(|s|), depending on what reparametrization is used for s. 
   DATA_SCALAR(s_sd); // The standard deviation of the normal prior on s or log(|s|). If s_sd>9999, a flat prior is imposed.
   // parameter list
-  PARAMETER_VECTOR(beta_a); // r x 1 mean vector coefficients for a
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER(log_b); // log-transformed scale parameters of the GEV model  
   PARAMETER(s); // initial shape parameter of the GEV model. IMPORTANT: If reparam_s = "negative" or "postive", the initial input should be log(|s|)
+  PARAMETER_VECTOR(beta_a); // r x 1 mean vector coefficients for a
   PARAMETER(log_sigma_a); // hyperparameter: log-transformed squared amplitude parameter (scalar) of the exponential covariance function in Sigma_a
   PARAMETER(log_ell_a); // hyperparameter: log-transformed smoothness parameter (scalar) of the exponential covariance function in Sigma_a
 

@@ -72,8 +72,8 @@
 #' hyperparameters in the exponential kernel for the Gaussian process describing the spatial 
 #' variation of `a`.  
 #' ```
-#' init_param = list(beta_a = rep(0, n_covariates), 
-#'                   a = rep(1,n_locations), log_b = 0, s = 1,
+#' init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
+#'                   beta_a = rep(0, n_covariates), 
 #'                   log_sigma_a = 0, log_ell_a = 0)
 #' ```
 #' Note that even if `reparam_s=="zero"`, an initial value for `s` still must be provided, even
@@ -83,21 +83,21 @@
 #' When `b` is considered a random effect, its corresponding GP hyperparameters `log_sigma_b` 
 #' and `log_ell_b` need to be specified.
 #' ```
-#' init_param = list(beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
-#'                   a = rep(1,n_locations),
+#' init_param = list(a = rep(1,n_locations),
 #'                   log_b = rep(0,n_locations), s=1,
+#'                   beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
 #'                   log_sigma_a = 0,log_ell_a = 0, 
 #'                   log_sigma_b = 0,log_ell_b = 0).
 #' ```
 #'
 #' - random = "abs", kernel = "exp": 
 #' ```
-#' init_param = list(beta_a = rep(0, n_covariates), 
-#'                   beta_b = rep(0, n_covariates),
-#'                   beta_s = rep(0, n_covariates),
-#'                   a = rep(1,n_locations),
+#' init_param = list(a = rep(1,n_locations),
 #'                   log_b = rep(0,n_locations), 
 #'                   s = rep(0,n_locations),
+#'                   beta_a = rep(0, n_covariates), 
+#'                   beta_b = rep(0, n_covariates),
+#'                   beta_s = rep(0, n_covariates),
 #'                   log_sigma_a = 0,log_ell_a = 0, 
 #'                   log_sigma_b = 0,log_ell_b = 0).
 #'                   log_sigma_s = 0,log_ell_s = 0).
@@ -107,12 +107,12 @@
 #' When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are `log_sigma_a/b/s` 
 #' and `log_kappa_a/b/s` for each spatial random effect. 
 #' ``` 
-#' init_param = list(beta_a = rep(0, n_covariates), 
-#'                   beta_b = rep(0, n_covariates),
-#'                   beta_s = rep(0, n_covariates),
-#'                   a = rep(1,n_locations),
+#' init_param = list(a = rep(1,n_locations),
 #'                   log_b = rep(0,n_locations), 
 #'                   s = rep(0,n_locations), 
+#'                   beta_a = rep(0, n_covariates), 
+#'                   beta_b = rep(0, n_covariates),
+#'                   beta_s = rep(0, n_covariates),
 #'                   log_sigma_a = 0,log_kappa_a = 0, 
 #'                   log_sigma_b = 0,log_kappa_b = 0).
 #'                   log_sigma_s = 0,log_kappa_s = 0).
@@ -147,11 +147,11 @@
 #' n_loc = nrow(locs)
 #' # No covariates are included, only intercept is inlcuded.
 #' fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
-#'                       init_param = list(beta_a = 0,
-#'                                         beta_b = 0,
-#'                                         a = rep(0, n_loc), 
+#'                       init_param = list(a = rep(0, n_loc), 
 #'                                         log_b = rep(0, n_loc), 
 #'                                         s = 0,
+#'                                         beta_a = 0,
+#'                                         beta_b = 0,
 #'                                         log_sigma_a = 0, 
 #'                                         log_kappa_a = 0,
 #'                                         log_sigma_b = 0, 
@@ -165,10 +165,11 @@
 #' 
 #' # Using the SPDE kernel (SPDE approximation to the Matern kernel)
 #' fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "ab",
-#'                            init_param = list(beta_a = 0,
-#'                                              beta_b = 0,
+#'                            init_param = list(a = rep(0, n_loc),
 #'                                              log_b = rep(0, n_loc), 
 #'                                              s = 0,
+#'                                              beta_a = 0,
+#'                                              beta_b = 0,
 #'                                              log_sigma_a = 0, 
 #'                                              log_kappa_a = 0,
 #'                                              log_sigma_b = 0, 

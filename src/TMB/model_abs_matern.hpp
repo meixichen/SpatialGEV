@@ -29,12 +29,12 @@ Type model_abs_matern(objective_function<Type>* obj){
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positve"
   DATA_SCALAR(nu); // Smoothness parameter for the Matern cov kernel
   // parameter list
-  PARAMETER_VECTOR(beta_a); // r x 1 mean vector coefficients for a
-  PARAMETER_VECTOR(beta_b); // r x 1 mean vector coefficients for logb
-  PARAMETER_VECTOR(beta_s); // r x 1 mean vector coefficients for s
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER_VECTOR(log_b); // random effect to be integrated out: log-transformed scale parameters of the GEV model  
   PARAMETER_VECTOR(s); // if reparam_s = "negative" or "postive", the initial input should be log(|s|)
+  PARAMETER_VECTOR(beta_a); // r x 1 mean vector coefficients for a
+  PARAMETER_VECTOR(beta_b); // r x 1 mean vector coefficients for logb
+  PARAMETER_VECTOR(beta_s); // r x 1 mean vector coefficients for s
   PARAMETER(log_sigma_a); // hyperparameter for Sigma_a
   PARAMETER(log_kappa_a); // hyperparameter
   PARAMETER(log_sigma_b); // hyperparameter for Sigma_b

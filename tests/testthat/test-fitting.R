@@ -22,9 +22,8 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   ##### Model a
   cat("Fitting model a using exp kernel...\n")
   fit_e <- spatialGEV_fit(y = y_train, locs = locs_train, random = "a",
-			init_param = list(beta_a = 3,
-					  a = rep(2, n_train), log_b = -1, s = logs,
-					  log_sigma_a = 1, log_ell_a = 5),
+			init_param = list(a = rep(2, n_train), log_b = -1, s = logs,
+					  beta_a =3, log_sigma_a = 1, log_ell_a = 5),
                         kernel="exp",
 			reparam_s = "positive", silent = T)
   expect_equal(fit_e$fit$convergence, 0)
@@ -40,8 +39,8 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   ##### Model ab
   cat("Fitting model ab using exp kernel...\n")
   fit_e <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
-			init_param = list(beta_a = 3, beta_b = 0,
-					  a = rep(2, n_train), log_b = rep(-1,n_train), s = logs,
+			init_param = list(a = rep(2, n_train), log_b = rep(-1,n_train), s = logs,
+					  beta_a = 3, beta_b = 0,
 					  log_sigma_a = 1, log_ell_a = 5,
 					  log_sigma_b = 1, log_ell_b = 5),
                         kernel="exp",
@@ -59,10 +58,11 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   ##### Model abs
   cat("Fitting model abs using exp kernel...\n")
   fit_e <- spatialGEV_fit(y = y_train, locs = locs_train, random = "abs",
-			init_param = list(beta_a = 3, beta_b = 0, beta_s = -2,
+			init_param = list(
 					  a = rep(2, n_train), 
 					  log_b = rep(-1,n_train), 
 					  s = rep(-3,n_train),
+					  beta_a = 3, beta_b = 0, beta_s = -2,
 					  log_sigma_a = 1, log_ell_a = 5,
 					  log_sigma_b = 1, log_ell_b = 5,
 					  log_sigma_s = -1, log_ell_s = 5),
@@ -82,8 +82,9 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   ###### Model a
   cat("Fitting model a using spde kernel...\n")
   fit_s <- spatialGEV_fit(y = y_train, locs = locs_train, random = "a",
-			init_param = list(beta_a = 3,
+			init_param = list(
 					  a = rep(2, n_train), log_b = -1, s = logs,
+					  beta_a = 3,
 					  log_sigma_a = 1, log_kappa_a = -2),
                         kernel="spde",
 			reparam_s = "positive", silent = T)
@@ -100,8 +101,9 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   ###### Model ab
   cat("Fitting model ab using SPDE...\n")
   fit_s <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
-                        init_param = list(beta_a = 3, beta_b = 0,
+                        init_param = list(
                                           a = rep(2, n_train), log_b = rep(-1, n_train), s = logs,
+					  beta_a = 3, beta_b = 0,
                                           log_sigma_a = 1, log_kappa_a = -2,
 					  log_sigma_b = 1, log_kappa_b = -2),
                         kernel="spde",
@@ -121,8 +123,9 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   ###### Model a
   cat("Fitting model a to the training set using Matern...\n")  
   fit_m <- spatialGEV_fit(y = y_train, locs = locs_train, random = "a",
-			      init_param = list(beta_a = 3,
+			      init_param = list(
 						a = rep(2, n_train), log_b = -1, s = logs,
+						beta_a = 3,
 						log_sigma_a = 1, log_kappa_a = -2),
 			      kernel="matern", reparam_s = "positive", silent = T)
   # Test if sampling works
@@ -135,8 +138,9 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   ###### Model ab
   cat("Fitting model ab using SPDE...\n")
   fit_m <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
-                        init_param = list(beta_a = 3, beta_b = 0,
+                        init_param = list(
                                           a = rep(2, n_train), log_b = rep(-1, n_train), s = logs,
+					  beta_a = 3, beta_b = 0,
                                           log_sigma_a = 1, log_kappa_a = -2,
 					  log_sigma_b = 0, log_kappa_b = -2),
                         kernel="matern",
@@ -179,10 +183,11 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
   
   cat("Fitting model abs using exp kernel...\n")
   fit_e <- spatialGEV_fit(y = y_train, locs = locs_train, random = "abs",
-			  init_param = list(beta_a = 60, beta_b = 2, beta_s = -2,
+			  init_param = list(
 					    a = rep(60, n_train), 
 					    log_b = rep(2,n_train), 
 					    s = rep(-3,n_train),
+					    beta_a = 60, beta_b = 2, beta_s = -2,
 					    log_sigma_a = 1.5, log_ell_a = 5,
 					    log_sigma_b = 1.5, log_ell_b = 5,
 					    log_sigma_s = -1, log_ell_s = 5),
@@ -202,10 +207,11 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
 
   cat("Fitting model abs using SPDE kernel...\n")
   fit_s <- spatialGEV_fit(y = y_train, locs = locs_train, random = "abs",
-			  init_param = list(beta_a = 60, beta_b = 2, beta_s = -2,
+			  init_param = list(
 					    a = rep(60, n_train), 
 					    log_b = rep(3,n_train), 
 					    s = rep(-2,n_train),
+					    beta_a = 60, beta_b = 2, beta_s = -2,
 					    log_sigma_a = 1.5, log_kappa_a = -2,
 					    log_sigma_b = 1.5, log_kappa_b = -2,
 					    log_sigma_s = -1, log_kappa_s = -1),
@@ -224,10 +230,11 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
 
   cat("Fitting model abs using Matern kernel...\n")
   fit_m <- spatialGEV_fit(y = y_train, locs = locs_train, random = "abs",
-			  init_param = list(beta_a = 60, beta_b = 2, beta_s = -2,
+			  init_param = list(
 					    a = rep(60, n_train), 
 					    log_b = rep(3,n_train), 
 					    s = rep(-2,n_train),
+					    beta_a = 60, beta_b = 2, beta_s = -2,
 					    log_sigma_a = 1.5, log_kappa_a = -2,
 					    log_sigma_b = 1.5, log_kappa_b = -2,
 					    log_sigma_s = -1, log_kappa_s = -1),
