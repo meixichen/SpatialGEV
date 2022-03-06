@@ -3,6 +3,7 @@ set.seed(234)
 x <- y <- seq(0, 10, length=20)
 coor <- cbind(x, y)
 locs <- expand.grid(x,y)
+colnames(locs) <- c("x", "y")
 n_loc <- length(x)*length(y)
 
 # Simulate a
@@ -28,12 +29,12 @@ logs <- rgp(1, coor, cov.mod="powexp",
 s <- exp(logs)
 
 # Simulate data
-Y <- Map(rgev, n=sample(10:30, n_loc, replace=TRUE),
+Y <- Map(rgev, n=sample(10:30, n_loc, replaec=T),
          loc=as.vector(a), scale=as.vector(b), shape=as.vector(s))
 Y_mat <- matrix(sapply(Y, mean), ncol=sqrt(n_loc))
 #filled.contour(x, y, Y_mat, 
 #              color.palette = terrain.colors, main="y")
 
 simulatedData2 <- list(locs=locs, a=as.vector(a), logb=as.vector(logb), 
-		       logs=logs, y=Y)
+		       logs=as.vector(logs), y=Y)
 save(simulatedData2, file="simulatedData2.RData")

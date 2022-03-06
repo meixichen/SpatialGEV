@@ -39,27 +39,28 @@ knitr::opts_chunk$set(
 ## Introduction to the GEV-GP Model
 The generalized extreme value (GEV) distribution is often used to analyze sequences of maxima within non-overlapping time periods. An example of this type of data is the monthly maximum rainfall levels recorded over years at a weather station. Since there are typically a large number of weather stations within a country or a state, it is more ideal to have a model that can borrow information from nearby weather stations to increase inference and prediction accuracy. Such spatial information is often pooled using the Gaussian process.
 
-The GEV-GP model is a hierarchical model with a data layer and a spatial random effects layer. Let $\xx_1, \ldots, \xx_n \in \mathbb{R}^2$ denote the geographical coordinates of $n$ locations, and let $y_{ik}$ denote the extreme value measurement $k$ at location $i$, for $k = 1, \ldots, n_i$. The data layer specifies that each observation $y_{ik}$ has a generalized extreme value distribution, denoted by $y \sim \tx{GEV}(a, b_o, s_o)$, whose CDF is given by
+The GEV-GP model is a hierarchical model with a data layer and a spatial random effects layer. Let $\xx_1, \ldots, \xx_n \in \mathbb{R}^2$ denote the geographical coordinates of $n$ locations, and let $y_{ik}$ denote the extreme value measurement $k$ at location $i$, for $k = 1, \ldots, n_i$. The data layer specifies that each observation $y_{ik}$ has a generalized extreme value distribution, denoted by $y \sim \tx{GEV}(a, b, s)$, whose CDF is given by
 \begin{equation}
-    F(y\mid a, b_o, s_o) =
+    F(y\mid a, b, s) =
     \begin{cases}
-    \exp\left\{-\left(1+s_o\frac{y-a}{b_o}\right)^{-\frac{1}{s_o}}\right\} \ \ &s_o\neq 0,\\
-    \exp\left\{-\exp\left(-\frac{y-a}{b_o}\right)\right\} \ \ &s_o=0,
+    \exp\left\{-\left(1+s\frac{y-a}{b}\right)^{-\frac{1}{s}}\right\} \ \ &s\neq 0,\\
+    \exp\left\{-\exp\left(-\frac{y-a}{b}\right)\right\} \ \ &s=0,
     \end{cases} 
 \label{eqn:gev-distn}
 \end{equation} 
-where $a\in\mathbb{R}$, $b_o>0$, and $s_o\in\mathbb{R}$ are location, scale, and shape parameters, respectively. The support of the GEV distribution depends on the parameter values: $y$ is bounded below by $a-b_o/s_o$ when $s_o>0$, bounded above by $a-b_o/s_o$ when $s_o<0$, and unbounded when $s_o=0$. To capture the spatial dependence in the data, we assume some or all of the GEV parameters in the data layer are spatially varying. Thus they are introduced as random effects in the model. The ***SpatialGEV*** package currently only supports modelling $a$ and $b$ as spatial random effects.
+where $a\in\mathbb{R}$, $b>0$, and $s\in\mathbb{R}$ are location, scale, and shape parameters, respectively. The support of the GEV distribution depends on the parameter values: $y$ is bounded below by $a-b/s$ when $s>0$, bounded above by $a-b/s$ when $s<0$, and unbounded when $s=0$. To capture the spatial dependence in the data, we assume some or all of the GEV parameters in the data layer are spatially varying. Thus they are introduced as random effects in the model. 
 
-A zero-mean Gaussian process $z(\xx)\sim \mathcal{GP}(0, k(\xx, \xx'))$ is fully characterized by its kernel function $k(\xx, \xx') = \cov( z(\xx), z(\xx') )$, which captures the strength of the spatial correlation between locations. We assume that given the locations, the data follow independent GEV distributions each with their own parameters. The complete GEV-GP hierarchical model then becomes
+A Gaussian process $z(\xx)\sim \mathcal{GP}(\mu(\xx_{cov}), k(\xx, \xx'))$ is fully characterized by its mean $\mu(\xx_{cov})$ and kernel function $k(\xx, \xx') = \cov( z(\xx), z(\xx') )$, which captures the strength of the spatial correlation between locations. The mean is a function of parameters $\bm{\beta}$ and covariates $\xx_{cov}=(x_1,\ldots,x_p)'$. We assume that given the locations, the data follow independent GEV distributions each with their own parameters. The complete GEV-GP hierarchical model then becomes
 \begin{equation}
 \begin{aligned}
 y_{ik} \mid a(\xx_i), b(\xx_i), s & \ind \tx{GEV}\big( a(\xx_i), \exp( b(\xx_i) ), \exp(s)\big)\\
-a(\xx) \mid \sigma_a, \lambda_a &\sim \mathcal{GP}\big( 0, k(\xx, \xx' \mid \sigma_a^2, \lambda_a) \big)\\
-b(\xx) \mid \sigma_b, \lambda_b &\sim \mathcal{GP}\big( 0, k(\xx, \xx' \mid \sigma_b^2, \lambda_b) \big).
+a(\xx) \mid \bm{\beta}_a, \tth_a &\sim \mathcal{GP}\big( \XX_a\bm{\beta}_a, k(\xx, \xx' \mid \tth_a) \big)\\
+log(b)(\xx) \mid \bm{\beta}_b, \tth_b &\sim \mathcal{GP}\big( \XX_b\bm{\beta}_b, k(\xx, \xx' \mid \tth_b) \big)\\
+s(\xx) \mid \bm{\beta}_s, \tth_s &\sim \mathcal{GP}\big( \XX_b\bm{\beta}_s, k(\xx, \xx' \mid \tth_a) \big).
 \end{aligned}
 \end{equation}
 In this package, a uniform prior $\pi(\tth) \propto 1$ is specified on the fixed effect and hyperparameters 
-\[\tth=(s, \log(\sigma_a^2), \log(\lambda_a), \log(\sigma_b^2), \log(\lambda_b)).\] 
+\[\tth=(s, \tth_a, \tth_b, \tth_s).\] 
 
 ## What Does ***SpatialGEV*** Do?
 The package provides an interface to estimate the approximate joint posterior distribution of the spatial random effects $a$ and $b$ in the GEV-GP model. The main functionalities of the package are:
@@ -81,7 +82,7 @@ devtools::install_github("meixichen/SpatialGEV")
 ## Using the ***SpatialGEV*** Package
 
 ### Exploratory analysis
-We now demonstrate how to use this package through a simulation study. The simulated data used in this example comes with the package as a list variable `simulatedData`, which contains the following:
+We now demonstrate how to use this package through a simulation study. The simulated data used in this example comes with the package as a list variable `simulatedData2`, which contains the following:
 
 - `locs`: A $400\times 2$ data frame of spatial coordinates (longitudes and latitudes)
 
@@ -89,30 +90,34 @@ We now demonstrate how to use this package through a simulation study. The simul
 
 - `logb`: A length $400$ vector of the true values of log-transformed $b_i, \ i=1,\ldots,400$ at the 400 locations 
 
-- `logs`: A scalar of the log-transformed true $s$ parameter
+- `logs`: A length $400$ vector of the true values of log-transformed $s_i, \ i=1,\ldots,400$ at the 400 locations 
 
-- `y`: A length $400$ list, each element of which is a vector containing simulated observations at one location $i$ given $(a_i, b_i, s)$
-
+`a`, `logb` and `logs` are simulated from Gaussian random fields using the R package ***SpatialExtremes***. Using the simulated GEV parameters, we generate 50 to 70 observed data $\yy_i$ at each location $i, \ i=1,\ldots,400$. 
 ```{r getdata, message=FALSE}
-library(SpatialGEV)
-a <- simulatedData$a
-logb <- simulatedData$logb
-logs <- simulatedData$logs
-y <- simulatedData$y
-locs <- simulatedData$locs
+devtools::load_all("~/projects/SpatialGEV")
+a <- simulatedData2$a
+logb <- simulatedData2$logb
+logs <- simulatedData2$logs
+locs <- simulatedData2$locs
 n_loc <- nrow(locs)
+y <- Map(evd::rgev, n=sample(50:70, n_loc, replace=TRUE),
+         loc=a, scale=exp(logb), shape=exp(logs))
 ```
 
 Spatial variation of $a$ and $log(b)$ can be viewed by plotting them on regular lattices:
-```{r plot-ab, message=FALSE, fig.width=6, fig.height=5, out.width="50%"}
-library(fields) # for plotting
-par(mar=c(4.5,4.5,0.5,1))
-fields::image.plot(x=unique(locs$x), y=unique(locs$y), z=matrix(a, ncol=sqrt(n_loc)), 
-                   xlab="Longitude", ylab="Latitude",
-                   cex.lab=1,cex.axis=1, axis.args=list(cex.axis=1), graphics.reset = TRUE)
-fields::image.plot(x=unique(locs$x), y=unique(locs$y), z=matrix(logb, ncol=sqrt(n_loc)), 
-                   xlab="Longitude", ylab="Latitude",
-                   cex.lab=1,cex.axis=1, axis.args=list(cex.axis=1), graphics.reset = TRUE)
+```{r plot-ab, fig.width=6, fig.height=5, out.width="50%"}
+filled.contour(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)), 
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
+               main="Spatial variation of a",
+               cex.lab=1,cex.axis=1)
+filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logb), ncol=sqrt(n_loc)), 
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
+               main="Spatial variation of b",
+               cex.lab=1,cex.axis=1)
+filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logs), ncol=sqrt(n_loc)), 
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
+               main="Spatial variation of s",
+               cex.lab=1,cex.axis=1)
 ```
 
 Number of observations at each location is shown in the figure below.
@@ -140,29 +145,36 @@ To fit the GEV-GP model to this simulated dataset, the first step is calling the
 
 - `y`: A list of $n$ vectors, each of which contains all data collected at one location.
 
-- `X`: A $n \times 2$ coordinate matrix.
+- `locs`: A $n \times 2$ coordinate matrix.
 
-- `random`: Either "a" or "ab". "a" means only the GEV location parameter $a$ is treated as a spatial random effect following a GP, whereas "ab" means both GEV location parameter $a$ and scale parameter $b$ are treated as spatial random effects. Note that in the model $b$ is always estimated on the log scale since it is constrained to be positive.
+- `random`: A character string indicating which GEV parameters are treated as spatial random effects. It can be one of "a", "ab", and "abs", where "a", "b", and "s" represent the GEV location, scale, and shape parameters, respectively. Note that in the model $b$ is always estimated on the log scale since it is constrained to be positive.
 
 - `init_param`: A list of initial parameters to be passed to the optimizer. Call `?spatialGEV_fit()` and see Details for which parameters need to be included in the list.
 
 - `reparam_s`: A flag for reparametrizing the GEV shape parameter $s$ - either "zero", "unconstrained", "negative", or "positive". For example, if `reparam_s = "positive"`, the model works with the log-transformed shape parameter. Call `?spatialGEV_fit()` and see Details for more information about this argument. 
 
-There are two other arguments which user might want to specify to override the defaults:
+There are other arguments which user might want to specify to override the defaults:
 
 - `kernel`: The kernel used for the Gaussian process(es) describing the spatial random effect(s). Currently 3 kernels are implemented: the default exponential kernel (`kernel="exp"`), the Matérn kernel (`kernel="matern"`), and the SPDE approximation to the Matérn kernel (`kernel="spde"`) based on @lindgren-etal11. The SPDE kernel is typically much faster but less accurate.  
 
+- `X_a`, `X_b`, `X_s`: Design matrices for the spatial random effects "a", "b", and "s". The defaults are column matrices of $1$s, i.e., only an intercept parameter $\beta_0$ will be estimated for each spatial random effect.
+
 - `s_prior`: A vector $(\mu, \sigma)$. Optionally a normal prior with parameters $(\mu, \sigma)$ can be specified on the shape parameter $s$, or its reparametrized version depending on the value of `reparam_s`. When `s_prior` is not specified, a uniform prior is used. 
 
-The code below fits a GEV-GP model to the simulated data. The model assumes that the spatial random effects $a$ and $b$ both follow Gaussian processes with the Matérn kernel, and that the shape parameter $s$ is a positive constant across locations. A uniform prior is implicitly applied on $s$.
+The code below fits a GEV-GP model to the simulated data. The model assumes that all spatial random effects follow Gaussian processes with the exponential kernel:
+\[k(\xx, \xx') = \sigma^2\exp\left(-\frac{||\xx-\xx'||}{\ell}\right).\]
+No covariates are included in this model, so by default an intercept parameter $\beta_0$ is estimated for the GP of each spatial random effect.
+
 ```{r mod_fit, cache=TRUE}
-fit <- spatialGEV_fit(y = y, X = locs, random = "ab",
-                      init_param = list(a = rep(0, n_loc), log_b = rep(0, n_loc), s = 0,
-                                        log_sigma_a = 0, log_kappa_a = 0,
-                                        log_sigma_b = 0, log_kappa_b = 0),
-                      reparam_s = "positive",
-                      kernel = "matern",
-                      silent = TRUE) 
+fit <- spatialGEV_fit(y = y, locs = locs, random = "abs",
+                      init_param = list(a = rep(60, n_loc),
+                                        log_b = rep(2,n_loc),
+                                        s = rep(-3,n_loc),
+                                        beta_a = 60, beta_b = 2, beta_s = -2,
+                                        log_sigma_a = 1.5, log_ell_a = 5,
+                                        log_sigma_b = 1.5, log_ell_b = 5,
+                                        log_sigma_s = -1, log_ell_s = 5),
+                      reparam_s = "positive", kernel="exp", silent = T)
 ```
 
 ```{r}
@@ -179,40 +191,28 @@ To obtain posterior samples of $a$, $b$, and $s$, we pass the fitted model objec
 
 - `observation`: If set to `TRUE`, the function will also draw from the posterior predictive distribution $p(y^{\tx{rep}} \mid \YY)$ at the observed locations. This is useful for Bayesian model checking, which we will demonstrate shortly. 
 
-The following line of code draws 5000 samples from the posterior distribution and the posterior predictive distribution:
+- `loc_ind`: A vector of location indices at which samples will be drawn. Default is all locations.
+
+The following line of code draws 2000 samples from the posterior distribution and the posterior predictive distribution:
 ```{r pos_sam, cache=TRUE}
-sam <- spatialGEV_sample(model = fit, n_draw = 5000, observation = TRUE)
+sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = F)
 print(sam)
 ```
 
 Then use `summary()` to view the summary statistics of the posterior samples.
 ```{r}
 pos_summary <- summary(sam)
-pos_summary$param_summary[c(1:5, (n_loc+1):(n_loc+5), 2*n_loc+1),]
+pos_summary$param_summary[c(1:5, 
+                            (n_loc+1):(n_loc+5), 
+                            (2*n_loc+1):(2*n_loc+5),
+                            (3*n_loc):(nrow(pos_summary$param_summary))),]
 pos_summary$y_summary[1:5,]
 ```
 
 ### Model checking
-To evaluate whether the GEV-GP model is a good fit to the observed data, we conduct model checking using the samples from the posterior predictive distribution. Model checking procedures are discussed from Chapter 6 of @gelman-etal14.
-
-For each location $i, \ i=1,\ldots, 400$, we calculate a test statistic $T_i(\yy_i^{\tx{obs}})$ using the observed data, and then calculate the test statistic $T_i(\yy_i^{\tx{rep}})$ using posterior predictive samples at the same location. If these two test statistics roughly match at most locations, which is the case in the two plots below, we conclude that the model describes the observed data well.
-```{r model-check, fig.width=12, fig.height=6, out.width= "100%"}
-par(mfrow=c(1,2))
-plot(sapply(y, mean), pos_summary$y_summary[,"mean"], 
-     xlab="Test statistic from observed data",
-     ylab="Test statistic from predictive distribution",
-     main="Test statistic = mean")
-abline(0, 1, col="blue", lty="dashed")
-plot(sapply(y, function(x){quantile(x, probs=0.75)}), pos_summary$y_summary[,"75%"], 
-     xlab="Test statistic from observed data",
-     ylab="Test statistic from predictive distribution",
-     main="Test statistic = 75% quantile")
-abline(0, 1, col="blue", lty="dashed")
-```
-
-Since we know the true values of $a$, $b$, and $s$ in this simulation study, we are also able to compare the posterior mean with the true values. For $s$, the true value is $\exp(-2)=0.135$, whereas the posterior mean given above is $\exp(-2.0618766)=0.127$ with a 95\% credible interval of $(0.111, 0.146)$. The posterior means of $a$ and $b$ at different locations are plotted against the true values below.
+Since we know the true values of $a$, $b$, and $s$ in this simulation study, we are able to compare the posterior mean with the true values. The posterior means of $a$, $b$ and $s$ at different locations are plotted against the true values below.
 ```{r pos-plots, fig.width=12, fig.height=6, out.width= "100%"}
-par(mfrow=c(1,2))
+par(mfrow=c(1,3))
 plot(a, pos_summary$param_summary[1:n_loc,"mean"], 
      xlab="True a",
      ylab="Posterior mean of a",
@@ -223,23 +223,53 @@ plot(exp(logb), exp(pos_summary$param_summary[(n_loc+1):(2*n_loc),"mean"]),
      ylab="Posterior mean of b",
      main="True vs Posterior Mean of b")
 abline(0, 1, col="blue", lty="dashed")
+plot(exp(logs), exp(pos_summary$param_summary[(2*n_loc+1):(3*n_loc),"mean"]), 
+     xlab="True s",
+     ylab="Posterior mean of s",
+     main="True vs Posterior Mean of s")
+abline(0, 1, col="blue", lty="dashed")
 ```
 
 ### Posterior prediction
-Finally, we demonstrate how to make predictions at new locations. This is done using the `spatialGEV_predict()` function, which requires the following arguments:
+Finally, we demonstrate how to make predictions at new locations. This is done using the `spatialGEV_predict()` function, which takes the following arguments:
 
 - `model`: An object of class `spatialGEVfit`, which is the output of `spatialGEV_fit()`.
 
-- `X_new`: An $m \times 2$ matrix of the coordinates of the $m$ test locations.
+- `locs_new`: An $m \times 2$ matrix of the coordinates of the $m$ test locations.
 
 - `n_draw`: Number of samples to draw from the posterior predictive distribution $p(\YY^{\tx{new}} \mid \YY)$.
 
-We randomly sample 50 locations from the simulated dataset as test locations which are left out. Data from the rest 350 training locations are used for model fitting. 
+- `X_a_new`, `X_b_new`, `X_s_new`: Design matrices for the spatial random effects. Need to be provided here if design matrices were used in model fitting.
+
+- `parameter_draws`: An optional `n_draws x n_parameters` matrix that contains the posterior samples of all parameters. If `spatialGEV_sample()` has already been called prior to `spatialGEV_predict()`, its output can be provided to the prediction function to save time.
+
+We randomly sample 100 locations from the simulated dataset `simulatedData` as test locations which are left out. Data from the rest 300 training locations are used for model fitting. 
+```{r}
+a <- simulatedData$a
+logb <- simulatedData$logb
+logs <- simulatedData$logs
+y <- simulatedData$y
+locs <- simulatedData$locs
+n_loc <- nrow(locs)
+```
+
+In this dataset, the GEV parameters $a$ and $\log(b)$ are generated from the surfaces below, and the shape parameter is a constant $\exp(-2)$ across space.
+```{r plot-data-sim, fig.width=6, fig.height=5, out.width="50%"}
+filled.contour(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)), 
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", main="Spatial variation of GEV location parameter a",
+               cex.lab=1,cex.axis=1)
+filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logb), ncol=sqrt(n_loc)), 
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", main="Spatial variation of GEV scale parameter b",
+               cex.lab=1,cex.axis=1)
+```
+
+We fit a GEV-GP model with random $a$ and $b$ and log-transformed $s$ to the training dataset. The kernel used here is the SPDE approximation to the Matérn covariance function (@lindgren-etal11).
 ```{r test-fit, cache=TRUE}
 set.seed(123)
-n_test <- 20
+n_test <- 100
+n_train <- n_loc - n_test
 test_ind <- sample(1:n_loc, n_test)
-
+train_ind <- setdiff(1:n_loc, test_ind)
 # Obtain coordinate matrices and data lists
 locs_test <- locs[test_ind,]
 y_test <- y[test_ind]
@@ -247,26 +277,24 @@ locs_train <- locs[-test_ind,]
 y_train <- y[-test_ind]
 
 # Fit the GEV-GP model to the training set
-train_fit <- spatialGEV_fit(y = y_train, X = locs_train, random = "ab",
-                            init_param = list(a = rep(0, n_loc-n_test), 
-                                              log_b = rep(0, n_loc-n_test),
-                                              s = 0,
-                                              log_sigma_a = 1, log_kappa_a = -2,
-                                              log_sigma_b = 1, log_kappa_b = -2),
-                            reparam_s = "positive", 
-                            kernel = "matern",
-                            silent = TRUE)
+train_fit_s <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
+                      init_param = list(a = rep(0, n_train),
+                                        log_b = rep(0,n_train), s = 0,
+                                        beta_a = 0, beta_b = 0,
+                                        log_sigma_a = 1, log_kappa_a = -2,
+                                        log_sigma_b = 1, log_kappa_b = -2),
+                      reparam_s = "positive", kernel="spde", silent = T)
 ```
 
-The fitted model object is passed to `spatialGEV_predict()` for 5000 samples from the posterior predictive distributions. Note that this might take some time.
+The fitted model object is passed to `spatialGEV_predict()` for 2000 samples from the posterior predictive distributions. Note that this might take some time.
 ```{r test-pred, cache=TRUE}
-pred <- spatialGEV_predict(model = train_fit, X_new = locs_test, n_draw = 5000)
-pred
+pred_s <- spatialGEV_predict(model = train_fit_s, locs_new = locs_test, n_draw = 2000)
+pred_s
 ```
 
 Then we call `summary()` on the `pred` object to obtain summary statistics of the posterior predictive samples at the test locations.
 ```{r}
-pred_summary <- summary(pred)
+pred_summary <- summary(pred_s)
 pred_summary[1:5,]
 ```
 
@@ -274,23 +302,28 @@ Since we have the true observations at the test locations, we can compare summar
 ```{r pred-plot, fig.width=12, fig.height=6, out.width= "100%"}
 par(mfrow=c(1,2))
 plot(sapply(y_test, mean), pred_summary[,"mean"], 
-     xlab="Test statistic from observed data",
+     xlab="Test statistic from test data",
      ylab="Test statistic from predictive distribution",
      main="Test statistic = mean")
 abline(0, 1, col="blue", lty="dashed")
-plot(sapply(y_test, function(x){quantile(x, probs=0.75)}), pred_summary[,"75%"], 
-     xlab="Test statistic from observed data",
+plot(sapply(y_test, function(x){quantile(x, probs=0.975)}), pred_summary[,"97.5%"], 
+     xlab="Test statistic from test data",
      ylab="Test statistic from predictive distribution",
-     main="Test statistic = 75% quantile")
+     main="Test statistic = 97.5% quantile")
 abline(0, 1, col="blue", lty="dashed")
 ```
 
 ## Case study: Yearly maximum snowfall data in Ontario, Canada
 In this section, we show how to use the ***SpatialGEV*** package to analyze a real dataset. The data used here are the 1987-2021 monthly total snowfall data obtained from Environment and Natural Resources, Government of Canada. The link to download the raw data is https://climate-change.canada.ca/climate-data/#/monthly-climate-summaries. This dataset is automatically loaded with the package and is named `ONsnow`.
-```{r snow-grid, message=FALSE}
-library(SpatialGEV)
+```{r snow-grid, message=FALSE, fig.width=6, fig.height=5, out.width= "60%"}
+devtools::load_all()
 library(dplyr)
+#library(maps)
+lon_range <- c(-96, -73)
+lat_range <-  c(41.5, 55)
 summary(ONsnow)
+maps::map(xlim = lon_range, ylim = lat_range)
+points(ONsnow$LONGITUDE, ONsnow$LATITUDE)
 ```
 
 ### Data preprocessing
@@ -339,104 +372,53 @@ locs <- locs %>% select(cell_lon, cell_lat) %>% slice(chosen_loc_ind)
 n_loc <- nrow(locs)
 ```
 
-Now we fit the GEV-GP model to the data using the exponential kernel function. Both $a$ and $b$ are treated as spatial random effects. $s$ is constrained to be positive. Note that here we have specified a $\mathcal{N}(-5,5)$ prior on the log-transformed shape parameter. This is because we found that the shape parameter is estimated close to 0 and such a prior ensures model fitting procedure is numerically stable.
+```{r, fig.width=6, fig.height=5, out.width= "60%"}
+maps::map(xlim = lon_range, ylim = lat_range)
+points(locs$cell_lon, locs$cell_lat)
+```
+
+Now we fit the GEV-GP model to the data using the exponential kernel function. Both $a$ and $b$ are treated as spatial random effects. $s$ is constrained to be a positive constant. Note that here we have specified a $\mathcal{N}(-5,5)$ prior on the log-transformed shape parameter. This is because we found that the shape parameter is estimated close to 0 and such a prior ensures model fitting procedure is numerically stable.
 ```{r snow-fitting, cache=TRUE}
 fit <- spatialGEV_fit(Y, locs, random="ab",
                       init_param = list(a=rep(55, n_loc),
                                         log_b=rep(3, n_loc),
-                                        s=-4,
-                                        log_sigma_a=2, log_ell_a=5,
-                                        log_sigma_b=1, log_ell_b=5),
+                                        s=-5,
+                                        beta_a=55, beta_b=3,
+                                        log_sigma_a=6, log_ell_a=-1,
+                                        log_sigma_b=0, log_ell_b=-1),
                       reparam_s="positive",
-                      s_prior=c(-5, 5),
                       kernel="exp", 
-                      silent=TRUE)
-print(fit)
+                      s_prior=c(-5,5),
+                      silent=T)
+fit
 ```
 
-Next, 1000 samples are drawn from the joint posterior distribution of all parameters. 
+Next, 2000 samples are drawn from the joint posterior distribution of all parameters. 
 ```{r snow-sampling, cache=TRUE}
-sam <- spatialGEV_sample(fit, n_draw=1000, observation=T)
-sam_summary <- summary(sam)
-a_summary <- sam_summary$param_summary[1:n_loc,]
-logb_summary <- sam_summary$param_summary[(n_loc+1):(2*n_loc),]
-y_summary <- sam_summary$y_summary
+sam <- spatialGEV_sample(fit, n_draw=2000, observation=T)
 ```
 
-Plotted below are the spatial distributions of the posterior mean values $a_{\tx{pos}}$ and $\log(b)_{\tx{pos}}$, along with the lengths of the 95% credible intervals for all parameters at different locations.
-```{r snow-plots, fig.width=12, fig.height=4, out.width= "100%"}
-library(ggplot2)
-library(ggpubr)
-df_pos <- data.frame(lon = locs$cell_lon, lat = locs$cell_lat,
-                   a_means=a_summary[,"mean"], logb_means=logb_summary[,"mean"],
-                   a_sds=a_summary[,"97.5%"]-a_summary[,"2.5%"],
-                   logb_sds=logb_summary[,"97.5%"]-logb_summary[,"2.5%"])
-mean_a_map <- ggplot(df_pos, aes(lon, lat, fill= a_means)) +
-  geom_tile()+
-  ggtitle("Mean of a")+
-  xlab("Longitude")+ylab("Latitude")+
-  scale_fill_gradient(low="yellow", high="red",
-                      name="Mean",
-                      aesthetics="fill",
-                      na.value="white") +
-  scale_x_continuous(sec.axis = dup_axis(name="")) +
-  scale_y_continuous(sec.axis = dup_axis(name=""))+
-  theme_bw()+
-  theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), panel.border = element_blank(), 
-        panel.background = element_blank(),
-        text = element_text(size=12))
-mean_b_map <- ggplot(df_pos, aes(lon, lat, fill= logb_means)) +
-  geom_tile() +
-  ggtitle("Mean of log(b)")+
-  xlab("Longitude")+ylab("Latitude")+
-  scale_fill_gradient2(low="blue", mid="cyan", high="purple",
-                       name="Mean",
-                       aesthetics="fill",
-                       na.value="white") +
-  scale_x_continuous(sec.axis = dup_axis(name="")) +
-  scale_y_continuous(sec.axis = dup_axis(name=""))+
-  theme_bw()+
-  theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), panel.border = element_blank(), 
-        panel.background = element_blank(),
-        text = element_text(size=12))
+From the samples we can calculate the 50% and 10% return levels at all locations, which are the upper 50% and 10% quantiles of the extreme value distributions at these locations.
+```{r}
+y_draws <- sam$y_draws
+y_return <- t(apply(y_draws, 2, 
+                    quantile, probs=c(0.5, 0.9)))
+```
 
-sd_a_map <- ggplot(df_pos, aes(lon, lat, fill= a_sds)) +
-  geom_tile()+
-  ggtitle("95% CI length of a")+
-  xlab("Longitude")+ylab("Latitude")+
-  scale_fill_gradient(low="yellow", high="red",
-                      name="Length",
-                      aesthetics="fill",
-                      na.value="white") +
-  scale_x_continuous(sec.axis = dup_axis(name="")) +
-  scale_y_continuous(sec.axis = dup_axis(name=""))+
-  theme_bw()+
-  theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), panel.border = element_blank(), 
-        panel.background = element_blank(),
-        text = element_text(size=12))
-sd_b_map <- ggplot(df_pos, aes(lon, lat, fill= logb_sds)) +
-  geom_tile() +
-  ggtitle("95% CI length of log(b)")+
-  xlab("Longitude")+ylab("Latitude")+
-  scale_fill_gradient2(low="blue", mid="cyan", high="purple",
-                       name="Length",
-                       aesthetics="fill",
-                       na.value="white") +
-  scale_x_continuous(sec.axis = dup_axis(name="")) +
-  scale_y_continuous(sec.axis = dup_axis(name=""))+
-  theme_bw()+
-  theme(axis.line = element_line(colour = "black"), panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(), panel.border = element_blank(), 
-        panel.background = element_blank(),
-        text = element_text(size=12))
-ggarrange(mean_a_map, sd_a_map,
-          nrow=1, ncol=2)
-ggarrange(mean_b_map, sd_b_map,
-          nrow=1, ncol=2)
-
+Plotted below are the return levels.
+```{r snow-plots, fig.width=5, fig.height=4, out.width= "60%"}
+map_plot <- function(value){
+  maps::map("world", xlim=lon_range, ylim = lat_range, col="white", fill=TRUE)
+  fields::image.plot(legend.only = T, zlim=range(value),col=viridisLite::viridis(6), 
+                     horizontal = TRUE, legend.shrink = 0.5,
+                     cex=0.7, smallplot=c(0.4, 0.9, 0.1, 0.14))
+  val = fields::color.scale(value, col=scales::alpha(viridisLite::viridis(6), 1))
+  points(locs$cell_lon, locs$cell_lat, col=val, pch=15, cex=0.9)
+}
+map_plot(y_return[, "50%"])
+title("50% Return levels")
+map_plot(y_return[, "90%"])
+title("10% Return levels")
 ```
 
 ## References
