@@ -4,7 +4,15 @@
 \alias{spatialGEV_predict}
 \title{Draw from the posterior predictive distributions at new locations based on a fitted GEV-GP model}
 \usage{
-spatialGEV_predict(model, locs_new, n_draw, X_a_new = NULL, X_b_new = NULL)
+spatialGEV_predict(
+  model,
+  locs_new,
+  n_draw,
+  X_a_new = NULL,
+  X_b_new = NULL,
+  X_s_new = NULL,
+  parameter_draws = NULL
+)
 }
 \arguments{
 \item{model}{A fitted spatial GEV model object of class \code{spatialGEVfit}}
@@ -17,6 +25,13 @@ spatialGEV_predict(model, locs_new, n_draw, X_a_new = NULL, X_b_new = NULL)
 default is a column matrix of all 1s.}
 
 \item{X_b_new}{\verb{n_test x r2} design matrix for log(b) at the new locations}
+
+\item{X_s_new}{\verb{n_test x r2} design matrix for (possibly transformed) s at the new locations}
+
+\item{parameter_draws}{Optional. A \verb{n_draw x n_parameter} matrix. If \code{spatialGEV_sample()} has
+already been called, the output matrix of parameter draws can be supplied here to avoid doing
+sampling of parameters again. Make sure the number of rows of \code{parameter_draws} is the same as
+\code{n_draw}.}
 }
 \value{
 An object of class \code{spatialGEVpred}, which is a list of the following components:
