@@ -57,22 +57,24 @@ print.spatialGEVsam <- function(object,...){
 #' Summary method for spatialGEVsam
 #'
 #' @param object Object of class `spatialGEVsam` returned by `spatialGEV_sample`.
-#' @param ... Additional arguments for `summary`.
+#' @param q A vector of quantile values used to summarize the samples.
+#' Default is `c(0.025, 0.25, 0.5, 0.75, 0.975)`.
+#' @param ... Additional arguments for `summary`. Not used.
 #' @return Summary statistics of the posterior samples.
 #' @export
 
-summary.spatialGEVsam <- function(object, ...){
+summary.spatialGEVsam <- function(object, q=c(0.025, 0.25, 0.5, 0.75, 0.975), ...){
   # Summary of all parameters
   param_samps <- object[["parameter_draws"]]
   param_summary <- t(apply(param_samps, 2, quantile, 
-	             probs=c(0.025, 0.25, 0.5, 0.75, 0.975)))
+	             probs=q))
   param_summary <- cbind(param_summary, apply(param_samps, 2, mean))
   colnames(param_summary)[ncol(param_summary)] <- "mean"
   # Summary of data resamples 
   if ("y_draws" %in% names(object)){
     y_samps <- object[["y_draws"]]
     y_summary <- t(apply(y_samps, 2, quantile, 
-	           probs=c(0.025, 0.25, 0.5, 0.75, 0.975)))
+	           probs=q))
     y_summary <- cbind(y_summary, apply(y_samps, 2, mean))
     colnames(y_summary)[ncol(y_summary)] <- "mean"
     out <- list(param_summary=param_summary, y_summary=y_summary)
@@ -101,15 +103,17 @@ print.spatialGEVpred <- function(object, ...){
 #' Summary method for spatialGEVpred
 #'
 #' @param object Object of class `spatialGEVpred` returned by `spatialGEV_predict`.
+#' @param q A vector of quantile values used to summarize the samples.
+#' Default is `c(0.025, 0.25, 0.5, 0.75, 0.975)`.
 #' @param ... Additional arguments for `summary`.
 #' @return Summary statistics of the posterior predictive samples.
 #' @export
 
-summary.spatialGEVpred <- function(object, ...){
+summary.spatialGEVpred <- function(object, q=c(0.025, 0.25, 0.5, 0.75, 0.975), ...){
   # Summary of all parameters
   y_draws <- object[["pred_y_draws"]]
   out <- t(apply(y_draws, 2, quantile, 
-	             probs=c(0.025, 0.25, 0.5, 0.75, 0.975)))
+	             probs=q))
   out <- cbind(out, apply(y_draws, 2, mean))
   colnames(out)[ncol(out)] <- "mean"
   out
