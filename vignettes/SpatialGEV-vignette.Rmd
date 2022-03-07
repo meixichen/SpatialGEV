@@ -393,32 +393,41 @@ fit <- spatialGEV_fit(Y, locs, random="ab",
 fit
 ```
 
-Next, 2000 samples are drawn from the joint posterior distribution of all parameters. 
+Next, 5000 samples are drawn from the joint posterior distribution of all parameters. 
 ```{r snow-sampling, cache=TRUE}
-sam <- spatialGEV_sample(fit, n_draw=2000, observation=T)
+sam <- spatialGEV_sample(fit, n_draw=5000, observation=T)
 ```
 
-From the samples we can calculate the 50% and 10% return levels at all locations, which are the upper 50% and 10% quantiles of the extreme value distributions at these locations.
+From the samples we can calculate the 5-year, 10-year, and 25-year return levels at all locations, which are the upper $1/5$%, $1/10$%, and $1/25$% quantiles of the extreme value distributions at these locations.
 ```{r}
+return_periods <- c(5, 10, 25)
 y_draws <- sam$y_draws
 y_return <- t(apply(y_draws, 2, 
-                    quantile, probs=c(0.5, 0.9)))
+                    quantile, probs=1-1/return_periods))
 ```
 
 Plotted below are the return levels.
 ```{r snow-plots, fig.width=5, fig.height=4, out.width= "60%"}
+return5 <- y_return[, "80%"]
+return10 <- y_return[, "90%"]
+return25 <- y_return[, "96%"]
+zlim <- range(c(return5, return10, return25))
+
 map_plot <- function(value){
   maps::map("world", xlim=lon_range, ylim = lat_range, col="white", fill=TRUE)
-  fields::image.plot(legend.only = T, zlim=range(value),col=viridisLite::viridis(6), 
+  fields::image.plot(legend.only = T, zlim=zlim, col=viridisLite::viridis(10), 
                      horizontal = TRUE, legend.shrink = 0.5,
                      cex=0.7, smallplot=c(0.4, 0.9, 0.1, 0.14))
-  val = fields::color.scale(value, col=scales::alpha(viridisLite::viridis(6), 1))
+  val = fields::color.scale(value, col=scales::alpha(viridisLite::viridis(10), 1),
+                            zlim=zlim)
   points(locs$cell_lon, locs$cell_lat, col=val, pch=15, cex=0.9)
 }
-map_plot(y_return[, "50%"])
-title("50% Return levels")
-map_plot(y_return[, "90%"])
-title("10% Return levels")
+map_plot(return5)
+title("5-year Return levels")
+map_plot(return10)
+title("10-year Return levels")
+map_plot(return25)
+title("25-year Return levels")
 ```
 
 ## References
