@@ -212,8 +212,8 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
 					    log_b = rep(3,n_train), 
 					    s = rep(-2,n_train),
 					    beta_a = 60, beta_b = 2, beta_s = -2,
-					    log_sigma_a = 1.5, log_kappa_a = -2,
-					    log_sigma_b = 1.5, log_kappa_b = -2,
+					    log_sigma_a = 0, log_kappa_a = 0,
+					    log_sigma_b = -3, log_kappa_b = -1,
 					    log_sigma_s = -1, log_kappa_s = -1),
 			  reparam_s = "positive", kernel="spde", silent = T)
   expect_equal(fit_s$fit$convergence, 0)
@@ -234,10 +234,10 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
 					    a = rep(60, n_train), 
 					    log_b = rep(3,n_train), 
 					    s = rep(-2,n_train),
-					    beta_a = 60, beta_b = 2, beta_s = -2,
-					    log_sigma_a = 1.5, log_kappa_a = -2,
-					    log_sigma_b = 1.5, log_kappa_b = -2,
-					    log_sigma_s = -1, log_kappa_s = -1),
+					    beta_a = 60, beta_b = 3, beta_s = -2,
+					    log_sigma_a = 0, log_kappa_a = 0,
+					    log_sigma_b = -5, log_kappa_b = -1,
+					    log_sigma_s = -1, log_kappa_s = 0),
 			  reparam_s = "positive", kernel="matern", silent = T)
   expect_equal(fit_m$fit$convergence, 0)
   
