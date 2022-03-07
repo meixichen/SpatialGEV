@@ -110,42 +110,40 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE, loc_ind=NULL){
   output_list <- list(parameter_draws=joint_post_draw)
   # run below only if posterior draws of GEV observations are wanted
   if (observation){
-    s_draw_fun <- function(j, s_ind){ 
-      # `j` points to the j-th draw and `s_ind` is the index of s in the parameter vector of the model
-      if (reparam_s == 3){
-        joint_post_draw[j, s_ind]
-      }
-      else if (reparam_s == 1){
-        exp(joint_post_draw[j, s_ind])
-      }
-      else if (reparam_s == 2){
-        -exp(joint_post_draw[j, s_ind])
-      }
-      else{ # if reparam_s=0
-        0
-      }
+    if (reparam_s == 3){ # unconstrained s
+      s_fun <- function(x) x
     }
-    y_draws <- rep(NULL, n_draw) # <<==== TODO: Should allocate space for y_draws. Tried to preallocate a large matrix but got error message about not enough memory.
-    for (i in loc_ind){
-      loc_draw <- rep(NA, n_draw)
-      for (j in 1:n_draw){
-        a_draw <- joint_post_draw[j, paste0("a", i)]
-        if (mod == "a"){
-          b_draw <- joint_post_draw[j, "log_b"]
-          s_draw <- s_draw_fun(j, "s")
-        }
-        else if (mod == "ab"){
-          b_draw <- joint_post_draw[j, paste0("log_b", i)]
-          s_draw <- s_draw_fun(j, "s")
-        }
-	else { # if mod == "abs"
-          b_draw <- joint_post_draw[j, paste0("log_b", i)]
-          s_draw <- s_draw_fun(j, paste0("s", i))
-	}
-        loc_draw[j] <- rgev(1, loc = a_draw, scale = exp(b_draw), shape = s_draw)
-      }
-      y_draws <- cbind(y_draws, loc_draw)
+    else if (reparam_s == 1){ # positive s
+      s_fun <- function(x) exp(x)
     }
+    else if (reparam_s == 2){ # negative s
+      s_fun <- function(x) -exp(x)
+    }
+    else{ # s=0
+      s_fun <- function(x) 0
+    }
+    # Get parameter indices
+    a_ind <- which(colnames(joint_post_draw)%in% paste0("a", loc_ind))
+    if(mod=="a"){
+      # b is fixed
+      logb_ind <- "log_b"
+    } else{
+      # b is random
+      logb_ind <- which(colnames(joint_post_draw)%in% paste0("log_b", loc_ind))
+    }
+    if(mod=="abs"){
+      # s is random
+      s_ind <- which(colnames(joint_post_draw)%in% paste0("s", loc_ind))
+    } else{
+      # s is fixed
+      s_ind <- "s"
+    }                   
+    y_draws <- apply(joint_post_draw, 1,
+	       function(all_draw){
+		 mapply(rgev, n=1, loc=all_draw[a_ind], scale=exp(all_draw[logb_ind]),
+		      shape=s_fun(all_draw[s_ind]))
+	       })
+    y_draws <- t(y_draws)
     colnames(y_draws) <- paste0("y", loc_ind)
     output_list[["y_draws"]] <- y_draws
   }
