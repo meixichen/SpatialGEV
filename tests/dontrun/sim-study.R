@@ -34,6 +34,10 @@ data_mat <- matrix(sapply(data, mean), ncol=sqrt(n_loc))
 filled.contour(x, y, data_mat, 
 	       color.palette = terrain.colors, main="y")
 
+# Quantile 
+q_true <- Map(qgev, p=0.1, loc=as.vector(a), scale=as.vector(b), 
+	      shape=as.vector(s), lower.tail=F)
+filled.contour(x,y,matrix(q_true,ncol=30),color.palette=terrain.colors, main="True q10")
 ################ Model fitting using exp #######################
 init_param <- list(
 		   a = rep(50, n_loc), 
@@ -84,6 +88,21 @@ meshidxloc <- fit_s$meshidxloc
 a_s <- fit_s$rep$par.random[meshidxloc]
 logb_s <- fit_s$rep$par.random[length(fit_s$rep$par.random)/3+meshidxloc]
 logs_s <- fit_s$rep$par.random[length(fit_s$rep$par.random)/3*2+meshidxloc]
+q_s <- Map(qgev, p=0.1, loc=a_s, scale=exp(logb_s), shape=exp(log_s), lower.tail=F)
+
+sam_s <- spatialGEV_sample(fit_s, n_draw=2000, observation=T)
+saveRDS(sam_s, "sam_s900.rds")
+p_draws <- sam_s$parameter_draws
+a_ind <- which(colnames(p_draws)%in% paste0("a", 1:n_loc))
+logb_ind <- which(colnames(p_draws)%in% paste0("log_b", 1:n_loc))
+logs_ind <- which(colnames(p_draws)%in% paste0("s", 1:n_loc))
+q_draws <- apply(p_draws, 1,
+               function(all_draw){
+                 mapply(qgev, p=0.1, loc=all_draw[a_ind], scale=exp(all_draw[logb_ind]),
+                      shape=exp(all_draw[logs_ind]), lower.tail=F)
+               })
+plot(q_true, apply(q_draws, 1, mean))
+
 ################ Plotting #############################
 par(mfrow=c(3,2))
 plot(as.vector(a), fit_e$rep$par.random[1:n_loc],
@@ -106,6 +125,9 @@ abline(0, 1, lty="dashed", col="blue")
 plot(as.vector(b), exp(logb_s),
      xlab="True b", ylab="Estimated b", main="True vs estimated b (SPDE)")
 abline(0, 1, lty="dashed", col="blue")
+plot(q_true, apply(q_draws, 1, mean), main="True vs estimated return levels",
+     xlab="True upper 10% quantile", ylab="Posterior mean of upper 10% quantile")
+abline(0, 1, lty="dashed", col="blue")
 
 # Time plot
 par(mfrow=c(1,1))
@@ -114,3 +136,33 @@ barplot(c(fit_e$time, fit_m$time, fit_s$time),
 	ylab="Time (sec)")
 
 
+
+############## Sampling using Stan HMC ######################
+options(mc.cores=4)
+init_param <- list(
+		   a = rep(50, n_loc), 
+		   log_b = rep(3, n_loc), 
+		   s = rep(-2,n_loc),
+		   beta_a = 50, beta_b = 20, beta_s = -2, 
+                   log_sigma_a = 1, log_kappa_a = -1,
+                   log_sigma_b = 1, log_kappa_b = -1,
+                   log_sigma_s = -1, log_kappa_s = -1)
+obj_s <- spatialGEV_fit(data, locs, random = "abs",
+                      init_param = init_param,
+                      reparam_s = "positive", kernel="spde",
+                      adfun_only = TRUE)
+n_s <- obj_s$mesh$n
+init_param <- list(
+		   a = rep(50, n_s), 
+		   log_b = rep(3, n_s), 
+		   s = rep(-2,n_s),
+		   beta_a = 50, beta_b = 20, beta_s = -2, 
+                   log_sigma_a = 1, log_kappa_a = -1,
+                   log_sigma_b = 1, log_kappa_b = -1,
+                   log_sigma_s = -1, log_kappa_s = -1)
+t_start <- Sys.time()
+fit_hmc <- tmbstan(obj_s$adfun, chains=4, iter=100, open_progress=TRUE, 
+		   init=function(){init_param}, verbose=TRUE, silent=FALSE,
+                   refresh=5)
+time_hmc <- difftime(Sys.time(), t_start)
+saveRDS(list(fit=fit_hmc, time=time_hmc), "fit_hmc900.rds")
