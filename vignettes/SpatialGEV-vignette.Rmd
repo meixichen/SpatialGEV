@@ -56,11 +56,11 @@ A Gaussian process $z(\xx)\sim \mathcal{GP}(\mu(\xx_{cov}), k(\xx, \xx'))$ is fu
 y_{ik} \mid a(\xx_i), b(\xx_i), s & \ind \tx{GEV}\big( a(\xx_i), \exp( b(\xx_i) ), \exp(s)\big)\\
 a(\xx) \mid \bm{\beta}_a, \tth_a &\sim \mathcal{GP}\big( \XX_a\bm{\beta}_a, k(\xx, \xx' \mid \tth_a) \big)\\
 log(b)(\xx) \mid \bm{\beta}_b, \tth_b &\sim \mathcal{GP}\big( \XX_b\bm{\beta}_b, k(\xx, \xx' \mid \tth_b) \big)\\
-s(\xx) \mid \bm{\beta}_s, \tth_s &\sim \mathcal{GP}\big( \XX_b\bm{\beta}_s, k(\xx, \xx' \mid \tth_a) \big).
+s(\xx) \mid \bm{\beta}_s, \tth_s &\sim \mathcal{GP}\big( \XX_s\bm{\beta}_s, k(\xx, \xx' \mid \tth_a) \big).
 \end{aligned}
 \end{equation}
 In this package, a uniform prior $\pi(\tth) \propto 1$ is specified on the fixed effect and hyperparameters 
-\[\tth=(s, \tth_a, \tth_b, \tth_s).\] 
+\[\tth=(s, \bm{\beta}_a, \bm{\beta}_b, \bm{\beta}_s, \tth_a, \tth_b, \tth_s).\] 
 
 ## What Does ***SpatialGEV*** Do?
 The package provides an interface to estimate the approximate joint posterior distribution of the spatial random effects $a$ and $b$ in the GEV-GP model. The main functionalities of the package are:
@@ -155,11 +155,11 @@ To fit the GEV-GP model to this simulated dataset, the first step is calling the
 
 There are other arguments which user might want to specify to override the defaults:
 
-- `kernel`: The kernel used for the Gaussian process(es) describing the spatial random effect(s). Currently 3 kernels are implemented: the default exponential kernel (`kernel="exp"`), the Matérn kernel (`kernel="matern"`), and the SPDE approximation to the Matérn kernel (`kernel="spde"`) based on @lindgren-etal11. The SPDE kernel is typically much faster but less accurate.  
+- `kernel`: The kernel used for the Gaussian process(es) describing the spatial random effect(s). Currently 3 kernels are implemented: the default exponential kernel (`kernel="exp"`), the Matérn kernel (`kernel="matern"`), and the SPDE approximation to the Matérn kernel (`kernel="spde"`) based on @lindgren-etal11. 
 
 - `X_a`, `X_b`, `X_s`: Design matrices for the spatial random effects "a", "b", and "s". The defaults are column matrices of $1$s, i.e., only an intercept parameter $\beta_0$ will be estimated for each spatial random effect.
 
-- `s_prior`: A vector $(\mu, \sigma)$. Optionally a normal prior with parameters $(\mu, \sigma)$ can be specified on the shape parameter $s$, or its reparametrized version depending on the value of `reparam_s`. When `s_prior` is not specified, a uniform prior is used. 
+- `s_prior`: A vector $(\mu, \sigma)$. Optionally a normal prior with parameters $(\mu, \sigma)$ can be specified on the fixed effect shape parameter $s$, or its reparametrized version depending on the value of `reparam_s`. When `s_prior` is not specified, a uniform prior is used. 
 
 The code below fits a GEV-GP model to the simulated data. The model assumes that all spatial random effects follow Gaussian processes with the exponential kernel:
 \[k(\xx, \xx') = \sigma^2\exp\left(-\frac{||\xx-\xx'||}{\ell}\right).\]
@@ -286,6 +286,11 @@ train_fit_s <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
                       reparam_s = "positive", kernel="spde", silent = T)
 ```
 
+We see that using the SPDE approximation greatly speeds up model fitting:
+```{r}
+train_fit_s
+```
+
 The fitted model object is passed to `spatialGEV_predict()` for 2000 samples from the posterior predictive distributions. Note that this might take some time.
 ```{r test-pred, cache=TRUE}
 pred_s <- spatialGEV_predict(model = train_fit_s, locs_new = locs_test, n_draw = 2000)
@@ -399,21 +404,40 @@ sam <- spatialGEV_sample(fit, n_draw=5000, observation=T)
 ```
 
 From the samples we can calculate the 5-year, 10-year, and 25-year return levels at all locations, which are the upper $1/5$%, $1/10$%, and $1/25$% quantiles of the extreme value distributions at these locations.
-```{r}
-return_periods <- c(5, 10, 25)
-y_draws <- sam$y_draws
-y_return <- t(apply(y_draws, 2, 
-                    quantile, probs=1-1/return_periods))
+```{r get-return-levels}
+p_draws <- sam$parameter_draws
+# Get indices of each GEV parameter in the sample matrix
+a_ind <- which(colnames(p_draws)%in% paste0("a", 1:n_loc))
+logb_ind <- which(colnames(p_draws)%in% paste0("log_b", 1:n_loc))
+logs_ind <- which(colnames(p_draws) == "s")
+
+# Deine a function to draw from the return level posterior distribution
+rl_draw <- function(return_period){
+  apply(p_draws, 1,
+               function(all_draw){
+                 mapply(qgev, p=1/return_period, loc=all_draw[a_ind], scale=exp(all_draw[logb_ind]),
+                      shape=exp(all_draw[logs_ind]), lower.tail=F)
+               })
+}
+
+# 5 year return-level
+q5_draws <- rl_draw(5)
+return5 <- apply(q5_draws, 1, mean)
+return5sd <- apply(q5_draws, 1, sd)
+# 10 year return-level
+q10_draws <- rl_draw(10)
+return10 <- apply(q10_draws, 1, mean)
+return10sd <- apply(q10_draws, 1, sd)
+# 25 year return-level
+q25_draws <- rl_draw(25)
+return25 <- apply(q25_draws, 1, mean)
+return25sd <- apply(q25_draws, 1, sd)
 ```
 
 Plotted below are the return levels.
 ```{r snow-plots, fig.width=5, fig.height=4, out.width= "60%"}
-return5 <- y_return[, "80%"]
-return10 <- y_return[, "90%"]
-return25 <- y_return[, "96%"]
-zlim <- range(c(return5, return10, return25))
-
-map_plot <- function(value){
+map_plot <- function(value, zlim=NULL){
+  if (is.null(zlim)) zlim=range(value)
   maps::map("world", xlim=lon_range, ylim = lat_range, col="white", fill=TRUE)
   fields::image.plot(legend.only = T, zlim=zlim, col=viridisLite::viridis(10), 
                      horizontal = TRUE, legend.shrink = 0.5,
@@ -424,10 +448,16 @@ map_plot <- function(value){
 }
 map_plot(return5)
 title("5-year Return levels")
+map_plot(return5sd)
+title("SD of 5-year Return levels")
 map_plot(return10)
 title("10-year Return levels")
+map_plot(return10sd)
+title("SD of 10-year Return levels")
 map_plot(return25)
 title("25-year Return levels")
+map_plot(return25sd)
+title("SD of 25-year Return levels")
 ```
 
 ## References
