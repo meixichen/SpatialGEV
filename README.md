@@ -10,7 +10,7 @@ A fast Bayesian inference method for spatial random effects modelling of weather
 
 ### Installation
 
-Before installing ***SpatialGEV***, make sure you have ***TMB*** installed following the instructions [here](https://github.com/kaskr/adcomp/wiki/Download).
+Before installing ***SpatialGEV***, make sure you have ***TMB*** installed following the instructions [here](https://github.com/kaskr/adcomp/wiki/Download). ***SpatialGEV*** uses several functions from the ***INLA*** package for SPDE approximation and creating meshes on the spatial domain. Since ***INLA*** is not on CRAN, it needs to be downloaded following their instruction [here](https://www.r-inla.org/download-install). 
 
 To download this package in R, run 
 ```r
