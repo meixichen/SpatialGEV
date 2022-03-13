@@ -4,12 +4,15 @@
 \alias{summary.spatialGEVsam}
 \title{Summary method for spatialGEVsam}
 \usage{
-\method{summary}{spatialGEVsam}(object, ...)
+\method{summary}{spatialGEVsam}(object, q = c(0.025, 0.25, 0.5, 0.75, 0.975), ...)
 }
 \arguments{
 \item{object}{Object of class \code{spatialGEVsam} returned by \code{spatialGEV_sample}.}
 
-\item{...}{Additional arguments for \code{summary}.}
+\item{q}{A vector of quantile values used to summarize the samples.
+Default is \code{c(0.025, 0.25, 0.5, 0.75, 0.975)}.}
+
+\item{...}{Additional arguments for \code{summary}. Not used.}
 }
 \value{
 Summary statistics of the posterior samples.

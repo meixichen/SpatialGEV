@@ -4,10 +4,13 @@
 \alias{summary.spatialGEVpred}
 \title{Summary method for spatialGEVpred}
 \usage{
-\method{summary}{spatialGEVpred}(object, ...)
+\method{summary}{spatialGEVpred}(object, q = c(0.025, 0.25, 0.5, 0.75, 0.975), ...)
 }
 \arguments{
 \item{object}{Object of class \code{spatialGEVpred} returned by \code{spatialGEV_predict}.}
+
+\item{q}{A vector of quantile values used to summarize the samples.
+Default is \code{c(0.025, 0.25, 0.5, 0.75, 0.975)}.}
 
 \item{...}{Additional arguments for \code{summary}.}
 }

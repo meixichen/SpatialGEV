@@ -131,7 +131,7 @@
 #' should be that of log(|s|).
 #' 
 #' When the SPDE kernel is used, a mesh on the spatial domain is created using 
-#' `INLA::inla.mesh.2d()', which extends the spatial domain by adding additional triangles in the
+#' `INLA::inla.mesh.2d()`, which extends the spatial domain by adding additional triangles in the
 #' mesh to avoid boundary effects in estimation. As a result, the number of `a` and `b`  will be
 #' greater than the number of locations due to these additional triangles: each of them also has
 #' their own `a` and `b` values. Therefore, the fit function will return a vector `meshidxloc` to 

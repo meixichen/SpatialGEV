@@ -117,8 +117,8 @@ descriptions below (initial values specified below such as 0 and 1 are only exam
 \code{a} should be a vector and the rest are scalars. \code{log_sigma_a} and \code{log_ell_a} are
 hyperparameters in the exponential kernel for the Gaussian process describing the spatial
 variation of \code{a}.
-}\preformatted{init_param = list(beta_a = rep(0, n_covariates), 
-                  a = rep(1,n_locations), log_b = 0, s = 1,
+}\preformatted{init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
+                  beta_a = rep(0, n_covariates), 
                   log_sigma_a = 0, log_ell_a = 0)
 }
 
@@ -128,20 +128,20 @@ though in this case the value does not matter anymore.
 \item random = "ab", kernel = "exp":
 When \code{b} is considered a random effect, its corresponding GP hyperparameters \code{log_sigma_b}
 and \code{log_ell_b} need to be specified.
-}\preformatted{init_param = list(beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
-                  a = rep(1,n_locations),
+}\preformatted{init_param = list(a = rep(1,n_locations),
                   log_b = rep(0,n_locations), s=1,
+                  beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
                   log_sigma_a = 0,log_ell_a = 0, 
                   log_sigma_b = 0,log_ell_b = 0).
 }
 \itemize{
 \item random = "abs", kernel = "exp":
-}\preformatted{init_param = list(beta_a = rep(0, n_covariates), 
-                  beta_b = rep(0, n_covariates),
-                  beta_s = rep(0, n_covariates),
-                  a = rep(1,n_locations),
+}\preformatted{init_param = list(a = rep(1,n_locations),
                   log_b = rep(0,n_locations), 
                   s = rep(0,n_locations),
+                  beta_a = rep(0, n_covariates), 
+                  beta_b = rep(0, n_covariates),
+                  beta_s = rep(0, n_covariates),
                   log_sigma_a = 0,log_ell_a = 0, 
                   log_sigma_b = 0,log_ell_b = 0).
                   log_sigma_s = 0,log_ell_s = 0).
@@ -150,12 +150,12 @@ and \code{log_ell_b} need to be specified.
 \item random = "abs", kernel = "matern" or "spde":
 When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are \code{log_sigma_a/b/s}
 and \code{log_kappa_a/b/s} for each spatial random effect.
-}\preformatted{init_param = list(beta_a = rep(0, n_covariates), 
-                  beta_b = rep(0, n_covariates),
-                  beta_s = rep(0, n_covariates),
-                  a = rep(1,n_locations),
+}\preformatted{init_param = list(a = rep(1,n_locations),
                   log_b = rep(0,n_locations), 
                   s = rep(0,n_locations), 
+                  beta_a = rep(0, n_covariates), 
+                  beta_b = rep(0, n_covariates),
+                  beta_s = rep(0, n_covariates),
                   log_sigma_a = 0,log_kappa_a = 0, 
                   log_sigma_b = 0,log_kappa_b = 0).
                   log_sigma_s = 0,log_kappa_s = 0).
@@ -176,7 +176,10 @@ Note that when reparam_s = "negative" or "postive", the initial value of \code{s
 should be that of log(|s|).
 
 When the SPDE kernel is used, a mesh on the spatial domain is created using
-\verb{INLA::inla.mesh.2d()', which extends the spatial domain by adding additional triangles in the mesh to avoid boundary effects in estimation. As a result, the number of }a\code{and}b\verb{ will be greater than the number of locations due to these additional triangles: each of them also has their own}a\code{and}b\verb{values. Therefore, the fit function will return a vector}meshidxloc` to
+\code{INLA::inla.mesh.2d()}, which extends the spatial domain by adding additional triangles in the
+mesh to avoid boundary effects in estimation. As a result, the number of \code{a} and \code{b}  will be
+greater than the number of locations due to these additional triangles: each of them also has
+their own \code{a} and \code{b} values. Therefore, the fit function will return a vector \code{meshidxloc} to
 indicate the positions of the observed coordinates in the random effects vector.
 }
 \examples{
@@ -190,11 +193,11 @@ locs <- simulatedData$locs
 n_loc = nrow(locs)
 # No covariates are included, only intercept is inlcuded.
 fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
-                      init_param = list(beta_a = 0,
-                                        beta_b = 0,
-                                        a = rep(0, n_loc), 
+                      init_param = list(a = rep(0, n_loc), 
                                         log_b = rep(0, n_loc), 
                                         s = 0,
+                                        beta_a = 0,
+                                        beta_b = 0,
                                         log_sigma_a = 0, 
                                         log_kappa_a = 0,
                                         log_sigma_b = 0, 
@@ -208,10 +211,11 @@ print(fit)
 
 # Using the SPDE kernel (SPDE approximation to the Matern kernel)
 fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "ab",
-                           init_param = list(beta_a = 0,
-                                             beta_b = 0,
+                           init_param = list(a = rep(0, n_loc),
                                              log_b = rep(0, n_loc), 
                                              s = 0,
+                                             beta_a = 0,
+                                             beta_b = 0,
                                              log_sigma_a = 0, 
                                              log_kappa_a = 0,
                                              log_sigma_b = 0, 
