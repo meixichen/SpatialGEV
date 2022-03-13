@@ -29,7 +29,7 @@ logs <- rgp(1, coor, cov.mod="powexp",
 s <- exp(logs)
 
 # Simulate data
-Y <- Map(rgev, n=sample(10:30, n_loc, replaec=T),
+Y <- Map(rgev, n=sample(10:30, n_loc, replace=T),
          loc=as.vector(a), scale=as.vector(b), shape=as.vector(s))
 Y_mat <- matrix(sapply(Y, mean), ncol=sqrt(n_loc))
 #filled.contour(x, y, Y_mat, 
