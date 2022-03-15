@@ -28,6 +28,7 @@ Type model_abs_matern(objective_function<Type>* obj){
   DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=-1, no thresholding is made.
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positve"
   DATA_SCALAR(nu); // Smoothness parameter for the Matern cov kernel
+  DATA_INTEGER(beta_prior); // Type of prior on beta. 1 is weakly informative normal prior and any other numbers mean noninformative uniform prior U(-inf, inf).
   // parameter list
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER_VECTOR(log_b); // random effect to be integrated out: log-transformed scale parameters of the GEV model  
@@ -67,6 +68,11 @@ Type model_abs_matern(objective_function<Type>* obj){
   nll += MVNORM(covb)(mu_b);
   nll += MVNORM(covs)(mu_s);
   nll_accumulator_abs<Type>(nll, y, n_obs, a, log_b, s, n, reparam_s);
+  
+  // prior
+  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, Type(0.), Type(100.));
+  nll_accumulator_beta<Type>(nll, beta_b, beta_prior, Type(0.), Type(100.));
+  nll_accumulator_beta<Type>(nll, beta_s, beta_prior, Type(0.), Type(100.));
   
   return nll;  
 }

@@ -16,6 +16,7 @@ spatialGEV_fit(
   X_s = NULL,
   nu = 1,
   s_prior = NULL,
+  beta_prior = "uniform",
   sp_thres = -1,
   adfun_only = FALSE,
   ignore_random = FALSE,
@@ -56,6 +57,10 @@ Does not need to be provided if s is fixed.}
 \item{s_prior}{Optional. A length 2 vector where the first element is the mean of the normal
 prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a
 uniform prior is put on s if s is fixed, or a GP prior is applied if s is a random effect.}
+
+\item{beta_prior}{Optional. This specifies what prior is specified on the GP mean function
+coefficients \code{beta}s. It can be either \code{"uniform"} (default), which is the noninformative
+uniform flat prior, or "normal", which is a weakly informative prior N(0,100).}
 
 \item{sp_thres}{Optional. Thresholding value to create sparse covariance matrix. Any distance
 value greater than or equal to \code{sp_thres} will be set to 0. Default is -1, which means not

@@ -30,6 +30,7 @@ Type model_abs_spde(objective_function<Type>* obj){
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is zero: 0, constrained to positive: 1 , constrained to be negative: 2, or unconstrained: 3  
   DATA_SCALAR(nu); // Smoothness parameter for the Matern cov. 
   DATA_STRUCT(spde, spde_t); // take the returned object by INLA::inla.spde2.matern in R
+  DATA_INTEGER(beta_prior); // Type of prior on beta. 1 is weakly informative normal prior and any other numbers mean noninformative uniform prior U(-inf, inf).
   // parameter list
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER_VECTOR(log_b); // random effect to be integrated out: log-transformed scale parameters of the GEV model  
@@ -93,6 +94,11 @@ Type model_abs_spde(objective_function<Type>* obj){
       start_ind += n_obs[i];
     }
   }
+  
+  // prior
+  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, Type(0.), Type(100.));
+  nll_accumulator_beta<Type>(nll, beta_b, beta_prior, Type(0.), Type(100.));
+  nll_accumulator_beta<Type>(nll, beta_s, beta_prior, Type(0.), Type(100.));
 
   return nll;
 }

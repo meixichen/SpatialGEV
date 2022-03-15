@@ -26,6 +26,7 @@ Type model_a_spde(objective_function<Type>* obj){
   DATA_SCALAR(nu); // Smoothness parameter for the Matern cov.
   DATA_SCALAR(s_mean); // The mean of the normal prior on s or log(|s|), depending on what reparametrization is used for s. 
   DATA_SCALAR(s_sd); // The standard deviation of the normal prior on s or log(|s|). If s_sd>9999, a flat prior is imposed.
+  DATA_INTEGER(beta_prior); // Type of prior on beta. 1 is weakly informative normal prior and any other numbers mean noninformative uniform prior U(-inf, inf).
   DATA_STRUCT(spde, spde_t); // take the returned object by INLA::inla.spde2.matern in R
   // parameter list
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
@@ -75,6 +76,9 @@ Type model_a_spde(objective_function<Type>* obj){
       start_ind += n_obs[i];
     }
   }
+
+  // prior
+  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, Type(0.), Type(100.));
 
   return nll;  
 }

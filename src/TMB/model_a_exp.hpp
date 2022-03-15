@@ -24,6 +24,7 @@ Type model_a_exp(objective_function<Type>* obj){
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is zero: 0, constrained to positive: 1 , constrained to be negative: 2, or unconstrained: 3 
   DATA_SCALAR(s_mean); // The mean of the normal prior on s or log(|s|), depending on what reparametrization is used for s. 
   DATA_SCALAR(s_sd); // The standard deviation of the normal prior on s or log(|s|). If s_sd>9999, a flat prior is imposed.
+  DATA_INTEGER(beta_prior); // Type of prior on beta. 1 is weakly informative normal prior and any other numbers mean noninformative uniform prior U(-inf, inf).
   // parameter list
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER(log_b); // log-transformed scale parameters of the GEV model  
@@ -35,7 +36,7 @@ Type model_a_exp(objective_function<Type>* obj){
   int n = n_obs.size(); // number of locations
   Type sigma_a = exp(log_sigma_a);
   Type ell_a = exp(log_ell_a);
-  
+
   // construct the covariance matrix
   matrix<Type> cova(n,n);
   cov_expo<Type>(cova, dd, sigma_a, ell_a, sp_thres);
@@ -45,7 +46,10 @@ Type model_a_exp(objective_function<Type>* obj){
   nll_accumulator_a<Type>(nll, y, n_obs, a, log_b, s, n, reparam_s, s_mean, s_sd);  
   vector<Type> mu_a = a - design_mat_a * beta_a;
   nll += MVNORM(cova)(mu_a);
-  
+
+  // prior
+  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, Type(0.), Type(100.));
+
   return nll;  
 }
 

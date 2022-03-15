@@ -133,6 +133,25 @@ namespace SpatialGEV {
     return;
   }
 
+  /// Add negative log-likelihood contributed by prior on beta
+  ///
+  /// @param[out] nll Negative log-likelihood accumulator.
+  /// @param[in] beta Beta parameter in the model.
+  /// @param[in] prior Type of prior. 1 is weakly informative normal prior and any other numbers 
+  /// mean noninformative prior.
+  /// @param[in] mean Mean of the normal prior. Only relevant if prior=1.
+  /// @param[in] sd Standard deviation of the normal prior. Only relevant if prior=1.
+  template <class Type>
+  void nll_accumulator_beta(Type &nll, RefVector_t<Type> beta, Type prior,
+                            Type mean, Type sd) {
+    if (prior == 1) { 
+      for(int i=0; i< (beta.size()); i++){
+        nll -= dnorm(beta[i], mean, sd, 1);
+      }
+    }
+    return;
+  }
+
   /// Add negative log-likelihood contributed by the data layer for model_a.
   ///
   /// @param[out] nll negative log-likelihood accumulator.
