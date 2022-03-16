@@ -21,9 +21,11 @@
 #' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal 
 #' prior on s or log(s) and the second is the standard deviation. Default is NULL, meaning a 
 #' uniform prior is put on s if s is fixed, or a GP prior is applied if s is a random effect.
-#' @param beta_prior Optional. This specifies what prior is specified on the GP mean function 
-#' coefficients `beta`s. It can be either `"uniform"` (default), which is the noninformative 
-#' uniform flat prior, or "normal", which is a weakly informative prior N(0,100).
+#' @param beta_prior Optional named list that specifies normal priors on the GP mean function 
+#' coefficients `beta`s. Each element of the list should be a named length 2 vector in which 
+#' the first element is mean and second element is sd. 
+#' E.g. `beta_prior=list(beta_a=c(0,100), beta_b=c(0,10), beta_s=c(-2,5))`.
+#' Default is NULL, which means imposing a noninformative uniform flat prior.
 #' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance 
 #' value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not 
 #' using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad 
@@ -188,7 +190,7 @@
 #' }
 #' @export
 spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp", 
-			   X_a=NULL, X_b=NULL, X_s=NULL, nu=1, s_prior=NULL, beta_prior="uniform",
+			   X_a=NULL, X_b=NULL, X_s=NULL, nu=1, s_prior=NULL, beta_prior=NULL,
 			   sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE, 
 			   silent=FALSE, 
 			   mesh_extra_init=list(a=0, log_b=-1, s=0.001), ...){
@@ -322,9 +324,21 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
       data$s_sd <- s_prior[2]
     }
   }
-  if (beta_prior == "uniform") data$beta_prior <- as.integer(0)
-  else if (beta_prior == "normal") data$beta_prior <- as.integer(1)
-  else stop("Check beta_prior.") 
+  if (is.null(beta_prior)) {
+    data$beta_prior <- as.integer(0)
+    data$beta_a_prior <- rep(0,500)
+    data$beta_b_prior <- rep(0,500)
+    data$beta_s_prior <- rep(0,500)
+  }
+  else if (is.list(beta_prior)) {
+    data$beta_prior <- as.integer(1)
+    data$beta_a_prior <- beta_prior$beta_a
+    data$beta_b_prior <- beta_prior$beta_b
+    data$beta_s_prior <- beta_prior$beta_s 
+  }
+  else {
+    stop("Check beta_prior.") 
+  }
   #------ End: prepare data input for TMB ----------------
   
   if (ignore_random){

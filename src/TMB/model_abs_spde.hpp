@@ -31,6 +31,9 @@ Type model_abs_spde(objective_function<Type>* obj){
   DATA_SCALAR(nu); // Smoothness parameter for the Matern cov. 
   DATA_STRUCT(spde, spde_t); // take the returned object by INLA::inla.spde2.matern in R
   DATA_INTEGER(beta_prior); // Type of prior on beta. 1 is weakly informative normal prior and any other numbers mean noninformative uniform prior U(-inf, inf).
+  DATA_VECTOR(beta_a_prior); // length 2 vector containing mean and sd of normal prior on beta
+  DATA_VECTOR(beta_b_prior); // length 2 vector containing mean and sd of normal prior on beta
+  DATA_VECTOR(beta_s_prior); // length 2 vector containing mean and sd of normal prior on beta
   // parameter list
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER_VECTOR(log_b); // random effect to be integrated out: log-transformed scale parameters of the GEV model  
@@ -96,9 +99,9 @@ Type model_abs_spde(objective_function<Type>* obj){
   }
   
   // prior
-  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, Type(0.), Type(100.));
-  nll_accumulator_beta<Type>(nll, beta_b, beta_prior, Type(0.), Type(100.));
-  nll_accumulator_beta<Type>(nll, beta_s, beta_prior, Type(0.), Type(100.));
+  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
+  nll_accumulator_beta<Type>(nll, beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
+  nll_accumulator_beta<Type>(nll, beta_s, beta_prior, beta_s_prior[0], beta_s_prior[1]);
 
   return nll;
 }
