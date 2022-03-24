@@ -33,6 +33,12 @@ Type model_ab_spde(objective_function<Type>* obj){
   DATA_INTEGER(beta_prior); // Type of prior on beta. 1 is weakly informative normal prior and any other numbers mean noninformative uniform prior U(-inf, inf).
   DATA_VECTOR(beta_a_prior); // length 2 vector containing mean and sd of normal prior on beta
   DATA_VECTOR(beta_b_prior); // length 2 vector containing mean and sd of normal prior on beta
+  DATA_INTEGER(a_pc_prior); // 1 for using PC prior on a, 0 for using flat unif prior 
+  DATA_VECTOR(range_a_prior); // length 2 vector (rho_0, p_rho) s.t. P(rho < rho_0) = p_rho
+  DATA_VECTOR(sigma_a_prior); // length 2 vector (sig_0, p_sig) s.t. P(sig > sig_0) = p_sig
+  DATA_INTEGER(b_pc_prior); 
+  DATA_VECTOR(range_b_prior);
+  DATA_VECTOR(sigma_b_prior);
   // parameter list
   PARAMETER_VECTOR(a); // random effect to be integrated out. 
   PARAMETER_VECTOR(log_b); // random effect to be integrated out: log-transformed scale parameters of the GEV model  
@@ -94,6 +100,10 @@ Type model_ab_spde(objective_function<Type>* obj){
   // prior
   nll_accumulator_beta<Type>(nll, beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
   nll_accumulator_beta<Type>(nll, beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
+  nll_accumulator_matern_hyperpar<Type>(nll, log_kappa_a, log_sigma_a, a_pc_prior,
+                                        nu, range_a_prior, sigma_a_prior);
+  nll_accumulator_matern_hyperpar<Type>(nll, log_kappa_b, log_sigma_b, b_pc_prior,
+                                        nu, range_b_prior, sigma_b_prior);
   
   return nll;  
 }

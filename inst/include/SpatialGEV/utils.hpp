@@ -152,6 +152,45 @@ namespace SpatialGEV {
     return;
   }
 
+  
+  /// Add negative log-likelihood contributed by prior on Matern hyperparameters
+  ///
+  /// @param[out] nll Negative log-likelihood accumulator.
+  /// @param[in] log_kappa Log of inverse range parameter of Matern
+  /// @param[in] log_sigma Log of marginal variance parameter of Matern
+  /// @param[in] prior Type of prior. 1 is weakly penalized complexity (PC) prior and any other
+  /// number means noninformative prior.
+  /// @param[in] nu Matern smoothness hyperparameter.
+  /// @param[in] range_prior. Length 2 vector (rho_0, p_rho) s.t. P(rho < rho_0) = p_rho. 
+  /// Only relevant if prior=1.
+  /// @param[in] sigma_prior. Length 2 vector (sig_0, p_sig) s.t. P(sig > sig_0) = p_sig.  
+  /// Only relevant if prior=1.
+  template <class Type>
+  void nll_accumulator_matern_hyperpar(Type &nll, Type log_kappa, Type log_sigma,
+                                       Type prior, Type nu,                
+                                       cRefVector_t<Type> range_prior, 
+				       cRefVector_t<Type> sigma_prior) {
+    if (prior == 1) {
+       // See Theorem 6 of Fuglstad et al. (2017) https://arxiv.org/pdf/1503.00256.pdf 
+       Type log_rho = 0.5*log(8.0*nu) - log_kappa; // get range parameter
+       Type rho = exp(log_rho);
+       Type log_sig = 0.5*log_sigma; // get sd parameter
+       Type sig = exp(log_sig);
+       Type rho_0 = range_prior[0];
+       Type p_rho = range_prior[1];
+       Type sig_0 = sigma_prior[0];
+       Type p_sig = sigma_prior[1];
+       Type lam1 = -1.0 * log(p_rho) * rho_0;
+       Type lam2 = -1.0 * log(p_sig) / sig_0; 
+       // PC prior log density 
+       Type logpi = log(lam1) + log(lam2) - 2.0 * log_rho - lam1 / rho - lam2 * sig; 
+       // Jacobian adjustment = log(1 / (|dlogkappa/drho| * |dlogsigma/dsig|))
+       logpi += log_kappa + 0.5 * log_sigma - log(2.0) - 0.5*log(8.0*nu); 
+       nll -= logpi;
+    }
+    return;
+  }
+
   /// Add negative log-likelihood contributed by the data layer for model_a.
   ///
   /// @param[out] nll negative log-likelihood accumulator.

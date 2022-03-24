@@ -17,6 +17,7 @@ spatialGEV_fit(
   nu = 1,
   s_prior = NULL,
   beta_prior = NULL,
+  matern_pc_prior = NULL,
   sp_thres = -1,
   adfun_only = FALSE,
   ignore_random = FALSE,
@@ -63,6 +64,12 @@ coefficients \code{beta}s. Each element of the list should be a named length 2 v
 the first element is mean and second element is sd.
 E.g. \code{beta_prior=list(beta_a=c(0,100), beta_b=c(0,10), beta_s=c(-2,5))}.
 Default is NULL, which means imposing a noninformative uniform flat prior.}
+
+\item{matern_pc_prior}{Optional named list that specifies Penalized complexity
+priors on the GP Matern covariance hyperparameters \code{sig} and \code{rho}, where \code{sig = sqrt(sigma)} and \code{rho = sqrt(8*nu)/kappa}. Names must be \code{matern_a}, \code{matern_b},
+or \code{matern_s}.
+E.g. \code{matern_pc_prior=list(matern_s=matern_pc_prior(100, 0.9, 2, 0.1))}.
+Default is NULL, which means a flat prior. See \code{?matern_pc_prior} for more details.}
 
 \item{sp_thres}{Optional. Thresholding value to create sparse covariance matrix. Any distance
 value greater than or equal to \code{sp_thres} will be set to 0. Default is -1, which means not
@@ -217,20 +224,29 @@ fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
 print(fit)
 
 # Using the SPDE kernel (SPDE approximation to the Matern kernel)
-fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "ab",
+fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "abs",
                            init_param = list(a = rep(0, n_loc),
                                              log_b = rep(0, n_loc), 
-                                             s = 0,
+                                             s = rep(-2, n_loc),
                                              beta_a = 0,
                                              beta_b = 0,
+                                             beta_s = -2,
                                              log_sigma_a = 0, 
                                              log_kappa_a = 0,
                                              log_sigma_b = 0, 
-                                             log_kappa_b = 0),
+                                             log_kappa_b = 0,
+                                             log_sigma_s = 0, 
+                                             log_kappa_s = 0,
+                                             ),
                            reparam_s = "positive",
                            kernel = "spde",
-                           X_a = matrix(1, nrow=n_loc, ncol=1),
-                           X_b = matrix(1, nrow=n_loc, ncol=1),
+                           beta_prior = list(beta_a=c(0,100), beta_b=c(0,10),
+                                             beta_s=c(0,10)),
+                           matern_pc_prior = list(
+                                                 matern_a=matern_pc_prior(1e5,0.95,5,0.1),
+                                                 matern_b=matern_pc_prior(1e5,0.95,3,0.1),
+                                                 matern_s=matern_pc_prior(1e2,0.95,1,0.1),
+                                                 )
                            adfun_only = TRUE) 
 library(INLA)
 plot(fit_spde$mesh) # Plot the mesh
