@@ -62,3 +62,8 @@ fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "abs",
                            adfun_only = TRUE) 
 }
 }
+\references{
+Simpson, D., Rue, H., Riebler, A., Martins, T. G., & Sørbye, S. H. (2017).
+Penalising model component complexity: A principled, practical approach to
+construct priors. Statistical Science.
+}

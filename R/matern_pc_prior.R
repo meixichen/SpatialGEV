@@ -19,6 +19,10 @@
 #' P(sig > sig_0) = p_sig,
 #' ```
 #' where `rho = sqrt(8*nu)/kappa` and `sig = sqrt(sigma)`.
+#' @references
+#' Simpson, D., Rue, H., Riebler, A., Martins, T. G., & Sørbye, S. H. (2017).
+#' Penalising model component complexity: A principled, practical approach to
+#' construct priors. Statistical Science.
 #' @examples
 #' \dontrun{
 #' fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "abs",
