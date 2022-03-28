@@ -157,9 +157,13 @@ There are other arguments which user might want to specify to override the defau
 
 - `kernel`: The kernel used for the Gaussian process(es) describing the spatial random effect(s). Currently 3 kernels are implemented: the default exponential kernel (`kernel="exp"`), the Matérn kernel (`kernel="matern"`), and the SPDE approximation to the Matérn kernel (`kernel="spde"`) based on @lindgren-etal11. 
 
-- `X_a`, `X_b`, `X_s`: Design matrices for the spatial random effects "a", "b", and "s". The defaults are column matrices of $1$s, i.e., only an intercept parameter $\beta_0$ will be estimated for each spatial random effect.
+- `X_a`, `X_b`, `X_s`: Design matrices of covariates for the spatial random effects "a", "b", and "s". The defaults are column matrices of $1$s, i.e., only an intercept parameter $\beta_0$ will be estimated for each spatial random effect.
 
 - `s_prior`: A vector $(\mu, \sigma)$. Optionally a normal prior with parameters $(\mu, \sigma)$ can be specified on the fixed effect shape parameter $s$, or its reparametrized version depending on the value of `reparam_s`. When `s_prior` is not specified, a uniform prior is used. 
+
+- `beta_prior`: A named list of length-2 vectors $(\mu, \sigma)$. Optionally normal priors $\mathcal{N}(\mu, \sigma^2)$ can be put on the regression coefficients $\bm{beta}$ for the random effects. To specify a normal prior on a random effect, name the vector `beta_a` or `beta_b` or `beta_s`. E.g., `beta_prior=list(beta_a=c(0, 100))` puts a $\mathcal{N}(0,100)$ prior on $a$. When `beta_prior` is not specified, uniform priors are applied.
+
+- `matern_pc_prior`: A named list with elements provided using the `matern_pc_prior()` function. Optionally penalized complexity priors can be put on the Matérn covariance hyperparameters. See `?matern_pc_prior()` for more details.
 
 The code below fits a GEV-GP model to the simulated data. The model assumes that all spatial random effects follow Gaussian processes with the exponential kernel:
 \[k(\xx, \xx') = \sigma^2\exp\left(-\frac{||\xx-\xx'||}{\ell}\right).\]
@@ -195,7 +199,7 @@ To obtain posterior samples of $a$, $b$, and $s$, we pass the fitted model objec
 
 The following line of code draws 2000 samples from the posterior distribution and the posterior predictive distribution:
 ```{r pos_sam, cache=TRUE}
-sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = F)
+sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = T)
 print(sam)
 ```
 
@@ -319,7 +323,7 @@ abline(0, 1, col="blue", lty="dashed")
 ```
 
 ## Case study: Yearly maximum snowfall data in Ontario, Canada
-In this section, we show how to use the ***SpatialGEV*** package to analyze a real dataset. The data used here are the 1987-2021 monthly total snowfall data obtained from Environment and Natural Resources, Government of Canada. The link to download the raw data is https://climate-change.canada.ca/climate-data/#/monthly-climate-summaries. This dataset is automatically loaded with the package and is named `ONsnow`.
+In this section, we show how to use the ***SpatialGEV*** package to analyze a real dataset. The data used here are the 1987-2021 monthly total snowfall data (in cm) obtained from Environment and Natural Resources, Government of Canada. The link to download the raw data is https://climate-change.canada.ca/climate-data/#/monthly-climate-summaries. This dataset is automatically loaded with the package and is named `ONsnow`.
 ```{r snow-grid, message=FALSE, fig.width=6, fig.height=5, out.width= "60%"}
 devtools::load_all()
 library(dplyr)
