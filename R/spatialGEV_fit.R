@@ -369,7 +369,7 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
     data$range_a_prior <- data$range_b_prior <- data$range_s_prior <- c(1e5, 0.9)
     data$sigma_a_prior <- data$sigma_b_prior <- data$sigma_s_prior <- c(2, 0.1)
     if (!is.null(matern_pc_prior$matern_a)){
-      if (class(matern_pc_prior$matern_a)=="PC_prior"){
+      if (inherits(matern_pc_prior$matern_a, "PC_prior")){
 	data$a_pc_prior <- as.integer(1)
 	data$range_a_prior <- matern_pc_prior$matern_a$range_prior
 	data$sigma_a_prior <- matern_pc_prior$matern_a$sigma_prior
@@ -379,7 +379,7 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
       }
     }
     if (!is.null(matern_pc_prior$matern_b)){
-      if (class(matern_pc_prior$matern_b)=="PC_prior"){
+      if (inherits(matern_pc_prior$matern_b, "PC_prior")){
 	data$b_pc_prior <- as.integer(1)
 	data$range_b_prior <- matern_pc_prior$matern_b$range_prior
 	data$sigma_b_prior <- matern_pc_prior$matern_b$sigma_prior
@@ -389,7 +389,7 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
       }
     }
     if (!is.null(matern_pc_prior$matern_s)){
-      if (class(matern_pc_prior$matern_s)=="PC_prior"){
+      if (inherits(matern_pc_prior$matern_s, "PC_prior")){
 	data$s_pc_prior <- as.integer(1)
 	data$range_s_prior <- matern_pc_prior$matern_s$range_prior
 	data$sigma_s_prior <- matern_pc_prior$matern_s$sigma_prior
