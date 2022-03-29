@@ -7,9 +7,9 @@
 \method{print}{spatialGEVsam}(x, ...)
 }
 \arguments{
-\item{...}{Additional arguments for \code{print}.}
+\item{x}{Object of class \code{spatialGEVsam} returned by \code{spatialGEV_sample}.}
 
-\item{object}{Object of class \code{spatialGEVsam} returned by \code{spatialGEV_sample}.}
+\item{...}{Additional arguments for \code{print}.}
 }
 \value{
 Information about the object including dimension and direction to use \code{summary} on the object.

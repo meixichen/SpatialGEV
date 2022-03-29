@@ -7,9 +7,9 @@
 \method{print}{spatialGEVfit}(x, ...)
 }
 \arguments{
-\item{...}{More arguments for \code{print}.}
+\item{x}{Model object of class \code{spatialGEVfit} returned by \code{spatialGEV_fit}.}
 
-\item{object}{Model object of class \code{spatialGEVfit} returned by \code{spatialGEV_fit}.}
+\item{...}{More arguments for \code{print}.}
 }
 \value{
 Information about the fitted model containing number of fixed/random effects,

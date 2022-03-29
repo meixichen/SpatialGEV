@@ -7,9 +7,9 @@
 \method{print}{spatialGEVpred}(x, ...)
 }
 \arguments{
-\item{...}{Additional arguments for \code{print}.}
+\item{x}{Object of class \code{spatialGEVpred} returned by \code{spatialGEV_predict}.}
 
-\item{object}{Object of class \code{spatialGEVpred} returned by \code{spatialGEV_predict}.}
+\item{...}{Additional arguments for \code{print}.}
 }
 \value{
 Information about the prediction.
