@@ -1,25 +1,3 @@
-<script type="text/x-mathjax-config">
-MathJax.Hub.Config({
-  TeX: { equationNumbers: { autoNumber: "AMS" } }
-});
-</script>
-
-\newcommand{\bm}[1]{\boldsymbol{#1}}
-\newcommand{\tx}[1]{\mathrm{#1}}
-\newcommand{\xx}{{\bm{x}}}
-\newcommand{\yy}{{\bm{y}}}
-\newcommand{\XX}{{\bm{X}}}
-\newcommand{\YY}{{\bm{Y}}}
-\newcommand{\ZZ}{{\bm{Z}}}
-\newcommand{\tth}{{\bm{\theta}}}
-\newcommand{\pps}{{\bm{\psi}}}
-\newcommand{\uu}{{\bm{u}}}
-\newcommand{\SSi}{{\bm{\Sigma}}}
-\newcommand{\VV}{{\bm{V}}}
-\newcommand{\iid}{{\overset{iid}{\sim}}}
-\newcommand{\ind}{{\overset{ind}{\sim}}}
-\newcommand{\cov}{{\tx{Cov}}}
-
 # SpatialGEV
 
 *Meixi Chen, Martin Lysy*
@@ -42,19 +20,7 @@ devtools::install_github("meixichen/SpatialGEV")
 ```
 
 ### Model
-To study spatial extremes such as extreme rainfall, snowfall, and temperature, we consider a hierarchical model with a data layer of generalized extreme value (GEV) distribution and a spatial random effects layer of Gaussian processes (GP). This model is abbreviated as the GEV-GP model. 
-
-Let $\xx_1, \ldots, \xx_n \in \mathbb{R}^2$ denote the geographical coordinates of $n$ locations, and let $y_{ik}$ denote the extreme value measurement $k$ at location $i$, for $k = 1, \ldots, n_i$. The data layer specifies that each observation $y_{ik}$ has a generalized extreme value distribution, denoted by $y \sim \tx{GEV}(a, b, s)$,
-where $a\in\mathbb{R}$, $b>0$, and $s\in\mathbb{R}$ are location, scale, and shape parameters, respectively. Each GEV parameter is treated as a random effect modelled by a Gaussian process $z(\xx)\sim \mathcal{GP}(\mu(\xx_{cov}), k(\xx, \xx'))$ characterized by its mean $\mu(\xx_{cov})$ and kernel function $k(\xx, \xx') = \cov( z(\xx), z(\xx') )$. The mean is a function of parameters $\bm{\beta}$ and covariates $\xx_{cov}=(x_1,\ldots,x_p)'$. We assume that given the locations, the data follow independent GEV distributions each with their own parameters. The complete GEV-GP hierarchical model then becomes
-\begin{equation}
-\begin{aligned}
-y_{ik} \mid a(\xx_i), b(\xx_i), s & \ind \tx{GEV}\big( a(\xx_i), \exp( b(\xx_i) ), \exp(s)\big)\\
-a(\xx) \mid \bm{\beta}_a, \tth_a &\sim \mathcal{GP}\big( \XX_a\bm{\beta}_a, k(\xx, \xx' \mid \tth_a) \big)\\
-log(b)(\xx) \mid \bm{\beta}_b, \tth_b &\sim \mathcal{GP}\big( \XX_b\bm{\beta}_b, k(\xx, \xx' \mid \tth_b) \big)\\
-s(\xx) \mid \bm{\beta}_s, \tth_s &\sim \mathcal{GP}\big( \XX_s\bm{\beta}_s, k(\xx, \xx' \mid \tth_a) \big),
-\end{aligned}
-\end{equation}
-where $\bm{\beta}_\cdot$ and $\tth_\cdot$ are fixed effects in the model. 
+To study spatial extremes such as extreme rainfall, snowfall, and temperature, we consider a hierarchical model with a data layer of generalized extreme value (GEV) distribution and a spatial random effects layer of Gaussian processes (GP). This model is abbreviated as the GEV-GP model. To summarize, we have `Y ~ GEV(a, b, s)` where `a`, `b`, and `s` are GEV location, scale, and shape parameters. We also have `a ~ GP(mean, kernel)`, `b ~ GP(mean, kernel)`, and `s ~ GP(mean, kernel)`, where the mean function depends on some regression coefficients `beta` and the kernel defines the spatial correlation. For more details about the model, see our [arxiv paper](https://arxiv.org/abs/2110.07051?context=stat.CO).
 
 ### Example
 Using the simulated data set `simulatedData2` provided in the package, we demonstrate how to use this package. Spatial variation of the GEV parameters are plotted below.
@@ -72,7 +38,7 @@ y <- Map(evd::rgev, n=sample(50:70, n_loc, replace=TRUE),
 ![b-plot](docs/figures/b-plot.png)
 ![s-plot](docs/figures/s-plot.png)
 
-To fit a GEV-GP model to the simulated data, use the `spatialGEV_fit()` function. We use `random="abs"` to indicate that all three GEV parameters are treated as random effects. The shape parameter $s$ is constrained to be positive (log transformed) by specifying `reparam_s="positive"`. The covariance kernel function used here is the exponential kernel `kernel="exp"`. Initial parameter values are passed to `init_param` using a list.
+To fit a GEV-GP model to the simulated data, use the `spatialGEV_fit()` function. We use `random="abs"` to indicate that all three GEV parameters are treated as random effects. The shape parameter `s` is constrained to be positive (log transformed) by specifying `reparam_s="positive"`. The covariance kernel function used here is the exponential kernel `kernel="exp"`. Initial parameter values are passed to `init_param` using a list.
 ```
 fit <- spatialGEV_fit(y = y, locs = locs, random = "abs",
                       init_param = list(a = rep(60, n_loc),
@@ -95,7 +61,7 @@ print(fit)
 #> Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples
 ```
 
-Posterior samples of the random and fixed effects are drawn using `spatialGEV_sample()`. Specify `observation=TRUE` if we would also like to draw $y^{\tx{rep}}$ from the posterior predictive distribution.
+Posterior samples of the random and fixed effects are drawn using `spatialGEV_sample()`. Specify `observation=TRUE` if we would also like to draw from the posterior predictive distribution.
 ```
 sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = T)
 print(sam)
@@ -123,4 +89,3 @@ pos_summary$y_summary[1:5,]
 #> y4 35.89303 54.34104 68.39809 87.60576 142.1014 73.67881
 #> y5 34.91801 54.05809 68.75051 87.73555 150.1256 74.36443
 ```
-
