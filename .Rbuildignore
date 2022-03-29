@@ -5,3 +5,4 @@
 ^LICENSE.txt$
 ^vignettes/SpatialGEV-vignette_files$
 ^vignettes/SpatialGEV-vignette_cache$
+^doc$
