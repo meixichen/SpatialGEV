@@ -34,9 +34,9 @@ n_loc <- nrow(locs) # number of locations
 y <- Map(evd::rgev, n=sample(50:70, n_loc, replace=TRUE),
          loc=a, scale=exp(logb), shape=exp(logs)) # observations
 ```
-![a-plot](docs/figures/a-plot.png)
-![b-plot](docs/figures/b-plot.png)
-![s-plot](docs/figures/s-plot.png)
+![a-plot](README_files/figures/a-plot.png)
+![b-plot](README_files/figures/b-plot.png)
+![s-plot](README_files/figures/s-plot.png)
 
 To fit a GEV-GP model to the simulated data, use the `spatialGEV_fit()` function. We use `random="abs"` to indicate that all three GEV parameters are treated as random effects. The shape parameter `s` is constrained to be positive (log transformed) by specifying `reparam_s="positive"`. The covariance kernel function used here is the exponential kernel `kernel="exp"`. Initial parameter values are passed to `init_param` using a list.
 ```
