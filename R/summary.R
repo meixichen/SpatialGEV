@@ -6,7 +6,7 @@
 #' fitting time, convergence information, etc.
 #' @export
 
-print.spatialGEVfit <- function(object, ...){
+print.spatialGEVfit <- function(x, ...){
   # Time info
   time <- object$time
   ifelse(time <= 600,
@@ -43,7 +43,7 @@ print.spatialGEVfit <- function(object, ...){
 #' @return Information about the object including dimension and direction to use `summary` on the object.
 #' @export 
 
-print.spatialGEVsam <- function(object,...){
+print.spatialGEVsam <- function(x,...){
   # Dimension info
   dim_param <- dim(object[["parameter_draws"]])
   cat("The samples contains", dim_param[1], "draws of", dim_param[2], "parameters \n")
@@ -92,7 +92,7 @@ summary.spatialGEVsam <- function(object, q=c(0.025, 0.25, 0.5, 0.75, 0.975), ..
 #' @return Information about the prediction.
 #' @export
 
-print.spatialGEVpred <- function(object, ...){
+print.spatialGEVpred <- function(x, ...){
   # Dimension info
   dim_pred <- dim(object$pred_y_draws)
   cat(dim_pred[1], "posterior predictive samples have been draw for", dim_pred[2], "test locations\n")

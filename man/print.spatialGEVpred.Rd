@@ -4,12 +4,12 @@
 \alias{print.spatialGEVpred}
 \title{Print method for spatialGEVpred}
 \usage{
-\method{print}{spatialGEVpred}(object, ...)
+\method{print}{spatialGEVpred}(x, ...)
 }
 \arguments{
-\item{object}{Object of class \code{spatialGEVpred} returned by \code{spatialGEV_predict}.}
-
 \item{...}{Additional arguments for \code{print}.}
+
+\item{object}{Object of class \code{spatialGEVpred} returned by \code{spatialGEV_predict}.}
 }
 \value{
 Information about the prediction.

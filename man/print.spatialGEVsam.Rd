@@ -4,12 +4,12 @@
 \alias{print.spatialGEVsam}
 \title{Print method for spatialGEVsam}
 \usage{
-\method{print}{spatialGEVsam}(object, ...)
+\method{print}{spatialGEVsam}(x, ...)
 }
 \arguments{
-\item{object}{Object of class \code{spatialGEVsam} returned by \code{spatialGEV_sample}.}
-
 \item{...}{Additional arguments for \code{print}.}
+
+\item{object}{Object of class \code{spatialGEVsam} returned by \code{spatialGEV_sample}.}
 }
 \value{
 Information about the object including dimension and direction to use \code{summary} on the object.

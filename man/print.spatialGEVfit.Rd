@@ -4,12 +4,12 @@
 \alias{print.spatialGEVfit}
 \title{Print method for spatialGEVfit}
 \usage{
-\method{print}{spatialGEVfit}(object, ...)
+\method{print}{spatialGEVfit}(x, ...)
 }
 \arguments{
-\item{object}{Model object of class \code{spatialGEVfit} returned by \code{spatialGEV_fit}.}
-
 \item{...}{More arguments for \code{print}.}
+
+\item{object}{Model object of class \code{spatialGEVfit} returned by \code{spatialGEV_fit}.}
 }
 \value{
 Information about the fitted model containing number of fixed/random effects,
