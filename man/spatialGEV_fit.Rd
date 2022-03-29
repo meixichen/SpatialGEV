@@ -43,7 +43,8 @@ constrained to be "negative", or constrained to be "positive". If model "abs" is
 
 \item{kernel}{Kernel function for spatial random effects covariance matrix. Can be "exp"
 (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE
-approximation described in Lindgren el al. 2011).}
+approximation described in Lindgren el al. 2011). To use the SPDE approximation,
+the user must first install the INLA R package.}
 
 \item{X_a}{\verb{n x r} design matrix for a, where \code{r-1} is the number of covariates. If not
 provided, a \verb{n x 1} column matrix of 1s is used.}
@@ -97,7 +98,8 @@ This is used specifically for when \code{kernel="spde"}, in which case a mesh ne
 constructed on the spatial domain. When no arguments are passed to \code{inla.mesh.2d()}, a
 default argument is \code{max.edge=2}, which simply specifies the largest allowed triangle edge
 length. It is strongly suggested that the user should specify these arguments if they would
-like to use the SPDE kernel.}
+like to use the SPDE kernel. Please make sure INLA package is installed before
+using the SPDE approximation.}
 }
 \value{
 If \code{adfun_only=TRUE}, this function outputs a list returned by \code{TMB::MakeADFun()}.
@@ -224,6 +226,7 @@ fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
 print(fit)
 
 # Using the SPDE kernel (SPDE approximation to the Matern kernel)
+# Make sure the INLA package is installed before using `kernel="spde"`
 fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "abs",
                            init_param = list(a = rep(0, n_loc),
                                              log_b = rep(0, n_loc), 
@@ -248,7 +251,7 @@ fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "abs",
                                                  matern_s=matern_pc_prior(1e2,0.95,1,0.1),
                                                  )
                            adfun_only = TRUE) 
-library(INLA)
+require(INLA)
 plot(fit_spde$mesh) # Plot the mesh
 points(locs[,1], locs[,2], col="red", pch=16) # Plot the locations
 }

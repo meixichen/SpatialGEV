@@ -2,7 +2,6 @@
 #' @import mvtnorm
 #' @import evd
 #' @importFrom stats dist nlminb rnorm runif quantile
-#' @importFrom INLA inla.mesh.2d inla.spde2.matern
 #' @rawNamespace useDynLib(SpatialGEV, .registration=TRUE);useDynLib(SpatialGEV_TMBExports)
 "_PACKAGE"
 

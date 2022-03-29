@@ -2,3 +2,6 @@
 ^inst/extdata$
 ^joss$
 ^data-raw$
+^LICENSE.txt$
+^vignettes/SpatialGEV-vignette_files$
+^vignettes/SpatialGEV-vignette_cache$

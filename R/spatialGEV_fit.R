@@ -11,7 +11,8 @@
 #' `reparam_s` cannot be zero. See details.
 #' @param kernel Kernel function for spatial random effects covariance matrix. Can be "exp" 
 #' (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE 
-#' approximation described in Lindgren el al. 2011).
+#' approximation described in Lindgren el al. 2011). To use the SPDE approximation,
+#' the user must first install the INLA R package.
 #' @param X_a `n x r` design matrix for a, where `r-1` is the number of covariates. If not 
 #' provided, a `n x 1` column matrix of 1s is used.
 #' @param X_b `n x r` design matrix for log(b). Does not need to be provided if b is fixed.
@@ -53,7 +54,8 @@
 #' constructed on the spatial domain. When no arguments are passed to `inla.mesh.2d()`, a 
 #' default argument is `max.edge=2`, which simply specifies the largest allowed triangle edge
 #' length. It is strongly suggested that the user should specify these arguments if they would 
-#' like to use the SPDE kernel. 
+#' like to use the SPDE kernel. Please make sure INLA package is installed before
+#' using the SPDE approximation. 
 #' @return If `adfun_only=TRUE`, this function outputs a list returned by `TMB::MakeADFun()`. 
 #' This list contains components `par, fn, gr` and can be passed to an R optimizer.
 #' If `adfun_only=FALSE`, this function outputs an object of class `spatialGEVfit`, a list 
@@ -175,6 +177,7 @@
 #' print(fit)
 #' 
 #' # Using the SPDE kernel (SPDE approximation to the Matern kernel)
+#' # Make sure the INLA package is installed before using `kernel="spde"`
 #' fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "abs",
 #'                            init_param = list(a = rep(0, n_loc),
 #'                                              log_b = rep(0, n_loc), 
@@ -199,7 +202,7 @@
 #'                                                  matern_s=matern_pc_prior(1e2,0.95,1,0.1),
 #'                                                  )
 #'                            adfun_only = TRUE) 
-#' library(INLA)
+#' require(INLA)
 #' plot(fit_spde$mesh) # Plot the mesh
 #' points(locs[,1], locs[,2], col="red", pch=16) # Plot the locations
 #' }
@@ -254,6 +257,9 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
     if (kernel == "matern") data$nu <- nu
   }
   else if (kernel == "spde"){
+    if (!requireNamespace("INLA", quietly = TRUE)) {
+      stop("Please install package 'INLA' if using 'kernel='spde''.")
+    }
     mesh_args <- list(...)
     if (all(is.null(mesh_args$max.edge), 
 	    is.null(mesh_args$max.n.strict), 
@@ -437,7 +443,7 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
     start_t <- Sys.time()
     fit <- nlminb(adfun$par, adfun$fn, adfun$gr)
     report <- TMB::sdreport(adfun, getJointPrecision = TRUE)
-    t_taken <- as.numeric(difftime(Sys.time(), start_t, unit="secs"))
+    t_taken <- as.numeric(difftime(Sys.time(), start_t, units="secs"))
     out <- list(adfun=adfun, fit=fit, report=report, 
 		time=t_taken, random=random, kernel=kernel, 
 		locs_obs=locs, X_a=X_a, X_b=X_b, X_s=X_s)
