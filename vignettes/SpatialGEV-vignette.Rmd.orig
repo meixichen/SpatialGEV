@@ -72,7 +72,7 @@ The package provides an interface to estimate the approximate joint posterior di
 Details about the approximate posterior inference can be found in @chen-etal21.
 
 ## Installation
-***SpatialGEV*** depends on the package [***TMB***](https://github.com/kaskr/adcomp) to perform the Laplace approximation. Make sure you have ***TMB*** installed following their [instruction]((https://github.com/kaskr/adcomp/wiki/Download)) before installing ***SpatialGEV***. Moreover, ***SpatialGEV*** uses several functions from the ***INLA*** package for approximating the Matérn covariance with the SPDE representation and for creating meshes on the spatial domain. If the user would like to use the SPDE approximation, please first install ***INLA***. Since ***INLA*** is not on CRAN, it needs to be downloaded following their instruction [here](https://www.r-inla.org/download-install). 
+***SpatialGEV*** depends on the package [***TMB***](https://github.com/kaskr/adcomp) to perform the Laplace approximation. Make sure you have ***TMB*** installed following their [instruction](https://github.com/kaskr/adcomp/wiki/Download) before installing ***SpatialGEV***. Moreover, ***SpatialGEV*** uses several functions from the ***INLA*** package for approximating the Matérn covariance with the SPDE representation and for creating meshes on the spatial domain. If the user would like to use the SPDE approximation, please first install ***INLA***. Since ***INLA*** is not on CRAN, it needs to be downloaded following their instruction [here](https://www.r-inla.org/download-install). 
 
 To install ***SpatialGEV***, run the following:
 ```{r eval=FALSE}
