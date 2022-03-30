@@ -14,10 +14,13 @@ Authors@R: c(
            family = "Ramezan",
            role = "ctb",
            email = "rramezan@uwaterloo.ca"))
+Maintainer: Meixi Chen <meixi.chen@uwaterloo.ca>
 Description: The models in this package are built using the template model builder (TMB) in R, which has the fast ability to integrate out the latent variables using Laplace approximation. This package allows the users to choose in the fit function which parameter(s) is considered as following the GP, so the users can fit spatial GEV models with different complexities to their dataset without having to write the models in TMB by themselves. This package also offers a method to sample from both fixed and random effects posterior.
-License: GPL (>= 2)
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
+Depends:
+    R (>= 3.5.0)
 Imports: 
     TMB (>= 1.7.16),
     mvtnorm,
@@ -32,4 +35,5 @@ Suggests:
     testthat,
     knitr,
     rmarkdown
+Additional_repositories: https://inla.r-inla-download.org/R/stable/
 VignetteBuilder: knitr

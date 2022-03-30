@@ -1,30 +1,57 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
 # SpatialGEV
+
+<!-- badges: start -->
+<!-- badges: end -->
 
 *Meixi Chen, Martin Lysy*
 
----
+------------------------------------------------------------------------
 
-### Description
+## Description
 
-A fast Bayesian inference method for spatial random effects modelling of weather extremes. The latent spatial variables are efficiently marginalized by a Laplace approximation using the [***TMB***](https://github.com/kaskr/adcomp) library, which leverages efficient automatic differentiation in C++. The models are compiled in C++, whereas the optimization step is carried out in R. With this package, users can fit spatial GEV models with different complexities to their dataset without having to formulate the model using C++.  This package also offers a method to sample from the approximate posterior distributions of both fixed and random effects, which will be useful for downstream analysis. 
+A fast Bayesian inference method for spatial random effects modelling of
+weather extremes. The latent spatial variables are efficiently
+marginalized by a Laplace approximation using the
+[***TMB***](https://github.com/kaskr/adcomp) library, which leverages
+efficient automatic differentiation in C++. The models are compiled in
+C++, whereas the optimization step is carried out in R. With this
+package, users can fit spatial GEV models with different complexities to
+their dataset without having to formulate the model using C++. This
+package also offers a method to sample from the approximate posterior
+distributions of both fixed and random effects, which will be useful for
+downstream analysis.
 
-### Installation
+## Installation
 
-Before installing ***SpatialGEV***, make sure you have ***TMB*** installed following the instructions [here](https://github.com/kaskr/adcomp/wiki/Download). 
+Before installing ***SpatialGEV***, make sure you have ***TMB***
+installed following the instructions
+[here](https://github.com/kaskr/adcomp/wiki/Download).
 
-***SpatialGEV*** uses several functions from the ***INLA*** package for SPDE approximation to the Matérn covariance as well as mesh creation on the spatial domain. If the user would like to use the SPDE method (i.e. `kernel="spde"` in `spatialGEV_fit()`), please first install package ***INLA***. Since ***INLA*** is not on CRAN, it needs to be downloaded following their instruction [here](https://www.r-inla.org/download-install).
+***SpatialGEV*** uses several functions from the ***INLA*** package for
+SPDE approximation to the Matérn covariance as well as mesh creation on
+the spatial domain. If the user would like to use the SPDE method
+(i.e. `kernel="spde"` in `spatialGEV_fit()`), please first install
+package ***INLA***. Since ***INLA*** is not on CRAN, it needs to be
+downloaded following their instruction
+[here](https://www.r-inla.org/download-install).
 
-To download this package in R, run 
-```r
+To download the development version of this package, run
+
+``` r
 devtools::install_github("meixichen/SpatialGEV")
 ```
 
-### Model
-To study spatial extremes such as extreme rainfall, snowfall, and temperature, we consider a hierarchical model with a data layer of generalized extreme value (GEV) distribution and a spatial random effects layer of Gaussian processes (GP). This model is abbreviated as the GEV-GP model. To summarize, we have `Y ~ GEV(a, b, s)` where `a`, `b`, and `s` are GEV location, scale, and shape parameters. We also have `a ~ GP(mean, kernel)`, `b ~ GP(mean, kernel)`, and `s ~ GP(mean, kernel)`, where the mean function depends on some regression coefficients `beta` and the kernel defines the spatial correlation. For more details about the model, see our [arxiv paper](https://arxiv.org/abs/2110.07051?context=stat.CO).
+## Example
 
-### Example
-Using the simulated data set `simulatedData2` provided in the package, we demonstrate how to use this package. Spatial variation of the GEV parameters are plotted below.
-```
+Using the simulated data set `simulatedData2` provided in the package,
+we demonstrate how to use this package. Spatial variation of the GEV
+parameters are plotted below.
+
+``` r
+library(SpatialGEV)
 # GEV parameters simulated from Gaussian random fields
 a <- simulatedData2$a # location
 logb <- simulatedData2$logb # log scale
@@ -33,13 +60,42 @@ locs <- simulatedData2$locs # coordinate matrix
 n_loc <- nrow(locs) # number of locations
 y <- Map(evd::rgev, n=sample(50:70, n_loc, replace=TRUE),
          loc=a, scale=exp(logb), shape=exp(logs)) # observations
-```
-![a-plot](README_files/figures/a-plot.png)
-![b-plot](README_files/figures/b-plot.png)
-![s-plot](README_files/figures/s-plot.png)
 
-To fit a GEV-GP model to the simulated data, use the `spatialGEV_fit()` function. We use `random="abs"` to indicate that all three GEV parameters are treated as random effects. The shape parameter `s` is constrained to be positive (log transformed) by specifying `reparam_s="positive"`. The covariance kernel function used here is the exponential kernel `kernel="exp"`. Initial parameter values are passed to `init_param` using a list.
+filled.contour(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)), 
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
+               main="Spatial variation of a",
+               cex.lab=1,cex.axis=1)
 ```
+
+<img src="man/figures/README-show-data-1.png" width="50%" />
+
+``` r
+filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logb), ncol=sqrt(n_loc)), 
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
+               main="Spatial variation of b",
+               cex.lab=1,cex.axis=1)
+```
+
+<img src="man/figures/README-show-data-2.png" width="50%" />
+
+``` r
+filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logs), ncol=sqrt(n_loc)),
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude",
+               main="Spatial variation of s",
+               cex.lab=1,cex.axis=1)
+```
+
+<img src="man/figures/README-show-data-3.png" width="50%" />
+
+To fit a GEV-GP model to the simulated data, use the `spatialGEV_fit()`
+function. We use `random="abs"` to indicate that all three GEV
+parameters are treated as random effects. The shape parameter `s` is
+constrained to be positive (log transformed) by specifying
+`reparam_s="positive"`. The covariance kernel function used here is the
+exponential kernel `kernel="exp"`. Initial parameter values are passed
+to `init_param` using a list.
+
+``` r
 fit <- spatialGEV_fit(y = y, locs = locs, random = "abs",
                       init_param = list(a = rep(60, n_loc),
                                         log_b = rep(2,n_loc),
@@ -53,7 +109,7 @@ fit <- spatialGEV_fit(y = y, locs = locs, random = "abs",
 class(fit)
 #> [1] "spatialGEVfit"
 print(fit)
-#> Model fitting took 205.280467748642 seconds 
+#> Model fitting took 174.714142560959 seconds 
 #> The model has reached relative convergence 
 #> The model uses a exp kernel 
 #> Number of fixed effects in the model is 9 
@@ -61,8 +117,11 @@ print(fit)
 #> Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples
 ```
 
-Posterior samples of the random and fixed effects are drawn using `spatialGEV_sample()`. Specify `observation=TRUE` if we would also like to draw from the posterior predictive distribution.
-```
+Posterior samples of the random and fixed effects are drawn using
+`spatialGEV_sample()`. Specify `observation=TRUE` if we would also like
+to draw from the posterior predictive distribution.
+
+``` r
 sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = T)
 print(sam)
 #> The samples contains 2000 draws of 1209 parameters 
@@ -70,22 +129,23 @@ print(sam)
 #> Use summary() to obtain summary statistics of the samples
 ```
 
-To get summary statistics of the posterior samples, use `summary()` on the sample object.
-```
+To get summary statistics of the posterior samples, use `summary()` on
+the sample object.
+
+``` r
 pos_summary <- summary(sam)
 pos_summary$param_summary[1:5,]
-#>                   2.5%        25%        50%        75%      97.5%       mean
-#> a1          59.2556574 60.0367382 60.4530836 60.8875724 61.6483647 60.4615866
-#> a2          59.4032730 60.1219199 60.5665952 60.9924753 61.7481593 60.5701293
-#> a3          59.4014487 60.1590178 60.5622019 60.9232839 61.6675096 60.5499580
-#> a4          59.3537206 60.1099659 60.4892334 60.8886191 61.5937046 60.4981138
-#> a5          59.3622475 60.0573291 60.4044741 60.8010299 61.4994020 60.4277049
-
+#>        2.5%      25%      50%      75%    97.5%     mean
+#> a1 58.53086 59.77593 60.38428 61.01913 62.18773 60.39375
+#> a2 58.61986 59.71741 60.27881 60.80942 61.88439 60.25487
+#> a3 58.43086 59.57399 60.15292 60.70487 61.73008 60.13191
+#> a4 58.13659 59.21796 59.74732 60.34869 61.39179 59.77277
+#> a5 57.67409 58.84051 59.48342 60.11202 61.22805 59.47090
 pos_summary$y_summary[1:5,]
 #>        2.5%      25%      50%      75%    97.5%     mean
-#> y1 37.59580 55.57835 68.33582 86.56240 145.6394 74.75045
-#> y2 37.63764 54.37389 67.53186 83.14399 139.9202 72.23786
-#> y3 37.86797 54.62510 67.85533 86.69815 147.6480 74.29521
-#> y4 35.89303 54.34104 68.39809 87.60576 142.1014 73.67881
-#> y5 34.91801 54.05809 68.75051 87.73555 150.1256 74.36443
+#> y1 37.12727 54.72752 67.57171 84.51912 139.0746 72.49402
+#> y2 36.68054 54.00466 67.17315 86.66181 138.6378 72.92259
+#> y3 35.94104 53.06463 67.11551 85.54396 144.7266 72.79682
+#> y4 36.44413 54.48533 67.84922 85.58373 140.1069 73.04688
+#> y5 34.02216 52.88473 65.74329 83.69758 137.8215 71.23010
 ```

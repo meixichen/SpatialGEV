@@ -5,10 +5,11 @@
 *.o
 *.so
 *.dll
-inst/doc
 *.aux
 
 # swap
 [._]*.s[a-w][a-z]
 [._]s[a-w][a-z]
 *~
+/doc/
+/Meta/

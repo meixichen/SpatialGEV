@@ -1,0 +1,107 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# SpatialGEV
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+*Meixi Chen, Martin Lysy*
+
+---
+
+## Description
+
+A fast Bayesian inference method for spatial random effects modelling of weather extremes. 
+The latent spatial variables are efficiently marginalized by a Laplace approximation using the 
+[***TMB***](https://github.com/kaskr/adcomp) library, which leverages efficient automatic 
+differentiation in C++. The models are compiled in C++, whereas the optimization step is carried 
+out in R. With this package, users can fit spatial GEV models with different complexities to 
+their dataset without having to formulate the model using C++.  This package also offers a 
+method to sample from the approximate posterior distributions of both fixed and random effects, 
+which will be useful for downstream analysis.
+
+## Installation
+
+Before installing ***SpatialGEV***, make sure you have ***TMB*** installed following the instructions [here](https://github.com/kaskr/adcomp/wiki/Download). 
+
+***SpatialGEV*** uses several functions from the ***INLA*** package for SPDE approximation to the Matérn covariance as well as mesh creation on the spatial domain. If the user would like to use the SPDE method (i.e. `kernel="spde"` in `spatialGEV_fit()`), please first install package ***INLA***. Since ***INLA*** is not on CRAN, it needs to be downloaded following their instruction [here](https://www.r-inla.org/download-install).
+
+To download the development version of this package, run 
+```{r, eval=FALSE}
+devtools::install_github("meixichen/SpatialGEV")
+```
+
+## Example
+Using the simulated data set `simulatedData2` provided in the package, we demonstrate how to use this package. Spatial variation of the GEV parameters are plotted below.
+
+```{r show-data, fig.height=4, fig.width=4.5, out.width="50%"}
+library(SpatialGEV)
+# GEV parameters simulated from Gaussian random fields
+a <- simulatedData2$a # location
+logb <- simulatedData2$logb # log scale
+logs <- simulatedData2$logs # log shape
+locs <- simulatedData2$locs # coordinate matrix
+n_loc <- nrow(locs) # number of locations
+y <- Map(evd::rgev, n=sample(50:70, n_loc, replace=TRUE),
+         loc=a, scale=exp(logb), shape=exp(logs)) # observations
+
+filled.contour(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)), 
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
+               main="Spatial variation of a",
+               cex.lab=1,cex.axis=1)
+
+filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logb), ncol=sqrt(n_loc)), 
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
+               main="Spatial variation of b",
+               cex.lab=1,cex.axis=1)
+
+filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logs), ncol=sqrt(n_loc)),
+               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude",
+               main="Spatial variation of s",
+               cex.lab=1,cex.axis=1)
+```
+
+To fit a GEV-GP model to the simulated data, use the `spatialGEV_fit()` function. We use `random="abs"` to indicate that all three GEV parameters are treated as random effects. The shape parameter `s` is constrained to be positive (log transformed) by specifying `reparam_s="positive"`. The covariance kernel function used here is the exponential kernel `kernel="exp"`. Initial parameter values are passed to `init_param` using a list.
+
+```{r fit}
+fit <- spatialGEV_fit(y = y, locs = locs, random = "abs",
+                      init_param = list(a = rep(60, n_loc),
+                                        log_b = rep(2,n_loc),
+                                        s = rep(-3,n_loc),
+                                        beta_a = 60, beta_b = 2, beta_s = -2,
+                                        log_sigma_a = 1.5, log_ell_a = 5,
+                                        log_sigma_b = 1.5, log_ell_b = 5,
+                                        log_sigma_s = -1, log_ell_s = 5),
+                      reparam_s = "positive", kernel="exp", silent = T)
+
+class(fit)
+print(fit)
+```
+
+Posterior samples of the random and fixed effects are drawn using `spatialGEV_sample()`. Specify `observation=TRUE` if we would also like to draw from the posterior predictive distribution.
+
+```{r sample}
+sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = T)
+print(sam)
+```
+
+To get summary statistics of the posterior samples, use `summary()` on the sample object.
+```{r sample-summary}
+pos_summary <- summary(sam)
+pos_summary$param_summary[1:5,]
+pos_summary$y_summary[1:5,]
+```
+
