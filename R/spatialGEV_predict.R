@@ -17,7 +17,7 @@
 #' - An `n_test x 2` matrix `locs_new` containing the coordinates of the test data
 #' - An `n_train x 2` matrix `locs_obs` containing the coordinates of the observed data
 #' @examples 
-#' \dontrun{
+#' \donttest{
 #' set.seed(123)
 #' library(SpatialGEV)
 #' a <- simulatedData$a
@@ -49,7 +49,7 @@
 #'		       	       reparam_s = "positive", 
 #'			       kernel = "matern",
 #'			       silent = TRUE)
-#' pred <- spatialGEV_predict(model = train_fit, locs_new = locs_test, n_draw = 5000)
+#' pred <- spatialGEV_predict(model = train_fit, locs_new = locs_test, n_draw = 100)
 #' summary(pred)
 #' }
 #' @export

@@ -46,7 +46,7 @@ distributions at \code{n_test} new locations
 Draw from the posterior predictive distributions at new locations based on a fitted GEV-GP model
 }
 \examples{
-\dontrun{
+\donttest{
 set.seed(123)
 library(SpatialGEV)
 a <- simulatedData$a
@@ -78,7 +78,7 @@ train_fit <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
 	       	       reparam_s = "positive", 
 		       kernel = "matern",
 		       silent = TRUE)
-pred <- spatialGEV_predict(model = train_fit, locs_new = locs_test, n_draw = 5000)
+pred <- spatialGEV_predict(model = train_fit, locs_new = locs_test, n_draw = 100)
 summary(pred)
 }
 }

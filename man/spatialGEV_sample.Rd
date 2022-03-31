@@ -23,7 +23,7 @@ joint posterior draws of the parameters and optionally the GEV observations.
 Get posterior parameter draws from a fitted GEV-GP model.
 }
 \examples{
-\dontrun{
+\donttest{
 library(SpatialGEV)
 a <- simulatedData$a
 logb <- simulatedData$logb
@@ -32,7 +32,7 @@ y <- simulatedData$y
 locs <- simulatedData$locs
 n_loc <- nrow(locs)
 beta_a <- mean(a); beta_b <- mean(logb)
-fit <- spatialGEV_fit(y = y, X = locs, random = "ab",
+fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
                       init_param = list(beta_a = beta_a,
                                         beta_b = beta_b,
                                         a = rep(0, n_loc), 

@@ -150,7 +150,7 @@
 #' their own `a` and `b` values. Therefore, the fit function will return a vector `meshidxloc` to 
 #' indicate the positions of the observed coordinates in the random effects vector.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(SpatialGEV)
 #' a <- simulatedData$a
 #' logb <- simulatedData$logb
@@ -175,9 +175,34 @@
 #'                       X_b = matrix(1, nrow=n_loc, ncol=1),
 #'                       silent = TRUE) 
 #' print(fit)
-#' 
+#'
+#' # To use a different optimizer other than the default `nlminb()`, create 
+#' # an object ready to be passed to optimizer functions using `adfun_only=TRUE`
+#' obj <- spatialGEV_fit(y = y, locs = locs, random = "ab",
+#'                       init_param = list(a = rep(0, n_loc), 
+#'                                         log_b = rep(0, n_loc), 
+#'                                         s = 0,
+#'                                         beta_a = 0,
+#'                                         beta_b = 0,
+#'                                         log_sigma_a = 0, 
+#'                                         log_kappa_a = 0,
+#'                                         log_sigma_b = 0, 
+#'                                         log_kappa_b = 0),
+#'                       reparam_s = "positive",
+#'                       kernel = "matern",
+#'                       X_a = matrix(1, nrow=n_loc, ncol=1),
+#'                       X_b = matrix(1, nrow=n_loc, ncol=1),
+#'                       adfun_only = TRUE) 
+#' fit <- optim(obj$par, obj$fn, obj$gr)
+#' }
+#'
 #' # Using the SPDE kernel (SPDE approximation to the Matern kernel)
 #' # Make sure the INLA package is installed before using `kernel="spde"`
+#' \dontrun{
+#' library(INLA)
+#' y <- simulatedData2$y
+#' locs <- simulatedData2$locs
+#' n_loc <- nrow(locs) 
 #' fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "abs",
 #'                            init_param = list(a = rep(0, n_loc),
 #'                                              log_b = rep(0, n_loc), 
@@ -190,7 +215,7 @@
 #'                                              log_sigma_b = 0, 
 #'                                              log_kappa_b = 0,
 #'                                              log_sigma_s = 0, 
-#'                                              log_kappa_s = 0,
+#'                                              log_kappa_s = 0
 #'                                              ),
 #'                            reparam_s = "positive",
 #'                            kernel = "spde",
@@ -199,10 +224,8 @@
 #'                            matern_pc_prior = list(
 #'                                                  matern_a=matern_pc_prior(1e5,0.95,5,0.1),
 #'                                                  matern_b=matern_pc_prior(1e5,0.95,3,0.1),
-#'                                                  matern_s=matern_pc_prior(1e2,0.95,1,0.1),
-#'                                                  )
-#'                            adfun_only = TRUE) 
-#' require(INLA)
+#'                                                  matern_s=matern_pc_prior(1e2,0.95,1,0.1)
+#'                                                  )) 
 #' plot(fit_spde$mesh) # Plot the mesh
 #' points(locs[,1], locs[,2], col="red", pch=16) # Plot the locations
 #' }
