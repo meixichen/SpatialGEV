@@ -27,7 +27,7 @@ Imports:
     evd,
     stats
 LinkingTo: 
-    TMB
+    TMB, RcppEigen
 RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE)
 Suggests: 
