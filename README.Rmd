@@ -39,6 +39,11 @@ Before installing ***SpatialGEV***, make sure you have ***TMB*** installed follo
 
 ***SpatialGEV*** uses several functions from the ***INLA*** package for SPDE approximation to the Matérn covariance as well as mesh creation on the spatial domain. If the user would like to use the SPDE method (i.e. `kernel="spde"` in `spatialGEV_fit()`), please first install package ***INLA***. Since ***INLA*** is not on CRAN, it needs to be downloaded following their instruction [here](https://www.r-inla.org/download-install).
 
+To download the stable version of this package, run
+```{r, eval=FALSE}
+install.packages("SpatialGEV")
+```
+
 To download the development version of this package, run 
 ```{r, eval=FALSE}
 devtools::install_github("meixichen/SpatialGEV")
