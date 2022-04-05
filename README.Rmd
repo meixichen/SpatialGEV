@@ -16,6 +16,8 @@ knitr::opts_chunk$set(
 # SpatialGEV
 
 <!-- badges: start -->
+[![](https://www.r-pkg.org/badges/version/SpatialGEV)](https://cran.r-project.org/package=SpatialGEV)
+[![R-CMD-check](https://github.com/meixichen/SpatialGEV/workflows/R-CMD-check/badge.svg)](https://github.com/meixichen/SpatialGEV/actions)
 <!-- badges: end -->
 
 *Meixi Chen, Martin Lysy*
