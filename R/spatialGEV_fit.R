@@ -373,9 +373,9 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
   # Optionally specify normal priors on betas
   if (is.null(beta_prior)) {
     data$beta_prior <- as.integer(0)
-    data$beta_a_prior <- rep(0,500)
-    data$beta_b_prior <- rep(0,500)
-    data$beta_s_prior <- rep(0,500)
+    data$beta_a_prior <- c(0,500)
+    data$beta_b_prior <- c(0,500)
+    data$beta_s_prior <- c(0,500)
   }
   else if (is.list(beta_prior)) {
     data$beta_prior <- as.integer(1)
