@@ -20,7 +20,9 @@ r_nll(
   X_a = NULL,
   X_b = NULL,
   X_s = NULL,
-  f_s = function(x) {     x },
+  f_s = function(x) {
+     x
+ },
   ...
 )
 }
@@ -66,8 +68,10 @@ f(s) ~ GP(X_s*beta_s, Sigma(hyperparam_s)). Default is identitfy function: \code
 \item{...}{Additional arguments to pass to the kernel function, e.g. \code{nu} for the matern.}
 }
 \value{
-Scalar value of the negative marginal loglikelihood:\preformatted{-logL(Data; spatial_random_effects, fixed_hyperparameters)
-}
+Scalar value of the negative marginal loglikelihood:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{-logL(Data; spatial_random_effects, fixed_hyperparameters)
+}\if{html}{\out{</div>}}
 }
 \description{
 Calculate the negative marginal loglikelihood of the GEV-GP  model.

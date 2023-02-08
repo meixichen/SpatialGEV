@@ -121,8 +121,10 @@ Fit a GEV-GP model.
 This function adopts Laplace approximation using TMB model to integrate out the random effects.
 
 The random effects are assumed to follow Gaussian processes with mean 0 and covariance matrix
-defined by the chosen kernel function. E.g., using the exponential kernel function:\preformatted{cov(i,j) = sigma*exp(-|x_i - x_j|/ell)
-}
+defined by the chosen kernel function. E.g., using the exponential kernel function:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{cov(i,j) = sigma*exp(-|x_i - x_j|/ell)
+}\if{html}{\out{</div>}}
 
 When specifying the initial parameters to be passed to \code{init_param}, care must be taken to
 count the number of parameters. Described below is how to specify \code{init_param} under different
@@ -133,10 +135,12 @@ descriptions below (initial values specified below such as 0 and 1 are only exam
 \code{a} should be a vector and the rest are scalars. \code{log_sigma_a} and \code{log_ell_a} are
 hyperparameters in the exponential kernel for the Gaussian process describing the spatial
 variation of \code{a}.
-}\preformatted{init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
+}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
                   beta_a = rep(0, n_covariates), 
                   log_sigma_a = 0, log_ell_a = 0)
-}
+}\if{html}{\out{</div>}}
 
 Note that even if \code{reparam_s=="zero"}, an initial value for \code{s} still must be provided, even
 though in this case the value does not matter anymore.
@@ -144,15 +148,19 @@ though in this case the value does not matter anymore.
 \item random = "ab", kernel = "exp":
 When \code{b} is considered a random effect, its corresponding GP hyperparameters \code{log_sigma_b}
 and \code{log_ell_b} need to be specified.
-}\preformatted{init_param = list(a = rep(1,n_locations),
+}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{init_param = list(a = rep(1,n_locations),
                   log_b = rep(0,n_locations), s=1,
                   beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
                   log_sigma_a = 0,log_ell_a = 0, 
                   log_sigma_b = 0,log_ell_b = 0).
-}
+}\if{html}{\out{</div>}}
 \itemize{
 \item random = "abs", kernel = "exp":
-}\preformatted{init_param = list(a = rep(1,n_locations),
+}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{init_param = list(a = rep(1,n_locations),
                   log_b = rep(0,n_locations), 
                   s = rep(0,n_locations),
                   beta_a = rep(0, n_covariates), 
@@ -161,12 +169,14 @@ and \code{log_ell_b} need to be specified.
                   log_sigma_a = 0,log_ell_a = 0, 
                   log_sigma_b = 0,log_ell_b = 0).
                   log_sigma_s = 0,log_ell_s = 0).
-}
+}\if{html}{\out{</div>}}
 \itemize{
 \item random = "abs", kernel = "matern" or "spde":
 When the Matern or SPDE kernel is used, hyperparameters for the GP kernel are \code{log_sigma_a/b/s}
 and \code{log_kappa_a/b/s} for each spatial random effect.
-}\preformatted{init_param = list(a = rep(1,n_locations),
+}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{init_param = list(a = rep(1,n_locations),
                   log_b = rep(0,n_locations), 
                   s = rep(0,n_locations), 
                   beta_a = rep(0, n_covariates), 
@@ -175,7 +185,7 @@ and \code{log_kappa_a/b/s} for each spatial random effect.
                   log_sigma_a = 0,log_kappa_a = 0, 
                   log_sigma_b = 0,log_kappa_b = 0).
                   log_sigma_s = 0,log_kappa_s = 0).
-}
+}\if{html}{\out{</div>}}
 
 \code{raparam_s} allows the user to reparametrize the GEV shape parameter \code{s}. For example,
 \itemize{

@@ -26,11 +26,15 @@ A list to provide to the \code{matern_pc_prior} argument of \code{spatialGEV_fit
 Helper funcion to specify a Penalized Complexity (PC) prior on the Matern hyperparameters
 }
 \details{
-The joint prior on \code{rho} and \code{sig} achieves\preformatted{P(rho < rho_0) = p_rho,
-}
+The joint prior on \code{rho} and \code{sig} achieves
 
-and\preformatted{P(sig > sig_0) = p_sig,
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{P(rho < rho_0) = p_rho,
+}\if{html}{\out{</div>}}
+
+and
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{P(sig > sig_0) = p_sig,
+}\if{html}{\out{</div>}}
 
 where \code{rho = sqrt(8*nu)/kappa} and \code{sig = sqrt(sigma)}.
 }

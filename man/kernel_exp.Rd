@@ -26,8 +26,10 @@ whether \code{X1} and \code{X2} are used instead.
 Exponential covariance function
 }
 \details{
-Let x = dist(x_i, x_j).\preformatted{cov(i,j) = sigma*exp(-x/ell)
-}
+Let x = dist(x_i, x_j).
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{cov(i,j) = sigma*exp(-x/ell)
+}\if{html}{\out{</div>}}
 }
 \examples{
 X1 <- cbind(runif(10, 1, 10), runif(10, 10, 20))
