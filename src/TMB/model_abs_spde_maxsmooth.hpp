@@ -22,10 +22,12 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   - Fixed effects: beta_* and hyperparameters theta in cov_*
   */
   using namespace density;
+  using namespace R_inla;
+  using namespace Eigen;
   using namespace SpatialGEV;
   // data inputs
-  DATA_VECTOR(obs); // noisy obs of transformed c(loc_1,...,loc_n, scale_1,..., shape_n)
-  DATA_VECTOR(cov_obs); // covariance matrix of the noisy observations
+  DATA_VECTOR(obs); // 3n noisy obs of transformed c(loc_1,...,loc_n, scale_1,..., shape_n)
+  DATA_MATRIX(cov_obs); // 3n_loc x 3 covariance matrix of the noisy observations
   DATA_MATRIX(design_mat_a); // n x r design matrix for a
   DATA_MATRIX(design_mat_b); // n x r design matrix for b
   DATA_MATRIX(design_mat_s); // n x r design matrix for s
@@ -46,7 +48,7 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   DATA_VECTOR(range_s_prior);
   DATA_VECTOR(sigma_s_prior);
   // parameter list
-  PARAMETER_VECTOR(a); // random effect to be integrated out
+  PARAMETER_VECTOR(a); // random effect to be integrated out. Length is dim(Q)[1] instead of n.
   PARAMETER_VECTOR(b); // random effect to be integrated out
   PARAMETER_VECTOR(s); // random effect to be integrated out
   PARAMETER_VECTOR(beta_a); // r x 1 mean vector coefficients for a
@@ -58,22 +60,14 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   PARAMETER(log_kappa_b); // hyperparameter
   PARAMETER(log_sigma_s); // hyperparameter for Sigma_s
   PARAMETER(log_kappa_s); // as above
-
-  int n = a_obs.size();
+  
+  int n = meshidxloc.size();
   Type sigma_a = exp(log_sigma_a);
   Type kappa_a = exp(log_kappa_a);
   Type sigma_b = exp(log_sigma_b);
   Type kappa_b = exp(log_kappa_b);
   Type sigma_s = exp(log_sigma_s);
   Type kappa_s = exp(log_kappa_s);
-
-  // construct the covariance matrices
-  matrix<Type> cova(n,n);
-  matrix<Type> covb(n,n);
-  matrix<Type> covs(n,n);
-  cov_matern<Type>(cova, dd, sigma_a, kappa_a, nu, sp_thres);
-  cov_matern<Type>(covb, dd, sigma_b, kappa_b, nu, sp_thres);
-  cov_matern<Type>(covs, dd, sigma_s, kappa_s, nu, sp_thres);
 
   Type nll = Type(0.0);
 
@@ -85,21 +79,23 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   Type sigma_marg_b = exp(lgamma(nu)) / (exp(lgamma(nu + 1)) * 4 * M_PI * pow(kappa_b, 2*nu)); // marginal variance for log(b)
   Type sigma_marg_s = exp(lgamma(nu)) / (exp(lgamma(nu + 1)) * 4 * M_PI * pow(kappa_s, 2*nu)); // marginal variance for s
   vector<Type> mu_a = a - design_mat_a * beta_a;
-  vector<Type> mu_b = log_b - design_mat_b * beta_b;
+  vector<Type> mu_b = b - design_mat_b * beta_b;
   vector<Type> mu_s = s - design_mat_s * beta_s;
   nll = SCALE(GMRF(Q_a), sigma_a/sigma_marg_a)(mu_a);
   nll += SCALE(GMRF(Q_b), sigma_b/sigma_marg_b)(mu_b);
   nll += SCALE(GMRF(Q_s), sigma_s/sigma_marg_s)(mu_s);
-
+  
   // calculate the negative log likelihood
-  int start_ind = 0; // index of the first observation of location i in n_obs
-  int end_ind = 0; // index of the last observation of location i in n_obs
+  int start_ind = 0; // index of a_i in obs, where i is the i-th location
+  vector<Type> offset(3);
   for(int i=0;i<n;i++) {
-    end_ind += n_obs[i];
-    for(int j=start_ind;j<end_ind;j++){
-      nll -= gumbel_lpdf<Type>(y[j], a[meshidxloc[i]], log_b[meshidxloc[i]]);
-    }
-    start_ind += n_obs[i];
+    offset(0) = a(meshidxloc(i));
+    offset(1) = b(meshidxloc(i));
+    offset(2) = s(meshidxloc(i));
+    matrix<Type> cov_block = cov_obs.block(start_ind,0,3,3);
+    vector<Type> mu_obs = obs.segment(start_ind, 3) - offset;
+    nll += MVNORM(cov_block)(mu_obs);
+    start_ind += 3;
   }
 
   // prior

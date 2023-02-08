@@ -28,8 +28,10 @@ whether \code{X1} and \code{X2} are used instead.
 Matern covariance function
 }
 \details{
-Let x = dist(x_i, x_j).\preformatted{cov(i,j) = sigma * 2^(1-nu)/gamma(nu) * (kappa*x)^nu * K_v(kappa*x)
-}
+Let x = dist(x_i, x_j).
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{cov(i,j) = sigma * 2^(1-nu)/gamma(nu) * (kappa*x)^nu * K_v(kappa*x)
+}\if{html}{\out{</div>}}
 
 Note that when \code{nu=0.5}, the Matern kernel corresponds to the absolute exponential kernel.
 }
