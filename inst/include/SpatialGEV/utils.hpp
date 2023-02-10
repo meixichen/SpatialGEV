@@ -45,8 +45,14 @@ namespace SpatialGEV {
   /// @return Log-density of GEV distribution evaluated at its inputs.
   template <class Type>
   Type gev_lpdf(Type x, Type a, Type log_b, Type s) {
-    Type log_t = log(Type(1.0) + s * (x - a) / exp(log_b));
-    return -exp(-Type(1.0) * log_t/s) - (s + Type(1.0))/s * log_t - log_b;
+    Type out;
+    if (fabs(s) <= 1e-7){
+      out = gumbel_lpdf(x, a, log_b);
+    } else{
+      Type log_t = log(Type(1.0) + s * (x - a) / exp(log_b));
+      out = -exp(-Type(1.0) * log_t/s) - (s + Type(1.0))/s * log_t - log_b;
+    }
+    return out;
     // return pow(t - Type(1.0)/s) + (s + Type(1.0))/s + log(t);
   }
  
