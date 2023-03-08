@@ -8,6 +8,7 @@ spatialGEV_predict(
   model,
   locs_new,
   n_draw,
+  type = "response",
   X_a_new = NULL,
   X_b_new = NULL,
   X_s_new = NULL,
@@ -21,6 +22,9 @@ spatialGEV_predict(
 
 \item{n_draw}{Number of draws from the posterior predictive distribution}
 
+\item{type}{A character string: "response" or "parameters". The former returns draws from the
+posterior predictive distribution, and the latter returns parameter draws (all on original scale).}
+
 \item{X_a_new}{\verb{n_test x r1} design matrix for a at the new locations. If not provided, the
 default is a column matrix of all 1s.}
 
@@ -28,7 +32,8 @@ default is a column matrix of all 1s.}
 
 \item{X_s_new}{\verb{n_test x r2} design matrix for (possibly transformed) s at the new locations}
 
-\item{parameter_draws}{Optional. A \verb{n_draw x n_parameter} matrix. If \code{spatialGEV_sample()} has
+\item{parameter_draws}{Optional. A \verb{n_draw x n_parameter} matrix, or an object that is of
+class 'spatialGEVsam'. If \code{spatialGEV_sample()} has
 already been called, the output matrix of parameter draws can be supplied here to avoid doing
 sampling of parameters again. Make sure the number of rows of \code{parameter_draws} is the same as
 \code{n_draw}.}
