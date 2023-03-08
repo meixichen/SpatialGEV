@@ -3,11 +3,14 @@
 #' @param model A fitted spatial GEV model object of class `spatialGEVfit`
 #' @param locs_new A `n_test x 2` matrix containing the coordinates of the new locations
 #' @param n_draw Number of draws from the posterior predictive distribution
+#' @param type A character string: "response" or "parameters". The former returns draws from the 
+#' posterior predictive distribution, and the latter returns parameter draws (all on original scale).
 #' @param X_a_new `n_test x r1` design matrix for a at the new locations. If not provided, the 
 #' default is a column matrix of all 1s.
 #' @param X_b_new `n_test x r2` design matrix for log(b) at the new locations 
 #' @param X_s_new `n_test x r2` design matrix for (possibly transformed) s at the new locations 
-#' @param parameter_draws Optional. A `n_draw x n_parameter` matrix. If `spatialGEV_sample()` has 
+#' @param parameter_draws Optional. A `n_draw x n_parameter` matrix, or an object that is of
+#' class 'spatialGEVsam'. If `spatialGEV_sample()` has 
 #' already been called, the output matrix of parameter draws can be supplied here to avoid doing
 #' sampling of parameters again. Make sure the number of rows of `parameter_draws` is the same as
 #' `n_draw`.
@@ -53,7 +56,8 @@
 #' summary(pred)
 #' }
 #' @export
-spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NULL, X_s_new=NULL, 
+spatialGEV_predict <- function(model, locs_new, n_draw, type="response",
+			       X_a_new=NULL, X_b_new=NULL, X_s_new=NULL, 
 			       parameter_draws=NULL){
   # extract info from model
   locs_obs <- model$locs_obs
@@ -80,12 +84,18 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
     stop("Cannot identify which GEV parameters are random.")
   }
 
+  if (!(type %in% c("response", "parameters"))) stop("Check type argument: must be 
+						     'response' or 'parameters'.")
+
 
   # get parameter draws
   if (is.null(parameter_draws)){ 
     parameter_draws <- spatialGEV_sample(model, n_draw, observation=FALSE)$parameter_draws
   }
   else{
+    if (inherits(parameter_draws, "spatialGEVsam")){ 
+      parameter_draws <- parameter_draws$parameter_draws
+    }
     if (nrow(parameter_draws) != n_draw) stop("nrow(parameter_draws) must be n_draw.")
   }
 
@@ -106,6 +116,7 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
   }
   total_param <- ncol(parameter_draws)
   pred_y_draws <- matrix(NA, nrow = n_draw, ncol = n_test)
+  pred_param_draws <- matrix(NA, nrow = n_draw, ncol = n_test*length(random))
   s_ind <- which(colnames(parameter_draws)=="s")
 
   # Sampling depends on model type
@@ -140,10 +151,13 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
 				     nu = nu)
       }
       new_a <- a_sim_fun(1) # sample parameter a one time
-      new_y <- t(apply(X = new_a, MARGIN = 1, FUN = function(row){
-        unlist(Map(rgev, n=1, loc=row, scale=b, shape=s))  
-      })) # a `1 x n_test` matrix
-      pred_y_draws[i, ] <- new_y
+      if (type == "response"){
+        new_y <- t(apply(X = new_a, MARGIN = 1, FUN = function(row){
+          unlist(Map(rgev, n=1, loc=row, scale=b, shape=s))  
+        })) # a `1 x n_test` matrix
+        pred_y_draws[i, ] <- new_y
+      }
+      pred_param_draws[i, ] <- new_a
     }
   }
   else if (mod == "ab"){ 
@@ -195,10 +209,13 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
       new_a <- a_sim_fun(1) # 1 x n_test matrix
       new_logb <- logb_sim_fun(1) # 1 x n_test matrix
       new_ab <- cbind(new_a, exp(new_logb)) # A `1 x (2*n_test)` matrix constructed by putting the matrix of exp(logb) to the right of the matrix of a
-      new_y <- t(apply(X = new_ab, MARGIN = 1, FUN = function(row){
-        unlist(Map(rgev, n=1, loc=row[1:n_test], scale=row[(n_test+1):length(row)], shape=s))  
-      })) # a `1 x n_test` matrix
-      pred_y_draws[i, ] <- new_y
+      if (type == "response"){
+        new_y <- t(apply(X = new_ab, MARGIN = 1, FUN = function(row){
+          unlist(Map(rgev, n=1, loc=row[1:n_test], scale=row[(n_test+1):length(row)], shape=s))  
+        })) # a `1 x n_test` matrix
+        pred_y_draws[i, ] <- new_y
+      }
+      pred_param_draws[i, ] <- new_ab
     }
   }
   else { # if mod="abs" 
@@ -270,14 +287,19 @@ spatialGEV_predict <- function(model, locs_new, n_draw, X_a_new=NULL, X_b_new=NU
       new_logb <- logb_sim_fun(1) # 1 x n_test matrix
       new_s <- s_sim_fun(1) # 1 x n_test matrix
       new_abs <- cbind(new_a, exp(new_logb), new_s) # A `1 x (3*n_test)` matrix
-      new_y <- t(apply(X = new_abs, MARGIN = 1, FUN = function(row){
-        unlist(Map(rgev, n=1, loc=row[1:n_test], scale=row[(n_test+1):(2*n_test)], 
-		   shape=row[(2*n_test+1):length(row)]))  
-      })) # a `1 x n_test` matrix
-      pred_y_draws[i, ] <- new_y
+      if (type == "response"){
+        new_y <- t(apply(X = new_abs, MARGIN = 1, FUN = function(row){
+          unlist(Map(rgev, n=1, loc=row[1:n_test], scale=row[(n_test+1):(2*n_test)], 
+	    	   shape=row[(2*n_test+1):length(row)]))  
+        })) # a `1 x n_test` matrix
+        pred_y_draws[i, ] <- new_y
+      }
+      pred_param_draws[i, ] <- new_abs
     }
   }
-  out <- list(pred_y_draws=pred_y_draws, locs_new=locs_new, locs_obs=locs_obs)
+
+  out <- list(pred_param_draws=pred_param_draws, locs_new=locs_new, locs_obs=locs_obs)
+  if (type == "response") out$pred_y_draws <- pred_y_draws
   class(out) <- "spatialGEVpred"
   out
 }
