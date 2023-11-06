@@ -45,3 +45,20 @@
 #'   \item{y}{A length 400 list of vectors which are observations simulated at each location}
 #' }
 "simulatedData2"
+
+#' Gridded monthly total snowfall in Canada from 1987 to 2021.
+#'
+#' Variables containing the monthly total snowfall (in cm) in Canada from 1987 to
+#' 2021 and the location information. The data has been gridded and information about
+#' the grid size can be found in the paper Fast and Scalable Inference for Spatial
+#' Extreme Value Models (arxiv: 2110.07051).
+#'
+#' @format A list containing the location information and the observations:
+#' \describe{
+#'   \item{locs}{A 509x2 matrix with longitude and latitude for each grid cell}
+#'   \item{n_loc}{Number of locations}
+#'   \item{Y}{A list of length 509 with each element of the list containing the
+#'   observations at a location}
+#' }
+#' @source \url{https://climate-change.canada.ca/climate-data/#/monthly-climate-summaries}
+"CAsnow"
