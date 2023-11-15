@@ -90,7 +90,7 @@ Type model_abs_multlink(objective_function<Type>* obj){
     (-(1./alp3)*pow(xi00+0.5, (-alp3+1)));
   Type b3 = -sig3*(log(-log(1-pow(0.5, alp3))));
   vector<Type> a = exp(psi);
-  vector<Type> log_b = exp(tau + psi);
+  vector<Type> log_b = tau + psi;
   vector<Type> s = pow(1. - exp(-exp( (phi - b3) / sig3)), 1./alp3) - .5;
   //nll -= sum((alpha-alp3)*log(s+0.5) + (beta-1)*log(0.5-s) + (phi-b3)/sig3 - exp((phi-b3)/sig3));
 
