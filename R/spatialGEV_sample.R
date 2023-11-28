@@ -41,7 +41,7 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE, loc_ind=NULL){
   rep <- model$report
   random <- model$random
   random_ind <- rep$env$random #indices of random effects
-  n_loc <- length(model$adfun$env$data$n_obs) # number of locations
+  n_loc <- length(unique(model$adfun$env$data$loc_ind)) # number of locations
   reparam_s <- model$adfun$env$data$reparam_s # parametrization of s
   ##########################
   if (length(random) == 1) {

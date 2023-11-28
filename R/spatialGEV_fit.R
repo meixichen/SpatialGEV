@@ -265,6 +265,7 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
   n_obs <- sapply(y, length)
   if (missing(sp_thres)) sp_thres <- -1
   y <- unlist(y)
+  loc_ind <- rep(1:n_loc, times=n_obs) # location ind associated with each obs
 
   #------ Prepare data input for TMB -------------
   if (kernel %in% c("exp", "matern")){
@@ -274,7 +275,7 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
     if (is.null(X_s)) X_s <- matrix(1, nrow=n_loc, ncol=1)
     
     dd <- as.matrix(stats::dist(locs))
-    data <- list(model = mod, y = unlist(y), n_obs = n_obs, 
+    data <- list(model = mod, y = unlist(y), loc_ind = loc_ind-1, 
 		 design_mat_a = X_a, design_mat_b = X_b, design_mat_s = X_s,
 		 dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
     if (kernel == "matern") data$nu <- nu
@@ -318,8 +319,8 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
     }
     # It is ok to have the additional element design_mat_b in the list even when it is not used 
     # in the TMB template
-    data <- list(model = mod, y = unlist(y), n_obs = n_obs, 
-	 	 design_mat_a = X_a, design_mat_b = X_b,  meshidxloc = meshidxloc-1, 
+    data <- list(model = mod, y = unlist(y), loc_ind = meshidxloc[loc_ind]-1, 
+	 	 design_mat_a = X_a, design_mat_b = X_b, 
 		 reparam_s = reparam_s, spde = spde, nu = nu)
     if (random == "a"){ 
       init_param_a <- rep(mesh_extra_init$a, n_s)

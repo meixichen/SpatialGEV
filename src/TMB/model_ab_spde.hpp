@@ -21,10 +21,9 @@ Type model_ab_spde(objective_function<Type>* obj){
   
   // data inputs
   DATA_VECTOR(y); // response vector: mws. Assumed to be > 0
-  DATA_IVECTOR(n_obs); // number of observations per location
+  DATA_IVECTOR(loc_ind); // meshlocidx, location index to which each observation in y is associated 
   DATA_MATRIX(design_mat_a); // n x r design matrix for a
   DATA_MATRIX(design_mat_b); // n x r design matrix for logb
-  DATA_IVECTOR(meshidxloc); // indices of the locations in the mesh matrix
   DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is zero: 0, constrained to positive: 1 , constrained to be negative: 2, or unconstrained: 3  
   DATA_SCALAR(nu); // Smoothness parameter for the Matern cov. 
   DATA_SCALAR(s_mean); // The mean of the normal prior on s or log(|s|), depending on what reparametrization is used for s. 
@@ -50,61 +49,28 @@ Type model_ab_spde(objective_function<Type>* obj){
   PARAMETER(log_sigma_b); // hyperparameter for the Matern SPDE for b
   PARAMETER(log_kappa_b); // as above
 
-  int n = n_obs.size(); // number of locations
   Type sigma_a = exp(log_sigma_a);
   Type kappa_a = exp(log_kappa_a);
   Type sigma_b = exp(log_sigma_b); 
   Type kappa_b = exp(log_kappa_b); 
  
+  // calculate the negative log likelihood
   Type nll = Type(0.0);
-
-  // spde approx
-  SparseMatrix<Type> Q_a = Q_spde(spde, kappa_a);
-  SparseMatrix<Type> Q_b = Q_spde(spde, kappa_b);
-  Type sigma_marg_a = exp(lgamma(nu)) / (exp(lgamma(nu + 1)) * 4 * M_PI * pow(kappa_a, 2*nu)); // marginal variance for a
-  Type sigma_marg_b = exp(lgamma(nu)) / (exp(lgamma(nu + 1)) * 4 * M_PI * pow(kappa_b, 2*nu)); // marginal variance for log(b)
+  // data layer
+  nll += nll_accumulator_ab<Type>(y, loc_ind, a, log_b, s, reparam_s);
+  // GP latent layer
   vector<Type> mu_a = a - design_mat_a * beta_a;
   vector<Type> mu_b = log_b - design_mat_b * beta_b;
-  nll = SCALE(GMRF(Q_a), sigma_a/sigma_marg_a)(mu_a);
-  nll += SCALE(GMRF(Q_b), sigma_b/sigma_marg_b)(mu_b);
-
-  // calculate the negative log likelihood
-  int start_ind = 0; // index of the first observation of location i in n_obs
-  int end_ind = 0; // index of the last observation of location i in n_obs
-  if (reparam_s == 0){ // this is the case we are using Gumbel distribution
-    for(int i=0;i<n;i++) {
-      end_ind += n_obs[i];
-      for(int j=start_ind;j<end_ind;j++){
-        nll -= gumbel_lpdf<Type>(y[j], a[meshidxloc[i]], log_b[meshidxloc[i]]);
-      }
-      start_ind += n_obs[i];
-    }
-  } else{ // the case where we are using GEV distribution with nonzerio shape parameter
-    if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
-      nll -= dnorm(s, s_mean, s_sd, true);
-    }
-    if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
-      s = exp(s);
-    } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
-      s = -exp(s);
-    } // if we don't use any reparametrization, then s is unconstrained
-    for(int i=0;i<n;i++) {
-      end_ind += n_obs[i];
-      for(int j=start_ind;j<end_ind;j++){
-        nll -= gev_lpdf<Type>(y[j], a[meshidxloc[i]], log_b[meshidxloc[i]], s);
-      }
-      start_ind += n_obs[i];
-    }
-  } 
-  
+  nll += gp_spde_nlpdf<Type>(mu_a, spde, sigma_a, kappa_a, nu);
+  nll += gp_spde_nlpdf<Type>(mu_b, spde, sigma_b, kappa_b, nu);
   // prior
-  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
-  nll_accumulator_beta<Type>(nll, beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
-  nll_accumulator_matern_hyperpar<Type>(nll, log_kappa_a, log_sigma_a, a_pc_prior,
-                                        nu, range_a_prior, sigma_a_prior);
-  nll_accumulator_matern_hyperpar<Type>(nll, log_kappa_b, log_sigma_b, b_pc_prior,
-                                        nu, range_b_prior, sigma_b_prior);
-  
+  nll += nll_accumulator_s_prior<Type>(s, s_mean, s_sd);
+  nll += nll_accumulator_beta<Type>(beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
+  nll += nll_accumulator_beta<Type>(beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
+  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_a, log_sigma_a, a_pc_prior,
+                                               nu, range_a_prior, sigma_a_prior);
+  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_b, log_sigma_b, b_pc_prior,
+                                               nu, range_b_prior, sigma_b_prior);
   return nll;  
 }
 
