@@ -19,7 +19,7 @@ Type model_ab_exp(objective_function<Type>* obj){
   
   // data inputs
   DATA_VECTOR(y); // response vector: mws. Assumed to be > 0
-  DATA_IVECTOR(n_obs); // number of observations per location
+  DATA_IVECTOR(loc_ind); // location index to which each observation in y is associated
   DATA_MATRIX(design_mat_a); // n x r design matrix for a
   DATA_MATRIX(design_mat_b); // n x r design matrix for logb
   DATA_MATRIX(dd); // distance matrix
@@ -41,30 +41,24 @@ Type model_ab_exp(objective_function<Type>* obj){
   PARAMETER(log_sigma_b); // hyperparameter: log-transformed squared amplitude parameter (scalar) of the exponential covariance function in Sigma_b
   PARAMETER(log_ell_b); // hyperparameter: log-transformed smoothness parameter (scalar) of the exponential covariance function in Sigma_b
 
-  int n = n_obs.size();
   Type sigma_a = exp(log_sigma_a);
   Type ell_a = exp(log_ell_a);
   Type sigma_b = exp(log_sigma_b);
   Type ell_b = exp(log_ell_b);
   
-  // construct the covariance matrices
-  matrix<Type> cova(n,n);
-  matrix<Type> covb(n,n);
-  cov_expo<Type>(cova, dd, sigma_a, ell_a, sp_thres);
-  cov_expo<Type>(covb, dd, sigma_b, ell_b, sp_thres);
-  
   // calculate the negative log likelihood
-  Type nll = Type(0.0); 
-  nll_accumulator_ab<Type>(nll, y, n_obs, a, log_b, s, n, reparam_s, s_mean, s_sd);
-  
+  Type nll = Type(0.0);
+  // data layer
+  nll += nll_accumulator_ab<Type>(y, loc_ind, a, log_b, s, reparam_s); 
+  // GP latent layer 
   vector<Type> mu_a = a - design_mat_a * beta_a;
   vector<Type> mu_b = log_b - design_mat_b * beta_b;
-  nll += MVNORM(cova)(mu_a);
-  nll += MVNORM(covb)(mu_b);
-  
+  nll += gp_exp_nlpdf<Type>(mu_a, dd, sigma_a, ell_a, sp_thres);
+  nll += gp_exp_nlpdf<Type>(mu_b, dd, sigma_b, ell_b, sp_thres);
   // prior
-  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
-  nll_accumulator_beta<Type>(nll, beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
+  nll += nll_accumulator_s_prior<Type>(s, s_mean, s_sd);
+  nll += nll_accumulator_beta<Type>(beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
+  nll += nll_accumulator_beta<Type>(beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
   
   return nll;  
 }

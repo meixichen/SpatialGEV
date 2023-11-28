@@ -7,6 +7,9 @@
 
 namespace SpatialGEV {
 
+  using namespace R_inla;
+  using namespace density;
+
   /// @typedef
   /// @brief Standard typedefs for arguments to Eigen functions.
   template <class Type>
@@ -30,7 +33,7 @@ namespace SpatialGEV {
   ///
   /// @return Log-density of Gumbel distribution evaluated at its inputs.
   template <class Type>
-  Type gumbel_lpdf(Type x, Type a, Type log_b) {
+  Type gumbel_lpdf(const Type x, const Type a, const Type log_b) {
     Type t = (x - a) / exp(log_b);
     return -exp(-Type(1.0) * t) - t - log_b;
   }
@@ -44,7 +47,7 @@ namespace SpatialGEV {
   ///
   /// @return Log-density of GEV distribution evaluated at its inputs.
   template <class Type>
-  Type gev_lpdf(Type x, Type a, Type log_b, Type s) {
+  Type gev_lpdf(const Type x, const Type a, const Type log_b, const Type s) {
     Type log_t = log(Type(1.0) + s * (x - a) / exp(log_b));
     return -exp(-Type(1.0) * log_t/s) - (s + Type(1.0))/s * log_t - log_b;
     // return pow(t - Type(1.0)/s) + (s + Type(1.0))/s + log(t);
@@ -58,7 +61,7 @@ namespace SpatialGEV {
   ///
   /// @return A scalar of squared exponential kernel function value
   template <class Type>
-  Type kernel_exp(Type x, Type sigma, Type ell) {
+  Type kernel_exp(const Type x, const Type sigma, const Type ell) {
     return sigma * exp(- x / ell);
   }
 
@@ -71,7 +74,7 @@ namespace SpatialGEV {
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
   void cov_expo(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dd,
-  	       Type sigma, Type ell, Type sp_thres) {
+  	       const Type sigma, const Type ell, const Type sp_thres) {
     int i,j;
     int n = dd.rows();
     if (sp_thres == -1){
@@ -105,7 +108,7 @@ namespace SpatialGEV {
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
   void cov_matern(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dd,
-  	       Type sigma, Type kappa, Type nu, Type sp_thres) {
+  	       const Type sigma, const Type kappa, const Type nu, const Type sp_thres) {
     int i,j;
     int n = dd.rows();
     if (sp_thres == -1){
@@ -133,26 +136,82 @@ namespace SpatialGEV {
     return;
   }
 
+  /// Negative log likelihood of the exponential Gaussian process prior.
+  ///
+  /// @param[out] nll negative log-likelihood accumulator.
+  /// @param[in] mu Mean vector of the GP
+  /// @param[in] dd Distance matrix.
+  /// @param[in] sigma Scale parameter.
+  /// @param[in] ell Length parameter.
+  /// @param[in] sp_thres Threshold parameter.
+  template <class Type>
+  Type gp_exp_nlpdf(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dd, 
+		  const Type sigma, const Type ell, const Type sp_thres) {
+    int n = dd.rows();
+    matrix<Type> cov(n,n);
+    cov_expo<Type>(cov, dd, sigma, ell, sp_thres); // construct the covariance matrix
+    Type nll = MVNORM(cov)(mu);
+    return nll;
+  }
+
+  /// Negative log likelihood of the Matern Gaussian process prior.
+  ///
+  /// @param[out] nll negative log-likelihood accumulator.
+  /// @param[in] mu Mean vector of the GP
+  /// @param[in] dd Distance matrix.
+  /// @param[in] sigma Hyperparameter of the Matern. It is in fact sigma^2.
+  /// @param[in] kappa Hyperparameter of the Matern. Positive.
+  /// @param[in] nu Smoothness parameter of the Matern.
+  /// @param[in] sp_thres Threshold parameter.
+  template <class Type>
+  Type gp_matern_nlpdf(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dd, 
+		  const Type sigma, const Type kappa, const Type nu, const Type sp_thres) {
+    int n = dd.rows();
+    matrix<Type> cov(n,n);
+    cov_matern<Type>(cov, dd, sigma, kappa, nu, sp_thres); // construct the covariance matrix
+    Type nll = MVNORM(cov)(mu);
+    return nll;
+  }
+
+  /// Negative log likelihood of the Matern-SPDE Gaussian process prior.
+  ///
+  /// @param[out] nll negative log-likelihood accumulator.
+  /// @param[in] spde the returned object by INLA::inla.spde2.matern in R.
+  /// @param[in] mu Mean vector of the GP.
+  /// @param[in] sigma Hyperparameter of the Matern. It is in fact sigma^2.
+  /// @param[in] kappa Hyperparameter of the Matern. Positive.
+  /// @param[in] nu Smoothness parameter of the Matern.
+  template <class Type>
+  Type gp_spde_nlpdf(cRefVector_t<Type> mu, spde_t<Type> spde, 
+		     const Type sigma, const Type kappa, const Type nu) {
+    // spde approx matrix
+    SparseMatrix<Type> Q = Q_spde(spde, kappa);
+    // marginal variance
+    Type sigma_marg = exp(lgamma(nu)) / (exp(lgamma(nu + 1)) * 4 * M_PI * pow(kappa, 2*nu));
+    Type nll = SCALE(GMRF(Q), sigma/sigma_marg)(mu); 
+    return nll;
+  }
+  
   /// Add negative log-likelihood contributed by prior on beta
   ///
-  /// @param[out] nll Negative log-likelihood accumulator.
+  /// @param[out] nll Negative log-likelihood.
   /// @param[in] beta Beta parameter in the model.
   /// @param[in] prior Type of prior. 1 is weakly informative normal prior and any other numbers 
   /// mean noninformative prior.
   /// @param[in] mean Mean of the normal prior. Only relevant if prior=1.
   /// @param[in] sd Standard deviation of the normal prior. Only relevant if prior=1.
   template <class Type>
-  void nll_accumulator_beta(Type &nll, RefVector_t<Type> beta, Type prior,
-                            Type mean, Type sd) {
+  Type nll_accumulator_beta(cRefVector_t<Type> beta, const int prior,
+                            const Type mean, const Type sd) {
+    Type nll = Type(0.0);
     if (prior == 1) { 
       for(int i=0; i< (beta.size()); i++){
         nll -= dnorm(beta[i], mean, sd, 1);
       }
     }
-    return;
+    return nll;
   }
 
-  
   /// Add negative log-likelihood contributed by prior on Matern hyperparameters
   ///
   /// @param[out] nll Negative log-likelihood accumulator.
@@ -166,10 +225,11 @@ namespace SpatialGEV {
   /// @param[in] sigma_prior. Length 2 vector (sig_0, p_sig) s.t. P(sig > sig_0) = p_sig.  
   /// Only relevant if prior=1.
   template <class Type>
-  void nll_accumulator_matern_hyperpar(Type &nll, Type log_kappa, Type log_sigma,
-                                       Type prior, Type nu,                
+  Type nll_accumulator_matern_hyperpar(const Type log_kappa, const Type log_sigma,
+                                       const int prior, const Type nu,                
                                        cRefVector_t<Type> range_prior, 
 				       cRefVector_t<Type> sigma_prior) {
+    Type nll = Type(0.0);
     if (prior == 1) {
        // See Theorem 6 of Fuglstad et al. (2017) https://arxiv.org/pdf/1503.00256.pdf 
        Type log_rho = 0.5*log(8.0*nu) - log_kappa; // get range parameter
@@ -188,131 +248,114 @@ namespace SpatialGEV {
        logpi += log_kappa + 0.5 * log_sigma - log(2.0) - 0.5*log(8.0*nu); 
        nll -= logpi;
     }
-    return;
+    return nll;
+  }
+  
+  /// Add negative log-likelihood contributed by prior on scalar s. Not needed if s is random
+  ///
+  /// @param[out] nll Negative log-likelihood.
+  /// @param[in] s GEV shape parameter (scalar).
+  /// @param[in] s_mean Mean of s prior distn.
+  /// @param[in] s_sd SD of s prior distn.
+  template <class Type>
+  Type nll_accumulator_s_prior(const Type s, const Type s_mean, const Type s_sd) {
+    Type nll = Type(0.0);
+    if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
+      nll -= dnorm(s, s_mean, s_sd, true);
+    }
+    return nll;
+  }
+
+  /// Log-likelihood of the GEV distribution based on different parameterization of s.
+  ///
+  /// @param[out] ll log-likelihood.
+  /// @param[in] y Data.
+  /// @param[in] a GEV Location parameter vector.
+  /// @param[in] log_b GEV (log) scale parameter.
+  /// @param[in] s GEV Shape parameter (possibly transformed).
+  /// @param[in] reparam_s Flag indicating reparametrization of s
+  template <class Type>
+  Type gev_reparam_lpdf(const Type y, const Type a, const Type log_b, Type s,
+		        const int reparam_s) {
+    Type ll;
+    if (reparam_s == 0){ // this is the case we are using Gumbel distribution
+      ll = gumbel_lpdf<Type>(y, a, log_b);
+    } else{ // the case where we are using GEV distribution with nonzero shape parameter
+      if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
+	s = exp(s);
+      } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
+	s = -exp(s);
+      } // if we don't use any reparametrization, then s is unconstrained
+      ll = gev_lpdf<Type>(y, a, log_b, s);
+    } // end else
+    return ll;
   }
 
   /// Add negative log-likelihood contributed by the data layer for model_a.
   ///
   /// @param[out] nll negative log-likelihood accumulator.
   /// @param[in] y Data.
-  /// @param[in] n_obs Vector of number of observations per location 
+  /// @param[in] loc_ind location index to which each observation in y is associated. 
   /// @param[in] a GEV Location parameter vector.
   /// @param[in] log_b GEV (log) scale parameter.
   /// @param[in] s GEV Shape parameter (possibly transformed).
-  /// @param[in] n Number of locations.
   /// @param[in] reparam_s Flag indicating reparametrization of s
   /// @param[in] s_mean Mean of s prior distn.
   /// @param[in] s_sd SD of s prior distn.
   template <class Type>
-  void nll_accumulator_a(Type &nll, cRefVector_t<Type>& y, vector<int> n_obs, 
-		      RefVector_t<Type> a, Type log_b, Type s,
-		      Type n, Type reparam_s, Type s_mean, Type s_sd) {
-    int start_ind = 0; // index of the first observation of location i in n_obs
-    int end_ind = 0; // index of the last observation of location i in n_obs
-    if (reparam_s == 0){ // this is the case we are using Gumbel distribution
-      for(int i=0;i<n;i++) {
-	end_ind += n_obs[i]; 
-	for (int j=start_ind;j<end_ind;j++){
-          nll -= gumbel_lpdf<Type>(y[j], a[i], log_b);
-	}
-        start_ind += n_obs[i];	
-      }
-    } else{ // the case where we are using GEV distribution with nonzerio shape parameter
-      if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
-	nll -= dnorm(s, s_mean, s_sd, true);
-      }
-      if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
-	s = exp(s);
-      } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
-	s = -exp(s);
-      } // if we don't use any reparametrization, then s is unconstrained
-      for(int i=0;i<n;i++) {
-	end_ind += n_obs[i];
-	for (int j=start_ind;j<end_ind;j++){
-          nll -= gev_lpdf<Type>(y[j], a[i], log_b, s);
-	} 
-	start_ind += n_obs[i];
-      }
-    } // end else
-    return;
+  Type nll_accumulator_a(cRefVector_t<Type>& y, vector<int> loc_ind, 
+		      cRefVector_t<Type> a, const Type log_b, Type s,
+		      const int reparam_s) {
+    Type nll = Type(0.0);
+    for(int i=0;i<y.size();i++) {
+      nll -= gev_reparam_lpdf<Type>(y[i], a[loc_ind[i]], log_b, s, reparam_s);
+    }
+    return nll;
   }
 
   /// Add negative log-likelihood contributed by the data layer for model_ab.
   ///
   /// @param[out] nll negative log-likelihood accumulator.
   /// @param[in] y Data.
-  /// @param[in] n_obs Vector of number of observations per location 
+  /// @param[in] loc_ind location index to which each observation in y is associated. 
   /// @param[in] a GEV location parameter vector.
   /// @param[in] log_b GEV (log) scale parameter vector.
   /// @param[in] s GEV shape parameter (possibly transformed).
-  /// @param[in] n Number of locations.
   /// @param[in] reparam_s Flag indicating reparametrization of s
   /// @param[in] s_mean Mean of s prior distn.
   /// @param[in] s_sd SD of s prior distn.
   template <class Type>
-  void nll_accumulator_ab(Type &nll, cRefVector_t<Type>& y, vector<int> n_obs, 
-		      RefVector_t<Type> a, RefVector_t<Type> log_b, Type s,
-		      Type n, Type reparam_s, Type s_mean, Type s_sd) {
-    int start_ind = 0; // index of the first observation of location i in n_obs
-    int end_ind = 0; // index of the last observation of location i in n_obs
-    if (reparam_s == 0){ // this is the case we are using Gumbel distribution
-      for(int i=0;i<n;i++) {
-	end_ind += n_obs[i]; 
-	for (int j=start_ind;j<end_ind;j++){
-          nll -= gumbel_lpdf<Type>(y[j], a[i], log_b[i]);
-	}
-        start_ind += n_obs[i];	
-      }
-    } else{ // the case where we are using GEV distribution with nonzerio shape parameter
-      if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
-	nll -= dnorm(s, s_mean, s_sd, true);
-      }
-      if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
-	s = exp(s);
-      } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
-	s = -exp(s);
-      } // if we don't use any reparametrization, then s is unconstrained
-      for(int i=0;i<n;i++) {
-	end_ind += n_obs[i];
-	for (int j=start_ind;j<end_ind;j++){
-          nll -= gev_lpdf<Type>(y[j], a[i], log_b[i], s);
-	} 
-	start_ind += n_obs[i];
-      }
-    } // end else
-    return;
+  Type nll_accumulator_ab(cRefVector_t<Type>& y, vector<int> loc_ind, 
+		      cRefVector_t<Type> a, cRefVector_t<Type> log_b, Type s,
+		      const int reparam_s) {
+    Type nll = Type(0.0);
+    for(int i=0;i<y.size();i++) {
+      nll -= gev_reparam_lpdf<Type>(y[i], a[loc_ind[i]], log_b[loc_ind[i]], s, reparam_s);
+    }
+    return nll;
   }
 
   /// Add negative log-likelihood contributed by the data layer for model_abs.
   ///
   /// @param[out] nll negative log-likelihood accumulator.
   /// @param[in] y Data.
-  /// @param[in] n_obs Vector of number of observations per location 
+  /// @param[in] loc_ind location index to which each observation in y is associated. 
   /// @param[in] a GEV location parameter vector.
   /// @param[in] log_b GEV (log) scale parameter vector.
   /// @param[in] s GEV shape parameter (possibly transformed).
-  /// @param[in] n Number of locations.
   /// @param[in] reparam_s Flag indicating reparametrization of s
   template <class Type>
-  void nll_accumulator_abs(Type &nll, cRefVector_t<Type>& y, vector<int> n_obs, 
-		      RefVector_t<Type> a, RefVector_t<Type> log_b, RefVector_t<Type> s,
-		      Type n, Type reparam_s) {
-    int start_ind = 0; // index of the first observation of location i in n_obs
-    int end_ind = 0; // index of the last observation of location i in n_obs
-    if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
-      s = s.array().exp();
-    } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
-      s = -s.array().exp();
-    } // if we don't use any reparametrization, then s is unconstrained
-    for(int i=0;i<n;i++) {
-      end_ind += n_obs[i];
-      for (int j=start_ind;j<end_ind;j++){
-	nll -= gev_lpdf<Type>(y[j], a[i], log_b[i], s[i]);
-      } 
-      start_ind += n_obs[i];
+  Type nll_accumulator_abs(cRefVector_t<Type>& y, vector<int> loc_ind, 
+		      cRefVector_t<Type> a, cRefVector_t<Type> log_b, RefVector_t<Type> s,
+		      const int reparam_s) {
+    Type nll = Type(0.0);
+    for(int i=0;i<y.size();i++) {
+      nll -= gev_reparam_lpdf<Type>(y[i], a[loc_ind[i]], log_b[loc_ind[i]], 
+		                    s[loc_ind[i]], reparam_s);
     }
-    return;
-  } 
+    return nll;
+  }
+
 } // end namespace SpatialGEV
 
 #endif

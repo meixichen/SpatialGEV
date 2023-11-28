@@ -17,7 +17,7 @@ Type model_a_exp(objective_function<Type>* obj){
   
   // data inputs
   DATA_VECTOR(y); // response vector: mws. Assumed to be > 0
-  DATA_IVECTOR(n_obs); // number of observations per location
+  DATA_IVECTOR(loc_ind); // location index to which each observation in y is associated
   DATA_MATRIX(design_mat_a); // n x r design matrix for a
   DATA_MATRIX(dd); // distance matrix
   DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=-1, no thresholding is made.
@@ -34,22 +34,19 @@ Type model_a_exp(objective_function<Type>* obj){
   PARAMETER(log_sigma_a); // hyperparameter: log-transformed squared amplitude parameter (scalar) of the exponential covariance function in Sigma_a
   PARAMETER(log_ell_a); // hyperparameter: log-transformed smoothness parameter (scalar) of the exponential covariance function in Sigma_a
 
-  int n = n_obs.size(); // number of locations
   Type sigma_a = exp(log_sigma_a);
   Type ell_a = exp(log_ell_a);
 
-  // construct the covariance matrix
-  matrix<Type> cova(n,n);
-  cov_expo<Type>(cova, dd, sigma_a, ell_a, sp_thres);
-  
   // calculate the negative log likelihood
   Type nll = Type(0.0); 
-  nll_accumulator_a<Type>(nll, y, n_obs, a, log_b, s, n, reparam_s, s_mean, s_sd);  
+  // data layer
+  nll += nll_accumulator_a<Type>(y, loc_ind, a, log_b, s, reparam_s);  
+  // GP latent layer
   vector<Type> mu_a = a - design_mat_a * beta_a;
-  nll += MVNORM(cova)(mu_a);
-
+  nll += gp_exp_nlpdf<Type>(mu_a, dd, sigma_a, ell_a, sp_thres);
   // prior
-  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
+  nll += nll_accumulator_s_prior<Type>(s, s_mean, s_sd);
+  nll += nll_accumulator_beta<Type>(beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
 
   return nll;  
 }

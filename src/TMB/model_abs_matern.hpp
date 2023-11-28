@@ -20,7 +20,7 @@ Type model_abs_matern(objective_function<Type>* obj){
   
   // data inputs
   DATA_VECTOR(y); // response vector: mws. Assumed to be > 0
-  DATA_IVECTOR(n_obs); // number of observations per location
+  DATA_IVECTOR(loc_ind); // location index to which each observation in y is associated
   DATA_MATRIX(design_mat_a); // n x r design matrix for a
   DATA_MATRIX(design_mat_b); // n x r design matrix for logb
   DATA_MATRIX(design_mat_s); // n x r design matrix for s
@@ -55,7 +55,6 @@ Type model_abs_matern(objective_function<Type>* obj){
   PARAMETER(log_sigma_s); // hyperparameter for Sigma_s
   PARAMETER(log_kappa_s); // as above
 
-  int n = n_obs.size();
   Type sigma_a = exp(log_sigma_a);
   Type kappa_a = exp(log_kappa_a);
   Type sigma_b = exp(log_sigma_b);
@@ -63,34 +62,27 @@ Type model_abs_matern(objective_function<Type>* obj){
   Type sigma_s = exp(log_sigma_s); 
   Type kappa_s = exp(log_kappa_s); 
   
-  // construct the covariance matrices
-  matrix<Type> cova(n,n);
-  matrix<Type> covb(n,n);
-  matrix<Type> covs(n,n);
-  cov_matern<Type>(cova, dd, sigma_a, kappa_a, nu, sp_thres);
-  cov_matern<Type>(covb, dd, sigma_b, kappa_b, nu, sp_thres);
-  cov_matern<Type>(covs, dd, sigma_s, kappa_s, nu, sp_thres);
-  
   // calculate the negative log likelihood
   Type nll = Type(0.0); 
+  // data layer
+  nll += nll_accumulator_abs<Type>(y, loc_ind, a, log_b, s, reparam_s);
+  // GP latent layer
   vector<Type> mu_a = a - design_mat_a * beta_a;
   vector<Type> mu_b = log_b - design_mat_b * beta_b;
   vector<Type> mu_s = s - design_mat_s * beta_s;
-  nll += MVNORM(cova)(mu_a);
-  nll += MVNORM(covb)(mu_b);
-  nll += MVNORM(covs)(mu_s);
-  nll_accumulator_abs<Type>(nll, y, n_obs, a, log_b, s, n, reparam_s);
-  
+  nll += gp_matern_nlpdf<Type>(mu_a, dd, sigma_a, kappa_a, nu, sp_thres);
+  nll += gp_matern_nlpdf<Type>(mu_b, dd, sigma_b, kappa_b, nu, sp_thres);
+  nll += gp_matern_nlpdf<Type>(mu_s, dd, sigma_s, kappa_s, nu, sp_thres);
   // prior
-  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
-  nll_accumulator_beta<Type>(nll, beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
-  nll_accumulator_beta<Type>(nll, beta_s, beta_prior, beta_s_prior[0], beta_s_prior[1]);
-  nll_accumulator_matern_hyperpar<Type>(nll, log_kappa_a, log_sigma_a, a_pc_prior,
-                                        nu, range_a_prior, sigma_a_prior);
-  nll_accumulator_matern_hyperpar<Type>(nll, log_kappa_b, log_sigma_b, b_pc_prior,
-                                        nu, range_b_prior, sigma_b_prior);
-  nll_accumulator_matern_hyperpar<Type>(nll, log_kappa_s, log_sigma_s, s_pc_prior,
-                                        nu, range_s_prior, sigma_s_prior);
+  nll += nll_accumulator_beta<Type>(beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
+  nll += nll_accumulator_beta<Type>(beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
+  nll += nll_accumulator_beta<Type>(beta_s, beta_prior, beta_s_prior[0], beta_s_prior[1]);
+  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_a, log_sigma_a, a_pc_prior,
+                                               nu, range_a_prior, sigma_a_prior);
+  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_b, log_sigma_b, b_pc_prior,
+                                               nu, range_b_prior, sigma_b_prior);
+  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_s, log_sigma_s, s_pc_prior,
+                                               nu, range_s_prior, sigma_s_prior);
   
   return nll;  
 }
