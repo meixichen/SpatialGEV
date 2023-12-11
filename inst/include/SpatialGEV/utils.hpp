@@ -145,7 +145,7 @@ namespace SpatialGEV {
   /// @param[in] ell Length parameter.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
-  Type gp_exp_nlpdf(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dd, 
+  Type nlpdf_gp_exp(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dd, 
 		  const Type sigma, const Type ell, const Type sp_thres) {
     int n = dd.rows();
     matrix<Type> cov(n,n);
@@ -164,7 +164,7 @@ namespace SpatialGEV {
   /// @param[in] nu Smoothness parameter of the Matern.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
-  Type gp_matern_nlpdf(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dd, 
+  Type nlpdf_gp_matern(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dd, 
 		  const Type sigma, const Type kappa, const Type nu, const Type sp_thres) {
     int n = dd.rows();
     matrix<Type> cov(n,n);
@@ -182,7 +182,7 @@ namespace SpatialGEV {
   /// @param[in] kappa Hyperparameter of the Matern. Positive.
   /// @param[in] nu Smoothness parameter of the Matern.
   template <class Type>
-  Type gp_spde_nlpdf(cRefVector_t<Type> mu, spde_t<Type> spde, 
+  Type nlpdf_gp_spde(cRefVector_t<Type> mu, spde_t<Type> spde, 
 		     const Type sigma, const Type kappa, const Type nu) {
     // spde approx matrix
     SparseMatrix<Type> Q = Q_spde(spde, kappa);
@@ -201,7 +201,7 @@ namespace SpatialGEV {
   /// @param[in] mean Mean of the normal prior. Only relevant if prior=1.
   /// @param[in] sd Standard deviation of the normal prior. Only relevant if prior=1.
   template <class Type>
-  Type nll_accumulator_beta(cRefVector_t<Type> beta, const int prior,
+  Type nlpdf_beta_prior(cRefVector_t<Type> beta, const int prior,
                             const Type mean, const Type sd) {
     Type nll = Type(0.0);
     if (prior == 1) { 
@@ -225,7 +225,7 @@ namespace SpatialGEV {
   /// @param[in] sigma_prior. Length 2 vector (sig_0, p_sig) s.t. P(sig > sig_0) = p_sig.  
   /// Only relevant if prior=1.
   template <class Type>
-  Type nll_accumulator_matern_hyperpar(const Type log_kappa, const Type log_sigma,
+  Type nlpdf_matern_hyperpar_prior(const Type log_kappa, const Type log_sigma,
                                        const int prior, const Type nu,                
                                        cRefVector_t<Type> range_prior, 
 				       cRefVector_t<Type> sigma_prior) {
@@ -258,7 +258,7 @@ namespace SpatialGEV {
   /// @param[in] s_mean Mean of s prior distn.
   /// @param[in] s_sd SD of s prior distn.
   template <class Type>
-  Type nll_accumulator_s_prior(const Type s, const Type s_mean, const Type s_sd) {
+  Type nlpdf_s_prior(const Type s, const Type s_mean, const Type s_sd) {
     Type nll = Type(0.0);
     if (s_sd<9999){ // put a prior on s, or log(s), or log(|s|)
       nll -= dnorm(s, s_mean, s_sd, true);
@@ -290,72 +290,6 @@ namespace SpatialGEV {
     } // end else
     return ll;
   }
-
-  /// Add negative log-likelihood contributed by the data layer for model_a.
-  ///
-  /// @param[out] nll negative log-likelihood accumulator.
-  /// @param[in] y Data.
-  /// @param[in] loc_ind location index to which each observation in y is associated. 
-  /// @param[in] a GEV Location parameter vector.
-  /// @param[in] log_b GEV (log) scale parameter.
-  /// @param[in] s GEV Shape parameter (possibly transformed).
-  /// @param[in] reparam_s Flag indicating reparametrization of s
-  /// @param[in] s_mean Mean of s prior distn.
-  /// @param[in] s_sd SD of s prior distn.
-  template <class Type>
-  Type nll_accumulator_a(cRefVector_t<Type>& y, vector<int> loc_ind, 
-		      cRefVector_t<Type> a, const Type log_b, Type s,
-		      const int reparam_s) {
-    Type nll = Type(0.0);
-    for(int i=0;i<y.size();i++) {
-      nll -= gev_reparam_lpdf<Type>(y[i], a[loc_ind[i]], log_b, s, reparam_s);
-    }
-    return nll;
-  }
-
-  /// Add negative log-likelihood contributed by the data layer for model_ab.
-  ///
-  /// @param[out] nll negative log-likelihood accumulator.
-  /// @param[in] y Data.
-  /// @param[in] loc_ind location index to which each observation in y is associated. 
-  /// @param[in] a GEV location parameter vector.
-  /// @param[in] log_b GEV (log) scale parameter vector.
-  /// @param[in] s GEV shape parameter (possibly transformed).
-  /// @param[in] reparam_s Flag indicating reparametrization of s
-  /// @param[in] s_mean Mean of s prior distn.
-  /// @param[in] s_sd SD of s prior distn.
-  template <class Type>
-  Type nll_accumulator_ab(cRefVector_t<Type>& y, vector<int> loc_ind, 
-		      cRefVector_t<Type> a, cRefVector_t<Type> log_b, Type s,
-		      const int reparam_s) {
-    Type nll = Type(0.0);
-    for(int i=0;i<y.size();i++) {
-      nll -= gev_reparam_lpdf<Type>(y[i], a[loc_ind[i]], log_b[loc_ind[i]], s, reparam_s);
-    }
-    return nll;
-  }
-
-  /// Add negative log-likelihood contributed by the data layer for model_abs.
-  ///
-  /// @param[out] nll negative log-likelihood accumulator.
-  /// @param[in] y Data.
-  /// @param[in] loc_ind location index to which each observation in y is associated. 
-  /// @param[in] a GEV location parameter vector.
-  /// @param[in] log_b GEV (log) scale parameter vector.
-  /// @param[in] s GEV shape parameter (possibly transformed).
-  /// @param[in] reparam_s Flag indicating reparametrization of s
-  template <class Type>
-  Type nll_accumulator_abs(cRefVector_t<Type>& y, vector<int> loc_ind, 
-		      cRefVector_t<Type> a, cRefVector_t<Type> log_b, RefVector_t<Type> s,
-		      const int reparam_s) {
-    Type nll = Type(0.0);
-    for(int i=0;i<y.size();i++) {
-      nll -= gev_reparam_lpdf<Type>(y[i], a[loc_ind[i]], log_b[loc_ind[i]], 
-		                    s[loc_ind[i]], reparam_s);
-    }
-    return nll;
-  }
-
 } // end namespace SpatialGEV
 
 #endif

@@ -3,14 +3,6 @@
 
 # SpatialGEV
 
-<!-- badges: start -->
-
-[![](https://www.r-pkg.org/badges/version/SpatialGEV)](https://cran.r-project.org/package=SpatialGEV)
-[![R-CMD-check](https://github.com/meixichen/SpatialGEV/workflows/R-CMD-check/badge.svg)](https://github.com/meixichen/SpatialGEV/actions)
-<!-- badges: end -->
-
-*Meixi Chen, Martin Lysy*
-
 ------------------------------------------------------------------------
 
 ## Description
@@ -41,18 +33,6 @@ package ***INLA***. Since ***INLA*** is not on CRAN, it needs to be
 downloaded following their instruction
 [here](https://www.r-inla.org/download-install).
 
-To download the stable version of this package, run
-
-``` r
-install.packages("SpatialGEV")
-```
-
-To download the development version of this package, run
-
-``` r
-devtools::install_github("meixichen/SpatialGEV")
-```
-
 ## Example
 
 Using the simulated data set `simulatedData2` provided in the package,
@@ -79,6 +59,7 @@ filled.contour(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)),
 <img src="man/figures/README-show-data-1.png" width="50%" />
 
 ``` r
+
 filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logb), ncol=sqrt(n_loc)), 
                color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
                main="Spatial variation of b",
@@ -88,6 +69,7 @@ filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logb), ncol=sqrt(n_loc
 <img src="man/figures/README-show-data-2.png" width="50%" />
 
 ``` r
+
 filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logs), ncol=sqrt(n_loc)),
                color.palette = terrain.colors, xlab="Longitude", ylab="Latitude",
                main="Spatial variation of s",
@@ -118,7 +100,7 @@ fit <- spatialGEV_fit(y = y, locs = locs, random = "abs",
 class(fit)
 #> [1] "spatialGEVfit"
 print(fit)
-#> Model fitting took 195.921369075775 seconds 
+#> Model fitting took 115.830780506134 seconds 
 #> The model has reached relative convergence 
 #> The model uses a exp kernel 
 #> Number of fixed effects in the model is 9 
@@ -145,16 +127,16 @@ the sample object.
 pos_summary <- summary(sam)
 pos_summary$param_summary[1:5,]
 #>        2.5%      25%      50%      75%    97.5%     mean
-#> a1 59.40987 60.64400 61.30544 61.97212 63.21156 61.30726
-#> a2 59.71263 60.85517 61.49308 62.10176 63.33580 61.48465
-#> a3 59.90400 60.98621 61.57124 62.16295 63.27221 61.57475
-#> a4 60.04643 61.18383 61.74779 62.31118 63.31989 61.74186
-#> a5 60.23170 61.28422 61.84927 62.41081 63.50888 61.85298
+#> a1 59.20270 60.22268 60.70344 61.22922 62.23336 60.72328
+#> a2 59.33887 60.25114 60.74575 61.22163 62.17817 60.74891
+#> a3 59.46450 60.33362 60.79796 61.27163 62.22238 60.80331
+#> a4 59.28563 60.14818 60.61606 61.10302 62.03242 60.62846
+#> a5 59.19725 60.08532 60.55080 61.04834 61.99365 60.56196
 pos_summary$y_summary[1:5,]
 #>        2.5%      25%      50%      75%    97.5%     mean
-#> y1 36.25907 55.71395 69.15413 88.42064 148.2569 75.37335
-#> y2 35.06659 55.47327 68.06851 85.85395 137.6435 73.46851
-#> y3 35.98685 55.24515 69.83079 89.45464 148.9629 75.36266
-#> y4 36.19978 55.34347 70.38080 88.87337 145.9691 75.40005
-#> y5 37.17906 54.32230 69.24676 87.89255 145.5776 74.36854
+#> y1 37.17353 53.85883 67.39668 84.60663 138.9015 72.82329
+#> y2 36.25853 54.70681 68.02840 84.54277 134.2604 72.48797
+#> y3 37.39277 54.84193 68.03163 85.81245 146.8017 74.09823
+#> y4 37.60343 55.10097 68.70326 85.91832 141.4701 73.78086
+#> y5 36.15218 53.78928 66.79072 85.37318 144.9647 73.20392
 ```

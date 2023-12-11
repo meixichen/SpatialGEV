@@ -79,23 +79,26 @@ Type model_abs_multlink(objective_function<Type>* obj){
   Type nll = Type(0.0);
   // data layer 
   int reparam_s = 3; // unconstrained s
-  nll += nll_accumulator_abs<Type>(y, loc_ind, a, log_b, s, reparam_s);
+  for(int i=0;i<y.size();i++) {
+    nll -= gev_reparam_lpdf<Type>(y[i], a[loc_ind[i]], log_b[loc_ind[i]],
+                                  s[loc_ind[i]], reparam_s);
+  }
   // GP latent layer
   vector<Type> mu_psi = psi - design_mat_psi * beta_psi;
   vector<Type> mu_tau = tau - design_mat_tau * beta_tau;
   vector<Type> mu_phi = phi - design_mat_phi * beta_phi;
-  nll += gp_spde_nlpdf<Type>(mu_psi, spde, sigma_psi, kappa_psi, nu);
-  nll += gp_spde_nlpdf<Type>(mu_tau, spde, sigma_tau, kappa_tau, nu);
-  nll += gp_spde_nlpdf<Type>(mu_phi, spde, sigma_phi, kappa_phi, nu);
+  nll += nlpdf_gp_spde<Type>(mu_psi, spde, sigma_psi, kappa_psi, nu);
+  nll += nlpdf_gp_spde<Type>(mu_tau, spde, sigma_tau, kappa_tau, nu);
+  nll += nlpdf_gp_spde<Type>(mu_phi, spde, sigma_phi, kappa_phi, nu);
   // prior
-  nll += nll_accumulator_beta<Type>(beta_psi, beta_prior, beta_psi_prior[0], beta_psi_prior[1]);
-  nll += nll_accumulator_beta<Type>(beta_tau, beta_prior, beta_tau_prior[0], beta_tau_prior[1]);
-  nll += nll_accumulator_beta<Type>(beta_phi, beta_prior, beta_phi_prior[0], beta_phi_prior[1]);
-  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_psi, log_sigma_psi, psi_pc_prior,
+  nll += nlpdf_beta_prior<Type>(beta_psi, beta_prior, beta_psi_prior[0], beta_psi_prior[1]);
+  nll += nlpdf_beta_prior<Type>(beta_tau, beta_prior, beta_tau_prior[0], beta_tau_prior[1]);
+  nll += nlpdf_beta_prior<Type>(beta_phi, beta_prior, beta_phi_prior[0], beta_phi_prior[1]);
+  nll += nlpdf_matern_hyperpar_prior<Type>(log_kappa_psi, log_sigma_psi, psi_pc_prior,
                                         nu, range_psi_prior, sigma_psi_prior);
-  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_tau, log_sigma_tau, tau_pc_prior,
+  nll += nlpdf_matern_hyperpar_prior<Type>(log_kappa_tau, log_sigma_tau, tau_pc_prior,
                                         nu, range_tau_prior, sigma_tau_prior);
-  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_phi, log_sigma_phi, phi_pc_prior,
+  nll += nlpdf_matern_hyperpar_prior<Type>(log_kappa_phi, log_sigma_phi, phi_pc_prior,
                                         nu, range_phi_prior, sigma_phi_prior);
   return nll;
 }

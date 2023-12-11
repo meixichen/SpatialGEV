@@ -49,16 +49,18 @@ Type model_ab_exp(objective_function<Type>* obj){
   // calculate the negative log likelihood
   Type nll = Type(0.0);
   // data layer
-  nll += nll_accumulator_ab<Type>(y, loc_ind, a, log_b, s, reparam_s); 
+  for(int i=0;i<y.size();i++) {
+    nll -= gev_reparam_lpdf<Type>(y[i], a[loc_ind[i]], log_b[loc_ind[i]], s, reparam_s);
+  }
   // GP latent layer 
   vector<Type> mu_a = a - design_mat_a * beta_a;
   vector<Type> mu_b = log_b - design_mat_b * beta_b;
-  nll += gp_exp_nlpdf<Type>(mu_a, dd, sigma_a, ell_a, sp_thres);
-  nll += gp_exp_nlpdf<Type>(mu_b, dd, sigma_b, ell_b, sp_thres);
+  nll += nlpdf_gp_exp<Type>(mu_a, dd, sigma_a, ell_a, sp_thres);
+  nll += nlpdf_gp_exp<Type>(mu_b, dd, sigma_b, ell_b, sp_thres);
   // prior
-  nll += nll_accumulator_s_prior<Type>(s, s_mean, s_sd);
-  nll += nll_accumulator_beta<Type>(beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
-  nll += nll_accumulator_beta<Type>(beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
+  nll += nlpdf_s_prior<Type>(s, s_mean, s_sd);
+  nll += nlpdf_beta_prior<Type>(beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
+  nll += nlpdf_beta_prior<Type>(beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
   
   return nll;  
 }

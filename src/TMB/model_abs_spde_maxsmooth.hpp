@@ -89,18 +89,18 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   vector<Type> mu_a = a - design_mat_a * beta_a;
   vector<Type> mu_b = b - design_mat_b * beta_b;
   vector<Type> mu_s = s - design_mat_s * beta_s;
-  nll += gp_spde_nlpdf<Type>(mu_a, spde, sigma_a, kappa_a, nu);
-  nll += gp_spde_nlpdf<Type>(mu_b, spde, sigma_b, kappa_b, nu);
-  nll += gp_spde_nlpdf<Type>(mu_s, spde, sigma_s, kappa_s, nu);
+  nll += nlpdf_gp_spde<Type>(mu_a, spde, sigma_a, kappa_a, nu);
+  nll += nlpdf_gp_spde<Type>(mu_b, spde, sigma_b, kappa_b, nu);
+  nll += nlpdf_gp_spde<Type>(mu_s, spde, sigma_s, kappa_s, nu);
   // prior
-  nll += nll_accumulator_beta<Type>(beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
-  nll += nll_accumulator_beta<Type>(beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
-  nll += nll_accumulator_beta<Type>(beta_s, beta_prior, beta_s_prior[0], beta_s_prior[1]);
-  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_a, log_sigma_a, a_pc_prior,
+  nll += nlpdf_beta_prior<Type>(beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
+  nll += nlpdf_beta_prior<Type>(beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
+  nll += nlpdf_beta_prior<Type>(beta_s, beta_prior, beta_s_prior[0], beta_s_prior[1]);
+  nll += nlpdf_matern_hyperpar_prior<Type>(log_kappa_a, log_sigma_a, a_pc_prior,
                                         nu, range_a_prior, sigma_a_prior);
-  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_b, log_sigma_b, b_pc_prior,
+  nll += nlpdf_matern_hyperpar_prior<Type>(log_kappa_b, log_sigma_b, b_pc_prior,
                                         nu, range_b_prior, sigma_b_prior);
-  nll += nll_accumulator_matern_hyperpar<Type>(log_kappa_s, log_sigma_s, s_pc_prior,
+  nll += nlpdf_matern_hyperpar_prior<Type>(log_kappa_s, log_sigma_s, s_pc_prior,
                                         nu, range_s_prior, sigma_s_prior);
   return nll;  
    
