@@ -26,7 +26,6 @@ Type model_abs_multlink(objective_function<Type>* obj){
   DATA_MATRIX(design_mat_psi); // n x r design matrix
   DATA_MATRIX(design_mat_tau); 
   DATA_MATRIX(design_mat_phi); 
-  DATA_IVECTOR(meshidxloc); // indices of the locations in the mesh matrix
   DATA_SCALAR(nu); // Smoothness parameter for the Matern cov. 
   DATA_STRUCT(spde, spde_t); // take the returned object by INLA::inla.spde2.matern in R
   // Type of prior on beta. 1 is weakly informative normal prior and any other numbers 
