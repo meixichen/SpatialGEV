@@ -1,12 +1,12 @@
 context("model_abs_matern")
 
 test_that("`model_abs_matern` gives the same likelihood as the one calculated in R under different parametrizations of shape parameter", {
-  n.tests <- 30 # number of test simulations
-  
-  for (ii in 1:n.tests){
+  n_tests <- 30 # number of test simulations
+
+  for (ii in 1:n_tests){
     # simulate parameters and data
     n_sqrt <- sample(5:10, 1)
-    n <- n_sqrt^2 
+    n <- n_sqrt^2
     lon <- seq(0, 10, length.out = n_sqrt)
     lat <- seq(0, 10, length.out = n_sqrt)
     X <- expand.grid(x = lon, y = lat)
@@ -17,7 +17,7 @@ test_that("`model_abs_matern` gives the same likelihood as the one calculated in
     log_kappa_b <- rnorm(1, 0.5, 0.1)
     log_sigma_s <- runif(1, -4, -2)
     log_kappa_s <- rnorm(1, 1, 2)
-    cov_a <- kernel_matern(dd, exp(log_sigma_a), exp(log_kappa_a)) 
+    cov_a <- kernel_matern(dd, exp(log_sigma_a), exp(log_kappa_a))
     mean_a <- rep(rnorm(1, 1, 1), n)
     cov_b <- kernel_matern(dd, exp(log_sigma_b), exp(log_kappa_b))
     mean_b <- rep(rnorm(1, 0.5, 0.5), n)
@@ -28,13 +28,13 @@ test_that("`model_abs_matern` gives the same likelihood as the one calculated in
     log_s <- mvtnorm::rmvnorm(1, mean_s, cov_s)
     s <- exp(log_s)
     beta_a <- mean(a)
-    beta_b <- mean(log_b)   
-     
+    beta_b <- mean(log_b)
+
     # Positive s
     beta_s <- mean(log_s)
     y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
     init_param=list(
-		    a=a, log_b=log_b, s=log_s, 
+		    a=a, log_b=log_b, s=log_s,
 		    beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
 		    log_sigma_a=log_sigma_a, log_kappa_a=log_kappa_a,
                     log_sigma_b=log_sigma_b, log_kappa_b=log_kappa_b,
@@ -52,10 +52,10 @@ test_that("`model_abs_matern` gives the same likelihood as the one calculated in
                    hyperparam_a=c(exp(log_sigma_a), exp(log_kappa_a)),
 		   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
 		   hyperparam_s=c(exp(log_sigma_s), exp(log_kappa_s)),
-                   kernel="matern", beta_a=beta_a, beta_b=beta_b, beta_s=beta_s, 
-                   f_s=function(x){log(x)}) 
+                   kernel="matern", beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
+                   f_s=function(x){log(x)})
     expect_equal(nll_r, nll_tmb)
-    
+
     # Unconstrained s
     beta_s <- mean(s)
     init_param$s <- s
@@ -73,9 +73,9 @@ test_that("`model_abs_matern` gives the same likelihood as the one calculated in
                    hyperparam_a=c(exp(log_sigma_a), exp(log_kappa_a)),
 		   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
 		   hyperparam_s=c(exp(log_sigma_s), exp(log_kappa_s)),
-                   kernel="matern", beta_a=beta_a, beta_b=beta_b, beta_s=beta_s) 
+                   kernel="matern", beta_a=beta_a, beta_b=beta_b, beta_s=beta_s)
     expect_equal(nll_r, nll_tmb)
-    
+
     # Negative s
     s <- -exp(log_s)
     y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
@@ -96,7 +96,7 @@ test_that("`model_abs_matern` gives the same likelihood as the one calculated in
 		   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
 		   hyperparam_s=c(exp(log_sigma_s), exp(log_kappa_s)),
                    kernel="matern", beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
-                   f_s=function(x){log(abs(s))}) 
+                   f_s=function(x){log(abs(s))})
     expect_equal(nll_r, nll_tmb)
   }
 })
