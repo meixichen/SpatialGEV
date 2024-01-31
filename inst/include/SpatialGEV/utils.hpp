@@ -108,7 +108,8 @@ namespace SpatialGEV {
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
   void cov_matern(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dd,
-  	       const Type sigma, const Type kappa, const Type nu, const Type sp_thres) {
+		  const Type sigma, const Type kappa, const Type nu,
+		  const Type sp_thres) {
     int i,j;
     int n = dd.rows();
     if (sp_thres == -1){

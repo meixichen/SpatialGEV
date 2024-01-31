@@ -138,7 +138,7 @@ variation of \code{a}.
 }
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{init_param = list(a = rep(1,n_locations), log_b = 0, s = 1,
-                  beta_a = rep(0, n_covariates), 
+                  beta_a = rep(0, n_covariates),
                   log_sigma_a = 0, log_ell_a = 0)
 }\if{html}{\out{</div>}}
 
@@ -153,7 +153,7 @@ and \code{log_ell_b} need to be specified.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{init_param = list(a = rep(1,n_locations),
                   log_b = rep(0,n_locations), s=1,
                   beta_a = rep(0, n_covariates), beta_b = rep(0, n_covariates),
-                  log_sigma_a = 0,log_ell_a = 0, 
+                  log_sigma_a = 0,log_ell_a = 0,
                   log_sigma_b = 0,log_ell_b = 0).
 }\if{html}{\out{</div>}}
 \itemize{
@@ -161,12 +161,12 @@ and \code{log_ell_b} need to be specified.
 }
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{init_param = list(a = rep(1,n_locations),
-                  log_b = rep(0,n_locations), 
+                  log_b = rep(0,n_locations),
                   s = rep(0,n_locations),
-                  beta_a = rep(0, n_covariates), 
+                  beta_a = rep(0, n_covariates),
                   beta_b = rep(0, n_covariates),
                   beta_s = rep(0, n_covariates),
-                  log_sigma_a = 0,log_ell_a = 0, 
+                  log_sigma_a = 0,log_ell_a = 0,
                   log_sigma_b = 0,log_ell_b = 0).
                   log_sigma_s = 0,log_ell_s = 0).
 }\if{html}{\out{</div>}}
@@ -177,12 +177,12 @@ and \code{log_kappa_a/b/s} for each spatial random effect.
 }
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{init_param = list(a = rep(1,n_locations),
-                  log_b = rep(0,n_locations), 
-                  s = rep(0,n_locations), 
-                  beta_a = rep(0, n_covariates), 
+                  log_b = rep(0,n_locations),
+                  s = rep(0,n_locations),
+                  beta_a = rep(0, n_covariates),
                   beta_b = rep(0, n_covariates),
                   beta_s = rep(0, n_covariates),
-                  log_sigma_a = 0,log_kappa_a = 0, 
+                  log_sigma_a = 0,log_kappa_a = 0,
                   log_sigma_b = 0,log_kappa_b = 0).
                   log_sigma_s = 0,log_kappa_s = 0).
 }\if{html}{\out{</div>}}
@@ -219,39 +219,39 @@ locs <- simulatedData$locs
 n_loc = nrow(locs)
 # No covariates are included, only intercept is inlcuded.
 fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
-                      init_param = list(a = rep(0, n_loc), 
-                                        log_b = rep(0, n_loc), 
+                      init_param = list(a = rep(0, n_loc),
+                                        log_b = rep(0, n_loc),
                                         s = 0,
                                         beta_a = 0,
                                         beta_b = 0,
-                                        log_sigma_a = 0, 
+                                        log_sigma_a = 0,
                                         log_kappa_a = 0,
-                                        log_sigma_b = 0, 
+                                        log_sigma_b = 0,
                                         log_kappa_b = 0),
                       reparam_s = "positive",
                       kernel = "matern",
                       X_a = matrix(1, nrow=n_loc, ncol=1),
                       X_b = matrix(1, nrow=n_loc, ncol=1),
-                      silent = TRUE) 
+                      silent = TRUE)
 print(fit)
 
-# To use a different optimizer other than the default `nlminb()`, create 
+# To use a different optimizer other than the default `nlminb()`, create
 # an object ready to be passed to optimizer functions using `adfun_only=TRUE`
 obj <- spatialGEV_fit(y = y, locs = locs, random = "ab",
-                      init_param = list(a = rep(0, n_loc), 
-                                        log_b = rep(0, n_loc), 
+                      init_param = list(a = rep(0, n_loc),
+                                        log_b = rep(0, n_loc),
                                         s = 0,
                                         beta_a = 0,
                                         beta_b = 0,
-                                        log_sigma_a = 0, 
+                                        log_sigma_a = 0,
                                         log_kappa_a = 0,
-                                        log_sigma_b = 0, 
+                                        log_sigma_b = 0,
                                         log_kappa_b = 0),
                       reparam_s = "positive",
                       kernel = "matern",
                       X_a = matrix(1, nrow=n_loc, ncol=1),
                       X_b = matrix(1, nrow=n_loc, ncol=1),
-                      adfun_only = TRUE) 
+                      adfun_only = TRUE)
 fit <- optim(obj$par, obj$fn, obj$gr)
 }
 
@@ -261,19 +261,19 @@ fit <- optim(obj$par, obj$fn, obj$gr)
 library(INLA)
 y <- simulatedData2$y
 locs <- simulatedData2$locs
-n_loc <- nrow(locs) 
+n_loc <- nrow(locs)
 fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "abs",
                            init_param = list(a = rep(0, n_loc),
-                                             log_b = rep(0, n_loc), 
+                                             log_b = rep(0, n_loc),
                                              s = rep(-2, n_loc),
                                              beta_a = 0,
                                              beta_b = 0,
                                              beta_s = -2,
-                                             log_sigma_a = 0, 
+                                             log_sigma_a = 0,
                                              log_kappa_a = 0,
-                                             log_sigma_b = 0, 
+                                             log_sigma_b = 0,
                                              log_kappa_b = 0,
-                                             log_sigma_s = 0, 
+                                             log_sigma_s = 0,
                                              log_kappa_s = 0
                                              ),
                            reparam_s = "positive",
@@ -284,7 +284,7 @@ fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "abs",
                                                  matern_a=matern_pc_prior(1e5,0.95,5,0.1),
                                                  matern_b=matern_pc_prior(1e5,0.95,3,0.1),
                                                  matern_s=matern_pc_prior(1e2,0.95,1,0.1)
-                                                 )) 
+                                                 ))
 plot(fit_spde$mesh) # Plot the mesh
 points(locs[,1], locs[,2], col="red", pch=16) # Plot the locations
 }
