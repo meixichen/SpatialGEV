@@ -1,10 +1,10 @@
 #' Helper funcion to specify a Penalized Complexity (PC) prior on the Matern hyperparameters
-#' 
-#' @param rho_0 Hyperparameter for PC prior on the range parameter. Must be positive. 
+#'
+#' @param rho_0 Hyperparameter for PC prior on the range parameter. Must be positive.
 #' See details.
 #' @param p_rho Hyperparameter for PC prior on the range parameter. Must be between 0
 #' and 1. See details.
-#' @param sig_0 Hyperparameter for PC prior on the range parameter. Must be positive. 
+#' @param sig_0 Hyperparameter for PC prior on the range parameter. Must be positive.
 #' See details.
 #' @param p_sig Hyperparameter for PC prior on the range parameter. Must be between 0
 #' and 1. See details.
@@ -25,21 +25,21 @@
 #' construct priors. Statistical Science.
 #' @examples
 #' \donttest{
-#' y <- simulatedData2$y
-#' locs <- simulatedData2$locs
-#' n_loc <- nrow(locs) 
-#' fit <- spatialGEV_fit(y = y, locs = locs, random = "abs",
+#' n_loc <- 20
+#' y <- simulatedData2$y[1:n_loc]
+#' locs <- simulatedData2$locs[1:n_loc,]
+#' fit <- spatialGEV_fit(y, locs = locs, random = "abs",
 #'                       init_param = list(a = rep(0, n_loc),
-#'                                         log_b = rep(0, n_loc), 
+#'                                         log_b = rep(0, n_loc),
 #'                                         s = rep(-2, n_loc),
 #'                                         beta_a = 0,
 #'                                         beta_b = 0,
 #'                                         beta_s = -2,
-#'                                         log_sigma_a = 0, 
+#'                                         log_sigma_a = 0,
 #'                                         log_kappa_a = 0,
-#'                                         log_sigma_b = 0, 
+#'                                         log_sigma_b = 0,
 #'                                         log_kappa_b = 0,
-#'                                         log_sigma_s = 0, 
+#'                                         log_sigma_s = 0,
 #'                                         log_kappa_s = 0
 #'                                         ),
 #'                        reparam_s = "positive",
@@ -58,7 +58,7 @@ matern_pc_prior <- function(rho_0, p_rho, sig_0, p_sig){
   if (p_sig > 1 | p_sig < 0) stop("p_sig must be between 0 and 1.")
   if (rho_0 < 0 | sig_0 < 0) stop("rho_0 and sig_0 must be positive.")
   out <- list(range_prior=c(rho_0, p_rho),
-              sigma_prior=c(sig_0, p_sig)) 
+              sigma_prior=c(sig_0, p_sig))
   class(out) <- "PC_prior"
   return(out)
 }
