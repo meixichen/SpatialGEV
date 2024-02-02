@@ -2,7 +2,6 @@ context("model_abs_matern")
 
 test_that("`model_abs_matern` gives the same likelihood as the one calculated in R under different parametrizations of shape parameter", {
   n_tests <- 30 # number of test simulations
-
   for (ii in 1:n_tests){
     # simulate parameters and data
     n_sqrt <- sample(5:10, 1)
@@ -29,74 +28,73 @@ test_that("`model_abs_matern` gives the same likelihood as the one calculated in
     s <- exp(log_s)
     beta_a <- mean(a)
     beta_b <- mean(log_b)
-
     # Positive s
     beta_s <- mean(log_s)
-    y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
-    init_param=list(
-		    a=a, log_b=log_b, s=log_s,
-		    beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
-		    log_sigma_a=log_sigma_a, log_kappa_a=log_kappa_a,
-                    log_sigma_b=log_sigma_b, log_kappa_b=log_kappa_b,
-                    log_sigma_s=log_sigma_s, log_kappa_s=log_kappa_s)
-    adfun <- spatialGEV_fit(y, X, random="abs",
+    y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE),
+             loc=a, scale=exp(log_b), shape=s)
+    init_param <- list(
+      a=a, log_b=log_b, s=log_s,
+      beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
+      log_sigma_a=log_sigma_a, log_kappa_a=log_kappa_a,
+      log_sigma_b=log_sigma_b, log_kappa_b=log_kappa_b,
+      log_sigma_s=log_sigma_s, log_kappa_s=log_kappa_s
+    )
+    adfun <- spatialGEV_fit(y, locs=X, random="abs",
                             init_param=init_param,
                             reparam_s="positive",
                             sp_thres=-1,
-			    kernel="matern",
+                            kernel="matern",
                             adfun_only=TRUE,
                             ignore_random=TRUE,
                             silent=TRUE)
     nll_tmb <- adfun$fn(unlist(init_param))
     nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s,
                    hyperparam_a=c(exp(log_sigma_a), exp(log_kappa_a)),
-		   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
-		   hyperparam_s=c(exp(log_sigma_s), exp(log_kappa_s)),
+                   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
+                   hyperparam_s=c(exp(log_sigma_s), exp(log_kappa_s)),
                    kernel="matern", beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
-                   f_s=function(x){log(x)})
+                   f_s=function(x) log(x))
     expect_equal(nll_r, nll_tmb)
-
     # Unconstrained s
     beta_s <- mean(s)
     init_param$s <- s
     init_param$beta_s <- beta_s
-    adfun <- spatialGEV_fit(y, X, random="abs",
+    adfun <- spatialGEV_fit(y, locs=X, random="abs",
                             init_param=init_param,
                             reparam_s="unconstrained",
                             sp_thres=-1,
-			    kernel="matern",
+                            kernel="matern",
                             adfun_only=TRUE,
                             ignore_random=TRUE,
                             silent=TRUE)
     nll_tmb <- adfun$fn(unlist(init_param))
     nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s,
                    hyperparam_a=c(exp(log_sigma_a), exp(log_kappa_a)),
-		   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
-		   hyperparam_s=c(exp(log_sigma_s), exp(log_kappa_s)),
+                   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
+                   hyperparam_s=c(exp(log_sigma_s), exp(log_kappa_s)),
                    kernel="matern", beta_a=beta_a, beta_b=beta_b, beta_s=beta_s)
     expect_equal(nll_r, nll_tmb)
-
     # Negative s
     s <- -exp(log_s)
     y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE), loc=a, scale=exp(log_b), shape=s)
     beta_s <- mean(log_s)
     init_param$s <- log_s
     init_param$beta_s <- beta_s
-    adfun <- spatialGEV_fit(y, X, random="abs",
+    adfun <- spatialGEV_fit(y, locs=X, random="abs",
                             init_param=init_param,
                             reparam_s="negative",
                             sp_thres=-1,
-			    kernel="matern",
+                            kernel="matern",
                             adfun_only=TRUE,
                             ignore_random=TRUE,
                             silent=TRUE)
     nll_tmb <- adfun$fn(unlist(init_param))
     nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s,
                    hyperparam_a=c(exp(log_sigma_a), exp(log_kappa_a)),
-		   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
-		   hyperparam_s=c(exp(log_sigma_s), exp(log_kappa_s)),
+                   hyperparam_b=c(exp(log_sigma_b), exp(log_kappa_b)),
+                   hyperparam_s=c(exp(log_sigma_s), exp(log_kappa_s)),
                    kernel="matern", beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
-                   f_s=function(x){log(abs(s))})
+                   f_s=function(x) log(abs(s)))
     expect_equal(nll_r, nll_tmb)
   }
 })

@@ -1,15 +1,10 @@
 #' Fit a GEV-GP model.
 #'
-#' @param data If `method == "laplace"`, a list of length `n_loc` where each
-#'   element contains the GEV observations at the given spatial location.
-#'   If `method == "maxsmooth"` as list with two elements: `est`,
-#'   an `n_loc x 3` matrix of parameter estimates at each location,
-#'   and `var`, a `3 x 3 x n_loc` array of corresponding variance estimates.
-#' @param locs An `n_loc x 2` matrix of longitude and latitude of the corresponding response values.
+#' @param y List of `n` locations each with `n_obs[i]` independent GEV realizations.
+#' @param locs `n x 2` matrix of longitude and latitude of the corresponding response values.
 #' @param random Either "a", "ab", or "abs", where `a` indicates the location parameter,
 #' `b` indicates the scale parameter, `s` indicates the shape parameter.  This tells the model
 #' which GEV parameters are considered as random effects.
-#' @param method Either "laplace" or "maxsmooth".
 #' @param init_param A list of initial parameters. See details.
 #' @param reparam_s A flag indicating whether the shape parameter is "zero", "unconstrained",
 #' constrained to be "negative", or constrained to be "positive". If model "abs" is used,
@@ -18,10 +13,10 @@
 #' (exponential kernel), "matern" (Matern kernel), or "spde" (Matern kernel with SPDE
 #' approximation described in Lindgren el al. 2011). To use the SPDE approximation,
 #' the user must first install the INLA R package.
-#' @param X_a `n_loc x r_a` design matrix for a, where `r-1` is the number of covariates. If not
-#' provided, a `n_loc x 1` column matrix of 1s is used.
-#' @param X_b `n_loc x r_b` design matrix for log(b). Does not need to be provided if b is fixed.
-#' @param X_s `n_loc x r_s` design matrix for g(s), where g() is a transformation function of `s`.
+#' @param X_a `n x r` design matrix for a, where `r-1` is the number of covariates. If not
+#' provided, a `n x 1` column matrix of 1s is used.
+#' @param X_b `n x r` design matrix for log(b). Does not need to be provided if b is fixed.
+#' @param X_s `n x r` design matrix for g(s), where g() is a transformation function of `s`.
 #' Does not need to be provided if s is fixed.
 #' @param nu Hyperparameter of the Matern kernel. Default is 1.
 #' @param s_prior Optional. A length 2 vector where the first element is the mean of the normal
@@ -71,8 +66,6 @@
 #' and precision matrix for the fixed and random effects
 #' - Other helpful information about the model: kernel, data coordinates matrix, and optionally
 #' the created mesh if `kernel="spde" (See details).
-#'
-#' `spatialGEV_model()` is used internally by `spatialGEV_fit()` to parse its inputs.  It returns a list with elements `data`, `parameters`, `random`, and `map` to be passed to [TMB::MakeADFun()].  If `kernel == "spde"`, the list also contains an element `mesh`.
 #'
 #' @details
 #' This function adopts Laplace approximation using TMB model to integrate out the random effects.
@@ -159,14 +152,14 @@
 #' @examples
 #' \donttest{
 #' library(SpatialGEV)
-#' n_loc <- 20
-#' a <- simulatedData$a[1:n_loc]
-#' logb <- simulatedData$logb[1:n_loc]
-#' logs <- simulatedData$logs[1:n_loc]
-#' y <- simulatedData$y[1:n_loc]
-#' locs <- simulatedData$locs[1:n_loc,]
-#' # No covariates are included, only intercept is included.
-#' fit <- spatialGEV_fit(y, locs = locs, random = "ab",
+#' a <- simulatedData$a
+#' logb <- simulatedData$logb
+#' logs <- simulatedData$logs
+#' y <- simulatedData$y
+#' locs <- simulatedData$locs
+#' n_loc = nrow(locs)
+#' # No covariates are included, only intercept is inlcuded.
+#' fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
 #'                       init_param = list(a = rep(0, n_loc),
 #'                                         log_b = rep(0, n_loc),
 #'                                         s = 0,
@@ -185,7 +178,7 @@
 #'
 #' # To use a different optimizer other than the default `nlminb()`, create
 #' # an object ready to be passed to optimizer functions using `adfun_only=TRUE`
-#' obj <- spatialGEV_fit(y, locs = locs, random = "ab",
+#' obj <- spatialGEV_fit(y = y, locs = locs, random = "ab",
 #'                       init_param = list(a = rep(0, n_loc),
 #'                                         log_b = rep(0, n_loc),
 #'                                         s = 0,
@@ -207,10 +200,10 @@
 #' # Make sure the INLA package is installed before using `kernel="spde"`
 #' \dontrun{
 #' library(INLA)
-#' n_loc <- 20
-#' y <- simulatedData2$y[1:n_loc]
-#' locs <- simulatedData2$locs[1:n_loc,]
-#' fit_spde <- spatialGEV_fit(y, locs = locs, random = "abs",
+#' y <- simulatedData2$y
+#' locs <- simulatedData2$locs
+#' n_loc <- nrow(locs)
+#' fit_spde <- spatialGEV_fit(y = y, locs = locs, random = "abs",
 #'                            init_param = list(a = rep(0, n_loc),
 #'                                              log_b = rep(0, n_loc),
 #'                                              s = rep(-2, n_loc),
@@ -237,68 +230,256 @@
 #' points(locs[,1], locs[,2], col="red", pch=16) # Plot the locations
 #' }
 #' @export
-spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
-                           method = c("laplace", "maxsmooth"),
-                           init_param, reparam_s,
-                           kernel = c("spde", "matern", "exp"),
-                           X_a = NULL, X_b = NULL, X_s = NULL, nu = 1,
-                           s_prior = NULL, beta_prior = NULL,
-                           matern_pc_prior = NULL,
-                           sp_thres = -1, adfun_only = FALSE,
-                           ignore_random = FALSE, silent = FALSE,
-                           mesh_extra_init = list(a=0, log_b=-1, s=0.001),
-                           ...) {
-  # parse inputs
-  kernel <- match.arg(kernel)
-  random <- match.arg(random)
-  method <- match.arg(method)
-  if(method == "maxsmooth") {
-    if((kernel != "spde") || (random != "abs")) {
-      stop("For `method = 'maxsmooth'`, only `random = 'abs'` and `kernel = 'spde'` are currently implemented.")
+spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
+			   X_a=NULL, X_b=NULL, X_s=NULL, nu=1,
+			   s_prior=NULL, beta_prior=NULL, matern_pc_prior=NULL,
+			   sp_thres=-1, adfun_only=FALSE, ignore_random=FALSE,
+			   silent=FALSE,
+			   mesh_extra_init=list(a=0, log_b=-1, s=0.001), ...){
+
+  if (length(y) != nrow(locs)){
+    stop("The length of y must be the same as the number of rows of locs.")
+  }
+  if (!(random %in% c("a", "ab", "abs"))){
+    stop("Argument random must be either 'a', 'ab', or 'abs'.")
+  }
+  if (reparam_s == "zero"){
+    reparam_s <- as.integer(0)
+    if (random == "abs") stop("When s is a random effect, reparam_s cannot be zero.")
+  }
+  else if (reparam_s == "positive"){
+    reparam_s <- as.integer(1)
+  }
+  else if (reparam_s == "negative"){
+    reparam_s <- as.integer(2)
+  }
+  else if (reparam_s == "unconstrained"){
+    reparam_s <- as.integer(3)
+  }
+  else{
+    stop("Argument reparam_s must be one of 'zero', 'unconstrained', 'positive', or 'negative'.")
+  }
+  mod <- paste("model", random, sep="_")
+  mod <- paste(mod, kernel, sep="_")
+  n_loc <- length(y)
+  n_obs <- sapply(y, length)
+  if (missing(sp_thres)) sp_thres <- -1
+  y <- unlist(y)
+  loc_ind <- rep(1:n_loc, times=n_obs) # location ind associated with each obs
+
+  #------ Prepare data input for TMB -------------
+  if (kernel %in% c("exp", "matern")){
+    # Default design matrices
+    if (is.null(X_a)) X_a <- matrix(1, nrow=n_loc, ncol=1)
+    if (is.null(X_b)) X_b <- matrix(1, nrow=n_loc, ncol=1)
+    if (is.null(X_s)) X_s <- matrix(1, nrow=n_loc, ncol=1)
+
+    dd <- as.matrix(stats::dist(locs))
+    data <- list(model = mod, y = unlist(y), loc_ind = loc_ind-1,
+		 design_mat_a = X_a, design_mat_b = X_b, design_mat_s = X_s,
+		 dd = dd, sp_thres = sp_thres, reparam_s = reparam_s)
+    if (kernel == "matern") data$nu <- nu
+  }
+  else if (kernel == "spde"){
+    if (!requireNamespace("INLA", quietly = TRUE)) {
+      stop("Please install package 'INLA' if using 'kernel='spde''.")
+    }
+    mesh_args <- list(...)
+    if (all(is.null(mesh_args$max.edge),
+	    is.null(mesh_args$max.n.strict),
+	    is.null(mesh_args$max.n))){
+      # if none of the above is specified, use our default
+      mesh <- INLA::inla.mesh.2d(locs, max.edge=2)
+    }
+    else{
+      mesh <- INLA::inla.mesh.2d(locs, ...)
+    }
+    spde <- (INLA::inla.spde2.matern(mesh)$param.inla)[c("M0", "M1", "M2")]
+    n_s <- nrow(spde$M0) # number of mesh triangles created by INLA
+    meshidxloc <- as.integer(mesh$idx$loc)
+
+    # Default design matrices to provide to the data list
+    if (is.null(X_a)){
+      X_a <- matrix(1, nrow=n_s, ncol=1)
+    }
+    else{ # Expand the current design matrix using 0s due to the additional triangles in the mesh
+      X_a_temp <- matrix(0, nrow=n_s, ncol=ncol(X_a))
+      X_a_temp[,1] <- 1
+      X_a_temp[meshidxloc,] <- X_a
+      X_a <- X_a_temp
+    }
+    if (is.null(X_b)){
+      X_b <- matrix(1, nrow=n_s, ncol=1)
+    }
+    else{ # Expand the design matrix
+      X_b_temp <- matrix(0, nrow=n_s, ncol=ncol(X_b))
+      X_b_temp[,1] <- 1
+      X_b_temp[meshidxloc,] <- X_b
+      X_b <- X_b_temp
+    }
+    # It is ok to have the additional element design_mat_b in the list even when it is not used
+    # in the TMB template
+    data <- list(model = mod, y = unlist(y), loc_ind = meshidxloc[loc_ind]-1,
+	 	 design_mat_a = X_a, design_mat_b = X_b,
+		 reparam_s = reparam_s, spde = spde, nu = nu)
+    if (random == "a"){
+      init_param_a <- rep(mesh_extra_init$a, n_s)
+      init_param_a[meshidxloc] <- init_param$a # expand the vector of initial parameters due to extra location points introduced by mesh
+      init_param$a <- init_param_a
+    }
+    else if (random == "ab") {
+      init_param_a <- rep(mesh_extra_init$a, n_s)
+      init_param_b <- rep(mesh_extra_init$log_b, n_s)
+      init_param_a[meshidxloc] <- init_param$a
+      init_param_b[meshidxloc] <- init_param$log_b
+      init_param$a <- init_param_a
+      init_param$log_b <- init_param_b
+    }
+    else { # if random == "abs"
+      if (is.null(X_s)){
+	X_s <- matrix(1, nrow=n_s, ncol=1)
+      }
+      else{ # Expand the design matrix
+	X_s_temp <- matrix(0, nrow=n_s, ncol=ncol(X_s))
+	X_s_temp[,1] <- 1
+	X_s_temp[meshidxloc,] <- X_s
+	X_s <- X_s_temp
+      }
+      data$design_mat_s <- X_s
+      init_param_a <- rep(mesh_extra_init$a, n_s)
+      init_param_b <- rep(mesh_extra_init$log_b, n_s)
+      init_param_s <- rep(mesh_extra_init$s, n_s)
+      init_param_a[meshidxloc] <- init_param$a
+      init_param_b[meshidxloc] <- init_param$log_b
+      init_param_s[meshidxloc] <- init_param$s
+      init_param$a <- init_param_a
+      init_param$log_b <- init_param_b
+      init_param$s <- init_param_s
     }
   }
-  model <- spatialGEV_model(data = data, locs = locs, random = random,
-                            method = method, init_param = init_param,
-                            reparam_s = reparam_s, kernel = kernel,
-                            X_a = X_a, X_b = X_b, X_s = X_s, nu = nu,
-                            s_prior = s_prior, beta_prior = beta_prior,
-                            matern_pc_prior = matern_pc_prior,
-                            sp_thres = sp_thres, ignore_random = ignore_random,
-                            mesh_extra_init = mesh_extra_init, ...)
+  else {stop("kernel must be one of 'exp', 'matern', 'spde'!")}
+
+  ############# Priors #####################
+  # Optionally specify a normal prior on s if s is a fixed effect
+  if (random != "abs"){
+    if (missing(s_prior) | is.null(s_prior)){
+      data$s_mean <- 9999
+      data$s_sd <- 9999
+    }
+    else{ # specify the mean and sd of normal prior for s
+      data$s_mean <- s_prior[1]
+      data$s_sd <- s_prior[2]
+    }
+  }
+  # Optionally specify normal priors on betas
+  if (is.null(beta_prior)) {
+    data$beta_prior <- as.integer(0)
+    data$beta_a_prior <- c(0,500)
+    data$beta_b_prior <- c(0,500)
+    data$beta_s_prior <- c(0,500)
+  }
+  else if (is.list(beta_prior)) {
+    data$beta_prior <- as.integer(1)
+    data$beta_a_prior <- beta_prior$beta_a
+    data$beta_b_prior <- beta_prior$beta_b
+    data$beta_s_prior <- beta_prior$beta_s
+  }
+  else {
+    stop("Check beta_prior.")
+  }
+  # Optionally specify PC priors on Matern
+  if (kernel %in% c("matern", "spde")){
+    data$a_pc_prior <- data$b_pc_prior <- data$s_pc_prior <- as.integer(0)
+    data$range_a_prior <- data$range_b_prior <- data$range_s_prior <- c(1e5, 0.9)
+    data$sigma_a_prior <- data$sigma_b_prior <- data$sigma_s_prior <- c(2, 0.1)
+    if (!is.null(matern_pc_prior$matern_a)){
+      if (inherits(matern_pc_prior$matern_a, "PC_prior")){
+	data$a_pc_prior <- as.integer(1)
+	data$range_a_prior <- matern_pc_prior$matern_a$range_prior
+	data$sigma_a_prior <- matern_pc_prior$matern_a$sigma_prior
+      }
+      else{
+        stop("List elements must be provided using `matern_pc_prior()`")
+      }
+    }
+    if (!is.null(matern_pc_prior$matern_b)){
+      if (inherits(matern_pc_prior$matern_b, "PC_prior")){
+	data$b_pc_prior <- as.integer(1)
+	data$range_b_prior <- matern_pc_prior$matern_b$range_prior
+	data$sigma_b_prior <- matern_pc_prior$matern_b$sigma_prior
+      }
+      else{
+        stop("List elements must be provided using `matern_pc_prior()`")
+      }
+    }
+    if (!is.null(matern_pc_prior$matern_s)){
+      if (inherits(matern_pc_prior$matern_s, "PC_prior")){
+	data$s_pc_prior <- as.integer(1)
+	data$range_s_prior <- matern_pc_prior$matern_s$range_prior
+	data$sigma_s_prior <- matern_pc_prior$matern_s$sigma_prior
+      }
+      else{
+        stop("List elements must be provided using `matern_pc_prior()`")
+      }
+    }
+    else if (!is.null(matern_pc_prior) & !is.list(matern_pc_prior)) {
+      stop("Check matern_pc_prior: must be a named list with names one or more of
+	   matern_a, matern_b, or matern_s, and the elements must be provided using
+	   `matern_pc_prior()` function.")
+    }
+  }
+  #------ End: prepare data input for TMB ----------------
+
+  if (ignore_random){
+    random <- NULL
+  }
+  else if (random == "ab" & !ignore_random){
+    random <- c("a", "log_b")
+  }
+  else if (random == "abs" & !ignore_random){
+    random <- c("a", "log_b", "s")
+  }
+  #else random <- "a"
+
+  # If using Gumbel, make sure s is not being estimated
+  map <- list()
+  if (reparam_s == "zero") {
+    map <- list(s = factor(NA))
+  }
+
   # Build TMB template
-  adfun <- TMB::MakeADFun(data = model$data,
-                          parameters = model$parameters,
-                          random = model$random,
-                          map = model$map,
+  adfun <- TMB::MakeADFun(data = data,
+                          parameters = init_param,
+                          random = random,
+                          map = map,
                           DLL = "SpatialGEV_TMBExports",
                           silent = silent)
-  # output
-  if(adfun_only) {
-    if(kernel == "spde") {
-      out <- list(adfun = adfun, mesh = model$mesh)
-    } else {
-      out <- adfun
+
+  if (adfun_only){
+    if (kernel == "spde"){
+      list(adfun=adfun, mesh=mesh)
     }
-  } else {
+    else{
+      adfun
+    }
+  }
+  else{
     start_t <- Sys.time()
     fit <- nlminb(adfun$par, adfun$fn, adfun$gr)
     report <- TMB::sdreport(adfun, getJointPrecision = TRUE)
     t_taken <- as.numeric(difftime(Sys.time(), start_t, units="secs"))
-    out <- list(adfun = adfun, fit = fit, report = report,
-                time = t_taken, random = model$random, kernel = kernel,
-                # FIXME: why not just call this locs?
-                locs_obs = locs,
-                X_a = model$data$design_mat_a,
-                X_b = model$data$design_mat_b,
-                X_s = model$data$design_mat_s)
-    if (kernel == "spde") {
-      out$mesh <- model$mesh
-      out$meshidxloc <- as.integer(model$mesh$idx$loc)
+    out <- list(adfun=adfun, fit=fit, report=report,
+		time=t_taken, random=random, kernel=kernel,
+		locs_obs=locs, X_a=X_a, X_b=X_b, X_s=X_s)
+    if (kernel == "spde"){
+      out$mesh <- mesh
+      out$meshidxloc <- meshidxloc
       out$nu <- nu
-    } else if (kernel == "matern") {
+    }
+    else if (kernel == "matern"){
       out$nu <- nu
     }
     class(out) <- "spatialGEVfit"
+    out
   }
-  out
 }
