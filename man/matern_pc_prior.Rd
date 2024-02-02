@@ -40,21 +40,21 @@ where \code{rho = sqrt(8*nu)/kappa} and \code{sig = sqrt(sigma)}.
 }
 \examples{
 \donttest{
-y <- simulatedData2$y
-locs <- simulatedData2$locs
-n_loc <- nrow(locs) 
-fit <- spatialGEV_fit(y = y, locs = locs, random = "abs",
+n_loc <- 20
+y <- simulatedData2$y[1:n_loc]
+locs <- simulatedData2$locs[1:n_loc,]
+fit <- spatialGEV_fit(y, locs = locs, random = "abs",
                       init_param = list(a = rep(0, n_loc),
-                                        log_b = rep(0, n_loc), 
+                                        log_b = rep(0, n_loc),
                                         s = rep(-2, n_loc),
                                         beta_a = 0,
                                         beta_b = 0,
                                         beta_s = -2,
-                                        log_sigma_a = 0, 
+                                        log_sigma_a = 0,
                                         log_kappa_a = 0,
-                                        log_sigma_b = 0, 
+                                        log_sigma_b = 0,
                                         log_kappa_b = 0,
-                                        log_sigma_s = 0, 
+                                        log_sigma_s = 0,
                                         log_kappa_s = 0
                                         ),
                        reparam_s = "positive",
