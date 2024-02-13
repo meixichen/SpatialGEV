@@ -53,6 +53,8 @@
 #' @param mesh_extra_init A named list of scalars. Used when the SPDE kernel is used. The list
 #' provides the initial values for a, log(b), and s on the extra triangles created in the mesh.
 #' The default is `list(a=1, log_b=0, s=0.001)`.
+#' @param get_hessian Default to TRUE so that `spatialGEV_sample()` can be used for sampling
+#' from the Normal approximated posterior with the inverse Hessian as the Normal covariance.
 #' @param ... Arguments to pass to `INLA::inla.mesh.2d()`. See details `?inla.mesh.2d()` and
 #' Section 2.1 of Lindgren & Rue (2015) JSS paper.
 #' This is used specifically for when `kernel="spde"`, in which case a mesh needs to be
@@ -247,6 +249,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                            sp_thres = -1, adfun_only = FALSE,
                            ignore_random = FALSE, silent = FALSE,
                            mesh_extra_init = list(a=0, log_b=-1, s=0.001),
+                           get_hessian=TRUE,
                            ...) {
   # parse inputs
   kernel <- match.arg(kernel)
@@ -282,7 +285,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
   } else {
     start_t <- Sys.time()
     fit <- nlminb(adfun$par, adfun$fn, adfun$gr)
-    report <- TMB::sdreport(adfun, getJointPrecision = TRUE)
+    report <- TMB::sdreport(adfun, getJointPrecision = get_hessian)
     t_taken <- as.numeric(difftime(Sys.time(), start_t, units="secs"))
     out <- list(adfun = adfun, fit = fit, report = report,
                 time = t_taken, random = model$random, kernel = kernel,
@@ -290,7 +293,8 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                 locs_obs = locs,
                 X_a = model$data$design_mat_a,
                 X_b = model$data$design_mat_b,
-                X_s = model$data$design_mat_s)
+                X_s = model$data$design_mat_s,
+                pdHess_avail = get_hessian & report$pdHess)
     if (kernel == "spde") {
       out$mesh <- model$mesh
       out$meshidxloc <- as.integer(model$mesh$idx$loc)

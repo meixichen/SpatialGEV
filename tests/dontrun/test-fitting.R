@@ -21,7 +21,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   
   ##### Model a
   cat("Fitting model a using exp kernel...\n")
-  fit_e <- spatialGEV_fit(y = y_train, locs = locs_train, random = "a",
+  fit_e <- spatialGEV_fit(data = y_train, locs = locs_train, random = "a",
 			init_param = list(a = rep(2, n_train), log_b = -1, s = logs,
 					  beta_a =3, log_sigma_a = 1, log_ell_a = 5),
                         kernel="exp",
@@ -38,7 +38,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   
   ##### Model ab
   cat("Fitting model ab using exp kernel...\n")
-  fit_e <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
+  fit_e <- spatialGEV_fit(data = y_train, locs = locs_train, random = "ab",
 			init_param = list(a = rep(2, n_train), log_b = rep(-1,n_train), s = logs,
 					  beta_a = 3, beta_b = 0,
 					  log_sigma_a = 1, log_ell_a = 5,
@@ -57,7 +57,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   
   ##### Model abs
   cat("Fitting model abs using exp kernel...\n")
-  fit_e <- spatialGEV_fit(y = y_train, locs = locs_train, random = "abs",
+  fit_e <- spatialGEV_fit(data = y_train, locs = locs_train, random = "abs",
 			init_param = list(
 					  a = rep(2, n_train), 
 					  log_b = rep(-1,n_train), 
@@ -81,7 +81,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   #----------- Test SPDE kernel -----------------
   ###### Model a
   cat("Fitting model a using spde kernel...\n")
-  fit_s <- spatialGEV_fit(y = y_train, locs = locs_train, random = "a",
+  fit_s <- spatialGEV_fit(data = y_train, locs = locs_train, random = "a",
 			init_param = list(
 					  a = rep(2, n_train), log_b = -1, s = logs,
 					  beta_a = 3,
@@ -100,7 +100,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   
   ###### Model ab
   cat("Fitting model ab using SPDE...\n")
-  fit_s <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
+  fit_s <- spatialGEV_fit(data = y_train, locs = locs_train, random = "ab",
                         init_param = list(
                                           a = rep(2, n_train), log_b = rep(-1, n_train), s = logs,
 					  beta_a = 3, beta_b = 0,
@@ -122,7 +122,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   #--------- Test Matern  -----------------------
   ###### Model a
   cat("Fitting model a to the training set using Matern...\n")  
-  fit_m <- spatialGEV_fit(y = y_train, locs = locs_train, random = "a",
+  fit_m <- spatialGEV_fit(data = y_train, locs = locs_train, random = "a",
 			      init_param = list(
 						a = rep(2, n_train), log_b = -1, s = logs,
 						beta_a = 3,
@@ -137,7 +137,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   
   ###### Model ab
   cat("Fitting model ab using SPDE...\n")
-  fit_m <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
+  fit_m <- spatialGEV_fit(data = y_train, locs = locs_train, random = "ab",
                         init_param = list(
                                           a = rep(2, n_train), log_b = rep(-1, n_train), s = logs,
 					  beta_a = 3, beta_b = 0,
@@ -182,7 +182,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
   #---------- Test exponential kernel ------------
   
   cat("Fitting model abs using exp kernel...\n")
-  fit_e <- spatialGEV_fit(y = y_train, locs = locs_train, random = "abs",
+  fit_e <- spatialGEV_fit(data = y_train, locs = locs_train, random = "abs",
 			  init_param = list(
 					    a = rep(60, n_train), 
 					    log_b = rep(2,n_train), 
@@ -206,7 +206,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
   #----------- Test SPDE kernel -----------------
 
   cat("Fitting model abs using SPDE kernel...\n")
-  fit_s <- spatialGEV_fit(y = y_train, locs = locs_train, random = "abs",
+  fit_s <- spatialGEV_fit(data = y_train, locs = locs_train, random = "abs",
 			  init_param = list(
 					    a = rep(60, n_train), 
 					    log_b = rep(3,n_train), 
@@ -229,7 +229,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model abs", {
   #--------- Test Matern  -----------------------
 
   cat("Fitting model abs using Matern kernel...\n")
-  fit_m <- spatialGEV_fit(y = y_train, locs = locs_train, random = "abs",
+  fit_m <- spatialGEV_fit(data = y_train, locs = locs_train, random = "abs",
 			  init_param = list(
 					    a = rep(60, n_train), 
 					    log_b = rep(3,n_train), 

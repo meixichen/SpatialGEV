@@ -30,9 +30,9 @@ print.spatialGEVfit <- function(x, ...){
   cat("Number of random effects in the model is", length(x$report$par.random), "\n")
 
   # Hessian info
-  ifelse(x$report$pdHess, 
+  ifelse(x$pdHess_avail, 
 	 mes <- "Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples \n",
-         mes <- "Hessian matrix is NOT positive definite. spatialGEV_sample and spatialGEV_predict cannot be used \n")
+         mes <- "Hessian matrix is NOT available or NOT positive definite. spatialGEV_sample and spatialGEV_predict cannot be used \n")
   cat(mes)
 }
 

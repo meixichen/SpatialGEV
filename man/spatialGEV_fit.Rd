@@ -25,6 +25,7 @@ spatialGEV_fit(
   ignore_random = FALSE,
   silent = FALSE,
   mesh_extra_init = list(a = 0, log_b = -1, s = 0.001),
+  get_hessian = TRUE,
   ...
 )
 
@@ -120,6 +121,9 @@ out in the model. This can be helpful for checking the marginal likelihood.}
 \item{mesh_extra_init}{A named list of scalars. Used when the SPDE kernel is used. The list
 provides the initial values for a, log(b), and s on the extra triangles created in the mesh.
 The default is \code{list(a=1, log_b=0, s=0.001)}.}
+
+\item{get_hessian}{Default to TRUE so that \code{spatialGEV_sample()} can be used for sampling
+from the Normal approximated posterior with the inverse Hessian as the Normal covariance.}
 
 \item{...}{Arguments to pass to \code{INLA::inla.mesh.2d()}. See details \code{?inla.mesh.2d()} and
 Section 2.1 of Lindgren & Rue (2015) JSS paper.
