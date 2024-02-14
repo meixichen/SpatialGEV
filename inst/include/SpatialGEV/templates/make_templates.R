@@ -1,6 +1,8 @@
 require(whisker)
 require(TMBtools)
-temp_file <- "~/SpatialGEV/inst/include/SpatialGEV/templates/gev_model_template.hpp"
+require(usethis)
+pkg_dir <- usethis::proj_get()
+temp_file <- paste(pkg_dir, "inst/include/SpatialGEV/templates", "gev_model_template.hpp", sep="/")
 template <- readLines(temp_file)
 
 #---------- Helper functions for parsing the template ----------------
@@ -60,10 +62,11 @@ for (i in 1:nrow(re_kernel_combs)){
     #calc_z_p = F
     calc_z_p = list(prob=0.1)
   )
-  
-  writeLines(whisker.render(template, temp_keys), 
-             paste0("../../../../src/TMB/", 
-                    paste("model", random_effects, kernel, sep = "_"), 
+
+  write_dir <- paste(pkg_dir, "src", "TMB", sep="/")
+  writeLines(whisker.render(template, temp_keys),
+             paste0(write_dir,
+                    paste("model", random_effects, kernel, sep = "_"),
                     ".hpp"))
 }
 
