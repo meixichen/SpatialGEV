@@ -269,7 +269,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                             sp_thres = sp_thres, ignore_random = ignore_random,
                             mesh_extra_init = mesh_extra_init, ...)
   # Build TMB template
-  adfun <- TMB::MakeADFun(data = model$data,
+  adfun <- TMB::MakeADFun(data = c(model$data, return_level=as.integer(0)),
                           parameters = model$parameters,
                           random = model$random,
                           map = model$map,
