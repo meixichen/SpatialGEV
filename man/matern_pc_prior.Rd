@@ -13,10 +13,10 @@ See details.}
 \item{p_rho}{Hyperparameter for PC prior on the range parameter. Must be between 0
 and 1. See details.}
 
-\item{sig_0}{Hyperparameter for PC prior on the range parameter. Must be positive.
+\item{sig_0}{Hyperparameter for PC prior on the variance parameter. Must be positive.
 See details.}
 
-\item{p_sig}{Hyperparameter for PC prior on the range parameter. Must be between 0
+\item{p_sig}{Hyperparameter for PC prior on the variance parameter. Must be between 0
 and 1. See details.}
 }
 \value{

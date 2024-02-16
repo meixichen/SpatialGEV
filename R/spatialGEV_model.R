@@ -37,7 +37,7 @@ spatialGEV_model <- function(data, locs, random = c("a", "ab", "abs"),
                    design_mat_a = out_kernel$X_a,
                    design_mat_b = out_kernel$X_b,
                    design_mat_s = out_kernel$X_s,
-                   dd = out_kernel$dd,
+                   dist_mat = out_kernel$dist_mat,
                    sp_thres = sp_thres))
     if(kernel == "matern") data$nu <- nu
   } else if(kernel == "spde") {
@@ -160,15 +160,15 @@ parse_reparam_s <- function(reparam_s, random) {
 }
 
 #' @noRd
-#' @return For `kernel %in% c("exp", "matern")`. A list with elements `X_a`, `X_b`, `X_s`, `dd`.
+#' @return For `kernel %in% c("exp", "matern")`. A list with elements `X_a`, `X_b`, `X_s`, `dist_mat`.
 parse_kernel_basic <- function(locs, X_a, X_b, X_s) {
   n_loc <- nrow(locs)
   # Default design matrices
   if(is.null(X_a)) X_a <- matrix(1, nrow=n_loc, ncol=1)
   if(is.null(X_b)) X_b <- matrix(1, nrow=n_loc, ncol=1)
   if(is.null(X_s)) X_s <- matrix(1, nrow=n_loc, ncol=1)
-  dd <- as.matrix(stats::dist(locs))
-  out <- list(X_a = X_a, X_b = X_b, X_s = X_s, dd = dd)
+  dist_mat <- as.matrix(stats::dist(locs))
+  out <- list(X_a = X_a, X_b = X_b, X_s = X_s, dist_mat = dist_mat)
   out
 }
 

@@ -4,9 +4,9 @@
 #' See details.
 #' @param p_rho Hyperparameter for PC prior on the range parameter. Must be between 0
 #' and 1. See details.
-#' @param sig_0 Hyperparameter for PC prior on the range parameter. Must be positive.
+#' @param sig_0 Hyperparameter for PC prior on the variance parameter. Must be positive.
 #' See details.
-#' @param p_sig Hyperparameter for PC prior on the range parameter. Must be between 0
+#' @param p_sig Hyperparameter for PC prior on the variance parameter. Must be between 0
 #' and 1. See details.
 #' @return A list to provide to the `matern_pc_prior` argument of `spatialGEV_fit`.
 #' @details
