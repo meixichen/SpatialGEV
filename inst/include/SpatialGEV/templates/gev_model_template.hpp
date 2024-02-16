@@ -11,36 +11,89 @@
 /// The model is defined as follows:
 ///
 /// y ~ GEV(a, b, s),
-/// random ~ GP(log_sigma, log_kappa/ell),
+{{#re_names}}
+/// {{long_name}} ~ GP({{gp_hyperparam1}}_{{short_name}}, {{gp_hyperparam2}}_{{short_name}})
+{{/re_names}}
+/// where the GP is parameterized using the {{kernel}} covariance kernel.
 ///
-/// where random can be either one of more of a, b, and s.
-///
+/// --------- Data provided from R ---------------
 /// @param[in] y Response vector of length `n_obs`.  Assumed to be > 0.
-/// @param[in] loc_ind Location vector of length `n_obs` of integers `0 <= i_loc < n_loc` indicating to which of the SPDE mesh locations each element of `y` is associated.
-/// @param[in] reparam_s Integer indicating the type of shape parameter. 0: `s = 0`, i.e., use Gumbel instead of GEV distribution.  1: `s > 0`, in which case we operate on `log(s)`.  2: `s < 0`, in which case we operate on `log(-s)`.  3: unconstrained.
-/// @param[in] beta_prior Integer specifying the type of prior on the design matrix coefficients.  1 is weakly informative normal prior and any other numbers means Lebesgue prior `pi(beta) \propto 1`.
-/// @param[in] spde Only used for model_x_spde. Object of type `spde_t` as constructed in R by a call to [INLA::inla.spde2.matern()] consisting of `n_loc` mesh locations.
-
-/// @param[in] dd Only used for model_x_exp or model_x_matern. Distance matrix.
-/// @param[in] design_mat_x Design matrix of size `n_loc x n_cov`, where `n_cov` is the number of covariates for `x`.
-/// @param[in] beta_x_prior Vector of length 2 containing the mean and sd of the normal prior on `beta_x`.
-///
-/// The following are only used for model_x_matern or matern_x_spde:
-/// @param[in] x_pc_prior Integer specifying the type of prior to use on the Matern covariance parameters `log_sigma_a` and `log_kappa_a`.  1 for using PC prior on a, 0 for using Lebesgue prior.
-/// @param[in] range_x_prior Vector of length 2 `(rho_0, p_rho)` s.t. `Pr(rho < rho_0) = p_rho`.
-/// @param[in] sigma_x_prior Vector of length 2 `(sig_0, p_sig)` s.t. `Pr(sig > sig_0) = p_sig`.
-///
-/// The following are only used for model="a" or "ab, i.e., when "s" is treated as a fixed effect:
+/// @param[in] loc_ind Location vector of length `n_obs` of integers `0 <= i_loc < n_loc` indicating
+/// to which
+/// locations each element of `y` is associated.
+/// @param[in] reparam_s Integer indicating the type of shape parameter. 0: `s = 0`, i.e., use
+/// Gumbel instead
+/// of GEV distribution.  1: `s > 0`, in which case we operate on `log(s)`.  2: `s < 0`, in which
+/// case we operate on `log(-s)`.  3: unconstrained.
+/// @param[in] beta_prior Integer specifying the type of prior on the design matrix coefficients.
+/// 1 is weakly informative normal prior and any other numbers means Lebesgue prior
+/// `pi(beta) \propto 1`.
+{{#use_spde}}
+/// @param[in] spde Object of type `spde_t` as constructed in R by a call to
+/// [INLA::inla.spde2.matern()]
+/// consisting of `n_loc` mesh locations.
+{{/use_spde}}
+{{^use_spde}}
+/// @param[in] dist_mat `n_loc x n_loc` distance matrix typically constructed via
+/// `stats::dist(coordinates)`.
+/// @param[in] sp_thres Scalar number used to make the covariance matrix sparse by thresholding.
+/// If sp_thres=-1, no thresholding is made.
+{{/use_spde}}
+{{#re_names}}
+/// @param[in] design_mat_{{short_name}} Design matrix of size `n_loc x n_covariate` for parameter
+/// {{long_name}}.
+/// @param[in] beta_{{short_name}}_prior Vector of length 2 containing the mean and sd of the normal
+/// prior on `beta_{{short_name}}`.
+{{/re_names}}
+{{#use_matern}}
+/// @param[in] nu Presepecified smoothness parameter for the Matérn covariance kernel applicable to
+/// all random effects.
+{{#re_names}}
+/// @param[in] {{short_name}}_pc_prior Integer specifying the type of prior to use on the Matérn
+/// GP on {{long_name}}.
+/// 1 for using PC prior on {{long_name}}, 0 for using Lebesgue prior.
+/// `log_sigma_a` and `log_kappa_a`.  1 for using PC prior on a, 0 for using Lebesgue prior.
+/// @param[in] range_{{short_name}}_prior PC prior on the range parameter for the Matérn GP on
+/// {{long_name}}. Vector of length 2 `(rho_0, p_rho)` s.t. `Pr(rho < rho_0) = p_rho`.
+/// @param[in] sigma_{{short_name}}_prior PC prior on the variance parameter for the Matérn GP on
+/// {{long_name}}. Vector of length 2 `(sig_0, p_sig)` s.t. `Pr(sig > sig_0) = p_sig`.
+{{/re_names}}
+{{/use_matern}}
+{{^is_random_s}}
 /// @param[in] s_mean Scalar for Normal prior mean on s.
 /// @param[in] s_sd Scalar for Normal prior sd on s.
+{{/is_random_s}}
 ///
-/// @param[in] a GEV location parameter(s).  Vector of length `n_loc` if `is_random_a == 0` or length 1 if `is_random_a == 1`.
-/// @param[in] log_b GEV scale parameter(s) on the log scale.  Same shape as `a`.
-/// @param[in] s GEV shape parameter(s) on the scale specified by `reparam_s`.  Same shape as `a`.
-///
-/// @param[in] beta_a, log_sigma_a, log_kappa/ell_a Hyperparameters of Matern GP for `a`.
-/// @param[in] beta_b, log_sigma_b, log_kappa/ell_b Hyperparameters of Matern GP for `log_b`.
-/// @param[in] beta_s, log_sigma_s, log_kappa/ell_s Hyperparameters of Matern GP for `s`.
+/// --------- Parameters to estimate ------------
+/// @param[in] a GEV location parameter.
+{{#is_random_a}}
+/// Vector of length `n_loc`.
+{{/is_random_a}}
+{{^is_random_a}}
+/// Vector of length 1.
+{{/is_random_a}}
+/// @param[in] log_b GEV scale parameter on the log scale.
+{{#is_random_b}}
+/// Vector of length `n_loc`.
+{{/is_random_b}}
+{{^is_random_b}}
+/// Vector of length 1.
+{{/is_random_b}}
+/// @param[in] s GEV shape parameter on the scale specified by `reparam_s`.
+{{#is_random_s}}
+/// Vector of length `n_loc`.
+{{/is_random_s}}
+{{^is_random_s}}
+/// Vector of length 1.
+{{/is_random_s}}
+{{#re_names}}
+/// @param[in] beta_{{short_name}} GP mean covariate coefficient vector of length `n_covariate`
+/// for {{long_name}}.
+/// @param[in] {{gp_hyperparam1}}_{{short_name}} GP covariance kernel variance hyperparameter
+/// for {{long_name}}.
+/// @param[in] {{gp_hyperparam2}}_{{short_name}} GP covariance kernel range hyperparameter
+/// for {{long_name}}.
+{{/re_names}}
 template<class Type>
 Type model_{{random_effects}}_{{kernel}}(objective_function<Type>* obj){
   using namespace density;
@@ -53,147 +106,71 @@ Type model_{{random_effects}}_{{kernel}}(objective_function<Type>* obj){
   DATA_IVECTOR(loc_ind);
   DATA_INTEGER(reparam_s);
   DATA_INTEGER(beta_prior);
-  // SPDE inputs
   {{#use_spde}}
   DATA_STRUCT(spde, spde_t);
   {{/use_spde}}
   {{^use_spde}}
-  DATA_MATRIX(dd); // distance matrix
-  DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=-1, no thresholding is made.
+  DATA_MATRIX(dist_mat);
+  DATA_SCALAR(sp_thres);
   {{/use_spde}}
   {{#use_matern}}
   DATA_SCALAR(nu);
   {{/use_matern}}
 
-  // Inputs for a
-  {{#is_random_a}}
-  DATA_MATRIX(design_mat_a);
-  DATA_VECTOR(beta_a_prior);
+  {{#re_names}}
+  // Inputs for {{long_name}}
+  DATA_MATRIX(design_mat_{{short_name}});
+  DATA_VECTOR(beta_{{short_name}}_prior);
   {{#use_matern}}
-  DATA_INTEGER(a_pc_prior);
-  DATA_VECTOR(range_a_prior);
-  DATA_VECTOR(sigma_a_prior);
+  DATA_INTEGER({{short_name}}_pc_prior);
+  DATA_VECTOR(range_{{short_name}}_prior);
+  DATA_VECTOR(sigma_{{short_name}}_prior);
   {{/use_matern}}
-  {{/is_random_a}}
-
-  // Inputs for b
-  {{#is_random_b}}
-  DATA_MATRIX(design_mat_b);
-  DATA_VECTOR(beta_b_prior);
-  {{#use_matern}}
-  DATA_INTEGER(b_pc_prior);
-  DATA_VECTOR(range_b_prior);
-  DATA_VECTOR(sigma_b_prior);
-  {{/use_matern}}
-  {{/is_random_b}}
-
-  // Inputs for s
-  {{#is_random_s}}
-  DATA_MATRIX(design_mat_s);
-  DATA_VECTOR(beta_s_prior);
-  {{#use_matern}}
-  DATA_INTEGER(s_pc_prior);
-  DATA_VECTOR(range_s_prior);
-  DATA_VECTOR(sigma_s_prior);
-  {{/use_matern}}
-  {{/is_random_s}}
+  {{/re_names}}
   {{^is_random_s}}
   DATA_SCALAR(s_mean);
   DATA_SCALAR(s_sd);
   {{/is_random_s}}
 
   // ------------ Parameters ----------------------
-  {{#is_random_a}}
-  PARAMETER_VECTOR(a);
-  {{/is_random_a}}
-  {{^is_random_a}}
-  PARAMETER(a);
-  {{/is_random_a}}
-  {{#is_random_b}}
-  PARAMETER_VECTOR(log_b);
-  {{/is_random_b}}
-  {{^is_random_b}}
-  PARAMETER(log_b);
-  {{/is_random_b}}
-  {{#is_random_s}}
-  PARAMETER_VECTOR(s);
-  {{/is_random_s}}
-  {{^is_random_s}}
-  PARAMETER(s);
-  {{/is_random_s}}
-  {{#is_random_a}}
-  PARAMETER_VECTOR(beta_a);
-  {{/is_random_a}}
-  {{#is_random_b}}
-  PARAMETER_VECTOR(beta_b);
-  {{/is_random_b}}
-  {{#is_random_s}}
-  PARAMETER_VECTOR(beta_s);
-  {{/is_random_s}}
-  {{#is_random_a}}
-  PARAMETER({{gp_hyperparam1}}_a);
-  PARAMETER({{gp_hyperparam2}}_a);
-  {{/is_random_a}}
-  {{#is_random_b}}
-  PARAMETER({{gp_hyperparam1}}_b);
-  PARAMETER({{gp_hyperparam2}}_b);
-  {{/is_random_b}}
-  {{#is_random_s}}
-  PARAMETER({{gp_hyperparam1}}_s);
-  PARAMETER({{gp_hyperparam2}}_s);
-  {{/is_random_s}}
 
+  PARAMETER_VECTOR(a);
+  PARAMETER_VECTOR(log_b);
+  PARAMETER_VECTOR(s);
+
+  {{#re_names}}
+  PARAMETER_VECTOR(beta_{{short_name}});
+  {{/re_names}}
+  {{#re_names}}
+  PARAMETER({{gp_hyperparam1}}_{{short_name}});
+  PARAMETER({{gp_hyperparam2}}_{{short_name}});
+  {{/re_names}}
 
   // Initialize the negative log likelihood
   Type nll = Type(0.0);
 
-  // ---------- Likelihood contribution from a ------------------
-  {{#is_random_a}}
+  {{#re_names}}
+  // ---------- Likelihood contribution from {{long_name}} ------------------
   // GP latent layer
-  vector<Type> mu_a = a - design_mat_a * beta_a;
-  nll += nlpdf_gp_{{kernel}}<Type>(mu_a, {{nlpdf_gp_distance}},
-                                   exp({{gp_hyperparam1}}_a), exp({{gp_hyperparam2}}_a),
+  vector<Type> mu_{{short_name}} = {{long_name}} - design_mat_{{short_name}} * beta_{{short_name}};
+  nll += nlpdf_gp_{{kernel}}<Type>(mu_{{short_name}}, {{nlpdf_gp_distance}},
+				   exp({{gp_hyperparam1}}_{{short_name}}),
+				   exp({{gp_hyperparam2}}_{{short_name}}),
                                    {{nlpdf_gp_extra}});
   // Priors
-  nll += nlpdf_beta_prior<Type>(beta_a, beta_prior, beta_a_prior(0), beta_a_prior(1));
+  nll += nlpdf_beta_prior<Type>(beta_{{short_name}}, beta_prior, beta_{{short_name}}_prior(0),
+                                beta_{{short_name}}_prior(1));
   {{#use_matern}}
-  nll += nlpdf_matern_hyperpar_prior<Type>({{gp_hyperparam2}}_a, {{gp_hyperparam1}}_a, a_pc_prior,
-                                           nu, range_a_prior, sigma_a_prior);
+  nll += nlpdf_matern_hyperpar_prior<Type>({{gp_hyperparam2}}_{{short_name}},
+					   {{gp_hyperparam1}}_{{short_name}},
+					   {{short_name}}_pc_prior,
+                                           nu, range_{{short_name}}_prior,
+					   sigma_{{short_name}}_prior);
   {{/use_matern}}
-  {{/is_random_a}}
-
-  // ---------- Likelihood contribution from b ------------------
-  {{#is_random_b}}
-  // GP latent layer
-  vector<Type> mu_b = log_b - design_mat_b * beta_b;
-  nll += nlpdf_gp_{{kernel}}<Type>(mu_b, {{nlpdf_gp_distance}},
-                                   exp({{gp_hyperparam1}}_b), exp({{gp_hyperparam2}}_b),
-                                   {{nlpdf_gp_extra}});
-  // Priors
-  nll += nlpdf_beta_prior<Type>(beta_b, beta_prior, beta_b_prior(0), beta_b_prior(1));
-  {{#use_matern}}
-  nll += nlpdf_matern_hyperpar_prior<Type>({{gp_hyperparam2}}_b, {{gp_hyperparam1}}_b, b_pc_prior,
-                                           nu, range_b_prior, sigma_b_prior);
-  {{/use_matern}}
-  {{/is_random_b}}
-
-  // ---------- Likelihood contribution from s ------------------
-  {{#is_random_s}}
-  // GP latent layer
-  vector<Type> mu_s = s - design_mat_s * beta_s;
-  nll += nlpdf_gp_{{kernel}}<Type>(mu_s, {{nlpdf_gp_distance}},
-                                   exp({{gp_hyperparam1}}_s), exp({{gp_hyperparam2}}_s),
-                                   {{nlpdf_gp_extra}});
-  // Priors
-  nll += nlpdf_beta_prior<Type>(beta_s, beta_prior, beta_s_prior(0), beta_s_prior(1));
-  {{#use_matern}}
-  nll += nlpdf_matern_hyperpar_prior<Type>({{gp_hyperparam2}}_s, {{gp_hyperparam1}}_s, s_pc_prior,
-                                           nu, range_s_prior, sigma_s_prior);
-  {{/use_matern}}
-  {{/is_random_s}}
+  {{/re_names}}
   {{^is_random_s}}
   // FIXME: rename this to not depend on `s`
-  nll += nlpdf_s_prior<Type>(s, s_mean, s_sd);
+  nll += nlpdf_s_prior<Type>({{s_var}}, s_mean, s_sd);
   {{/is_random_s}}
 
   // ------------- Data layer -----------------

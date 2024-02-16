@@ -74,28 +74,28 @@ namespace SpatialGEV {
   /// Compute the variance matrix for the exponential kernel.
   ///
   /// @param[out] cov Matrix into which to store the output.
-  /// @param[in] dd Distance matrix.
+  /// @param[in] dist_mat Distance matrix.
   /// @param[in] sigma Scale parameter.
   /// @param[in] ell Length parameter.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
-  void cov_expo(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dd,
+  void cov_expo(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dist_mat,
   	       const Type sigma, const Type ell, const Type sp_thres) {
     int i,j;
-    int n = dd.rows();
+    int n = dist_mat.rows();
     if (sp_thres == -1){
-      cov = - dd / ell;
+      cov = - dist_mat / ell;
       cov = cov.array().exp();
       cov *= sigma;
     }else {
       for (i = 0; i < n; i++){
 	cov(i,i) = sigma;
 	for (j = 0; j < i; j++){
-	  if (dd(i,j) >= sp_thres) {
+	  if (dist_mat(i,j) >= sp_thres) {
 	    cov(i,j) = 0;
 	    cov(j,i) = 0;
 	  } else {
-	    cov(i,j) = kernel_exp(dd(i,j), sigma, ell);
+	    cov(i,j) = kernel_exp(dist_mat(i,j), sigma, ell);
 	    cov(j,i) = cov(i,j);
 	  }
 	}
@@ -107,22 +107,22 @@ namespace SpatialGEV {
   /// Compute the variance matrix for the matern kernel.
   ///
   /// @param[out] cov Matrix into which to store the output.
-  /// @param[in] dd Distance matrix.
+  /// @param[in] dist_mat Distance matrix.
   /// @param[in] sigma Hyperparameter of the Matern. It is in fact sigma^2.
   /// @param[in] kappa Hyperparameter of the Matern. Positive.
   /// @param[in] nu Smoothness parameter of the Matern.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
-  void cov_matern(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dd,
+  void cov_matern(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dist_mat,
 		  const Type sigma, const Type kappa, const Type nu,
 		  const Type sp_thres) {
     int i,j;
-    int n = dd.rows();
+    int n = dist_mat.rows();
     if (sp_thres == -1){
       for (i = 0; i < n; i++){
 	cov(i,i) = sigma;
 	for (j = 0; j < i; j++){
-	    cov(i,j) = sigma*matern(dd(i,j), 1/kappa, nu);
+	    cov(i,j) = sigma*matern(dist_mat(i,j), 1/kappa, nu);
 	    cov(j,i) = cov(i,j);
 	}
       }
@@ -130,11 +130,11 @@ namespace SpatialGEV {
       for (i = 0; i < n; i++){
 	cov(i,i) = sigma;
 	for (j = 0; j < i; j++){
-	  if (dd(i,j) >= sp_thres) {
+	  if (dist_mat(i,j) >= sp_thres) {
 	    cov(i,j) = 0;
 	    cov(j,i) = 0;
 	  } else {
-	    cov(i,j) = sigma*matern(dd(i,j), 1/kappa, nu);
+	    cov(i,j) = sigma*matern(dist_mat(i,j), 1/kappa, nu);
 	    cov(j,i) = cov(i,j);
 	  }
 	}
@@ -147,16 +147,16 @@ namespace SpatialGEV {
   ///
   /// @param[out] nll negative log-likelihood accumulator.
   /// @param[in] mu Mean vector of the GP
-  /// @param[in] dd Distance matrix.
+  /// @param[in] dist_mat Distance matrix.
   /// @param[in] sigma Scale parameter.
   /// @param[in] ell Length parameter.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
-  Type nlpdf_gp_exp(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dd,
+  Type nlpdf_gp_exp(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dist_mat,
 		  const Type sigma, const Type ell, const Type sp_thres) {
-    int n = dd.rows();
+    int n = dist_mat.rows();
     matrix<Type> cov(n,n);
-    cov_expo<Type>(cov, dd, sigma, ell, sp_thres); // construct the covariance matrix
+    cov_expo<Type>(cov, dist_mat, sigma, ell, sp_thres); // construct the covariance matrix
     Type nll = MVNORM(cov)(mu);
     return nll;
   }
@@ -165,17 +165,17 @@ namespace SpatialGEV {
   ///
   /// @param[out] nll negative log-likelihood accumulator.
   /// @param[in] mu Mean vector of the GP
-  /// @param[in] dd Distance matrix.
+  /// @param[in] dist_mat Distance matrix.
   /// @param[in] sigma Hyperparameter of the Matern. It is in fact sigma^2.
   /// @param[in] kappa Hyperparameter of the Matern. Positive.
   /// @param[in] nu Smoothness parameter of the Matern.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
-  Type nlpdf_gp_matern(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dd,
+  Type nlpdf_gp_matern(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dist_mat,
 		  const Type sigma, const Type kappa, const Type nu, const Type sp_thres) {
-    int n = dd.rows();
+    int n = dist_mat.rows();
     matrix<Type> cov(n,n);
-    cov_matern<Type>(cov, dd, sigma, kappa, nu, sp_thres); // construct the covariance matrix
+    cov_matern<Type>(cov, dist_mat, sigma, kappa, nu, sp_thres); // construct the covariance matrix
     Type nll = MVNORM(cov)(mu);
     return nll;
   }
