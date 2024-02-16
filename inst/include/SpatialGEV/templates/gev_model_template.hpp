@@ -180,10 +180,13 @@ Type model_{{random_effects}}_{{kernel}}(objective_function<Type>* obj){
 
   {{#calc_z_p}}
   // ------------- Output z -----------------------
+  DATA_INTEGER(return_level);
   vector<Type> z(loc_ind.size());
-  Type p = {{prob}};
-  for (int i=0; i<y.size();i++){
-    z[i] = {{a_var}}-exp({{b_var}})/{{s_var}}*(1-pow(-log(1-p), -{{s_var}}));
+  if (return_level == 1){
+    Type p = {{prob}};
+    for (int i=0; i<y.size();i++){
+      z[i] = {{a_var}}-exp({{b_var}})/{{s_var}}*(1-pow(-log(1-p), -{{s_var}}));
+    }
   }
   ADREPORT(z);
   {{/calc_z_p}}
