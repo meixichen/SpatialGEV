@@ -52,7 +52,6 @@
 /// @param[in] {{short_name}}_pc_prior Integer specifying the type of prior to use on the Matérn
 /// GP on {{long_name}}.
 /// 1 for using PC prior on {{long_name}}, 0 for using Lebesgue prior.
-/// `log_sigma_a` and `log_kappa_a`.  1 for using PC prior on a, 0 for using Lebesgue prior.
 /// @param[in] range_{{short_name}}_prior PC prior on the range parameter for the Matérn GP on
 /// {{long_name}}. Vector of length 2 `(rho_0, p_rho)` s.t. `Pr(rho < rho_0) = p_rho`.
 /// @param[in] sigma_{{short_name}}_prior PC prior on the variance parameter for the Matérn GP on

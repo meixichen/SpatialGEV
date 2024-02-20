@@ -9,11 +9,11 @@ kernel_matern(x, sigma, kappa, nu = 1, X1 = NULL, X2 = NULL)
 \arguments{
 \item{x}{Distance measure.}
 
-\item{sigma}{Positive parameter. (This is in fact sigma^2)}
+\item{sigma}{Positive scale parameter.}
 
-\item{kappa}{Positive parameter.}
+\item{kappa}{Positive inverse range/lengthscale parameter.}
 
-\item{nu}{Range parameter default to 1.}
+\item{nu}{Smoothness parameter default to 1.}
 
 \item{X1}{A \verb{n1 x 2} matrix containing the coordinates of location set 1.
 If \code{x} is not provided, \code{X1} and \code{X2} should be provided for calculating their distance.}
@@ -30,7 +30,7 @@ Matern covariance function
 \details{
 Let x = dist(x_i, x_j).
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{cov(i,j) = sigma * 2^(1-nu)/gamma(nu) * (kappa*x)^nu * K_v(kappa*x)
+\if{html}{\out{<div class="sourceCode">}}\preformatted{cov(i,j) = sigma^2 * 2^(1-nu)/gamma(nu) * (kappa*x)^nu * K_v(kappa*x)
 }\if{html}{\out{</div>}}
 
 Note that when \code{nu=0.5}, the Matern kernel corresponds to the absolute exponential kernel.
