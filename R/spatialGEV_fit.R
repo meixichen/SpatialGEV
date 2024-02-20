@@ -291,15 +291,20 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
     }
   } else {
     start_t <- Sys.time()
-    adfun_optim <- TMB::MakeADFun(data = c(model$data, return_level=as.integer(0)),
-				  parameters = model$parameters,
-				  random = model$random,
-				  map = model$map,
-				  DLL = "SpatialGEV_TMBExports",
-				  silent = silent)
-    fit <- nlminb(adfun_optim$par, adfun_optim$fn, adfun_optim$gr)
-    par_fixed <- fit$par
-    report <- TMB::sdreport(adfun, par.fixed = par_fixed, getJointPrecision = get_hessian)
+    if (return_level) {
+      adfun_optim <- TMB::MakeADFun(data = c(model$data, return_level=as.integer(0)),
+  				    parameters = model$parameters,
+  				    random = model$random,
+  				    map = model$map,
+  				    DLL = "SpatialGEV_TMBExports",
+  				    silent = silent)
+      fit <- nlminb(adfun_optim$par, adfun_optim$fn, adfun_optim$gr)
+      report <- TMB::sdreport(adfun, par.fixed = fit$par, getJointPrecision = get_hessian)
+    } else{
+      adfun_optim <- adfun
+      fit <- nlminb(adfun_optim$par, adfun_optim$fn, adfun_optim$gr)
+      report <- TMB::sdreport(adfun_optim, getJointPrecision = get_hessian)
+    }
     t_taken <- as.numeric(difftime(Sys.time(), start_t, units="secs"))
     out <- list(adfun = adfun_optim, fit = fit, report = report,
                 time = t_taken, random = model$random, kernel = kernel,
