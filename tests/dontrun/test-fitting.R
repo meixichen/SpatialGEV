@@ -11,7 +11,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
 
   n_test <- 10                                # number of test locations
   n_train <- n_loc-n_test
-  test_ind <- sample(1:n_loc, n_test)           # indices of the test locations
+  test_ind <- sample(1:n_loc, n_test)         # indices of the test locations
   locs_test <- locs[test_ind,]                # coordinates of the test locations
   y_test <- y[test_ind]                       # observations at the test locations
   locs_train <- locs[-test_ind,]              # coordinates of the training (observed) locations
@@ -23,8 +23,8 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
   cat("Fitting model a using exp kernel...\n")
   fit_e <- spatialGEV_fit(data = y_train, locs = locs_train, random = "a",
 			init_param = list(a = rep(2, n_train), log_b = -1, s = logs,
-					  beta_a =3, log_sigma_a = 1, log_ell_a = 5),
-                        kernel="exp",
+			                  beta_a = 3, log_sigma_a = 1, log_ell_a = 5),
+			kernel="exp",
 			reparam_s = "positive", silent = T)
   expect_equal(fit_e$fit$convergence, 0)
 
