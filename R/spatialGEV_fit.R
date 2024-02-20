@@ -38,6 +38,12 @@
 #' or `matern_s`.
 #' E.g. `matern_pc_prior=list(matern_s=matern_pc_prior(100, 0.9, 2, 0.1))`.
 #' Default is NULL, which means a flat prior. See `?matern_pc_prior` for more details.
+#' @param return_level Optional. If TRUE, the posterior mean and sd of the upper
+#' p% quantile of the GEV distribution at each location will be returned. Default p
+#' is 10, which can be changed in
+#' `inst/include/SpatialGEV/templates/make_template.R` under development. More
+#' details on how to change the model templates can be found in the README in the
+#' templates folder above.
 #' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance
 #' value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not
 #' using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad
@@ -246,6 +252,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                            X_a = NULL, X_b = NULL, X_s = NULL, nu = 1,
                            s_prior = NULL, beta_prior = NULL,
                            matern_pc_prior = NULL,
+			   return_level=FALSE,
                            sp_thres = -1, adfun_only = FALSE,
                            ignore_random = FALSE, silent = FALSE,
                            mesh_extra_init = list(a=0, log_b=-1, s=0.001),
@@ -269,7 +276,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                             sp_thres = sp_thres, ignore_random = ignore_random,
                             mesh_extra_init = mesh_extra_init, ...)
   # Build TMB template
-  adfun <- TMB::MakeADFun(data = c(model$data, return_level=as.integer(0)),
+  adfun <- TMB::MakeADFun(data = c(model$data, return_level=as.integer(return_level)),
                           parameters = model$parameters,
                           random = model$random,
                           map = model$map,
@@ -284,10 +291,17 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
     }
   } else {
     start_t <- Sys.time()
-    fit <- nlminb(adfun$par, adfun$fn, adfun$gr)
-    report <- TMB::sdreport(adfun, getJointPrecision = get_hessian)
+    adfun_optim <- TMB::MakeADFun(data = c(model$data, return_level=as.integer(0)),
+				  parameters = model$parameters,
+				  random = model$random,
+				  map = model$map,
+				  DLL = "SpatialGEV_TMBExports",
+				  silent = silent)
+    fit <- nlminb(adfun_optim$par, adfun_optim$fn, adfun_optim$gr)
+    par_fixed <- fit$par
+    report <- TMB::sdreport(adfun, par.fixed = par_fixed, getJointPrecision = get_hessian)
     t_taken <- as.numeric(difftime(Sys.time(), start_t, units="secs"))
-    out <- list(adfun = adfun, fit = fit, report = report,
+    out <- list(adfun = adfun_optim, fit = fit, report = report,
                 time = t_taken, random = model$random, kernel = kernel,
                 # FIXME: why not just call this locs?
                 locs_obs = locs,
@@ -295,6 +309,10 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                 X_b = model$data$design_mat_b,
                 X_s = model$data$design_mat_s,
                 pdHess_avail = get_hessian & report$pdHess)
+    if (return_level) {
+      out$return_level <- report$value
+      out$return_level_sd <- report$sd
+    }
     if (kernel == "spde") {
       out$mesh <- model$mesh
       out$meshidxloc <- as.integer(model$mesh$idx$loc)

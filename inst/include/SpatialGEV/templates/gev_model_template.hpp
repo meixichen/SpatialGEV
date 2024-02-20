@@ -170,21 +170,21 @@ Type model_{{random_effects}}_{{kernel}}(objective_function<Type>* obj){
   {{/re_names}}
   {{^is_random_s}}
   // FIXME: rename this to not depend on `s`
-  nll += nlpdf_s_prior<Type>({{s_var}}, s_mean, s_sd);
+  nll += nlpdf_s_prior<Type>({{s_var_loc}}, s_mean, s_sd);
   {{/is_random_s}}
 
   // ------------- Data layer -----------------
   for(int i=0;i<y.size();i++) {
-    nll -= gev_reparam_lpdf<Type>(y(i), {{a_var}}, {{b_var}}, {{s_var}}, reparam_s);
+    nll -= gev_reparam_lpdf<Type>(y(i), {{a_var_loc}}, {{b_var_loc}}, {{s_var_loc}}, reparam_s);
   }
 
   {{#calc_z_p}}
   // ------------- Output z -----------------------
   DATA_INTEGER(return_level);
-  vector<Type> z(loc_ind.size());
+  vector<Type> z({{re}}.size());
   if (return_level == 1){
     Type p = {{prob}};
-    for (int i=0; i<y.size();i++){
+    for (int i=0; i<{{re}}.size();i++){
       z[i] = {{a_var}}-exp({{b_var}})/{{s_var}}*(1-pow(-log(1-p), -{{s_var}}));
     }
   }

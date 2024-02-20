@@ -121,11 +121,11 @@ Type model_a_spde(objective_function<Type>* obj){
 
   // ------------- Output z -----------------------
   DATA_INTEGER(return_level);
-  vector<Type> z(loc_ind.size());
+  vector<Type> z(a.size());
   if (return_level == 1){
     Type p = 0.1;
-    for (int i=0; i<y.size();i++){
-      z[i] = a(loc_ind(i))-exp(log_b(0))/s(0)*(1-pow(-log(1-p), -s(0)));
+    for (int i=0; i<a.size();i++){
+      z[i] = a(i)-exp(log_b(0))/s(0)*(1-pow(-log(1-p), -s(0)));
     }
   }
   ADREPORT(z);

@@ -15,12 +15,14 @@ choose_gp_hyperparam <- function(kernel = c("exp", "matern", "spde")){
          matern = c("log_sigma", "log_kappa"),
          spde = c("log_sigma", "log_kappa"))
 }
-choose_abs_var_name <- function(random_effects = c("a", "ab", "abs")){
+choose_abs_var_name <- function(random_effects = c("a", "ab", "abs"),
+                                with_loc_ind = F){
   random_effects <- match.arg(random_effects)
-  switch(random_effects,
-         a = c("a(loc_ind(i))", "log_b(0)", "s(0)"),
-         ab = c("a(loc_ind(i))", "log_b(loc_ind(i))", "s(0)"),
-         abs = c("a(loc_ind(i))", "log_b(loc_ind(i))", "s(loc_ind(i))"))
+  out <- switch(random_effects, 
+                a = c("a(i)", "log_b(0)", "s(0)"),
+                ab = c("a(i)", "log_b(i)", "s(0)"),
+                abs = c("a(i)", "log_b(i)", "s(i)"))
+  out
 }
 choose_nlpdf_gp_setting <- function(kernel = c("exp", "matern", "spde")){
   kernel <- match.arg(kernel)
@@ -51,9 +53,11 @@ for (i in 1:nrow(re_kernel_combs)){
   check_random_abs <- unname(parse_random(random_effects))
   gp_hyperparam <- choose_gp_hyperparam(kernel)
   abs_var_name <- choose_abs_var_name(random_effects)
+  abs_var_name_loc <- gsub("i", "loc_ind(i)", abs_var_name)
   nlpdf_gp_setting <- choose_nlpdf_gp_setting(kernel)
+  re_names <- create_re_long_short_names(check_random_abs)
   temp_keys <- list(
-    re_names = create_re_long_short_names(check_random_abs),
+    re_names = re_names,
     is_random_a = check_random_abs[1],
     is_random_b = check_random_abs[2],
     is_random_s = check_random_abs[3],
@@ -61,15 +65,19 @@ for (i in 1:nrow(re_kernel_combs)){
     kernel = match.arg(kernel, c("exp", "matern", "spde")),
     use_spde = kernel=="spde",
     use_matern = kernel %in% c("matern", "spde"),
-    a_var = abs_var_name[1],
-    b_var = abs_var_name[2],
-    s_var = abs_var_name[3],
+    a_var_loc = abs_var_name_loc[1],
+    b_var_loc = abs_var_name_loc[2],
+    s_var_loc = abs_var_name_loc[3],
     nlpdf_gp_distance = nlpdf_gp_setting[1],
     nlpdf_gp_extra = nlpdf_gp_setting[2],
     gp_hyperparam1 = gp_hyperparam[1],
     gp_hyperparam2 = gp_hyperparam[2],
     #calc_z_p = F
-    calc_z_p = list(prob=0.1)
+    calc_z_p = list(re = unname(re_names[[1]]['long_name']),
+                    a_var = abs_var_name[1],
+                    b_var = abs_var_name[2],
+                    s_var = abs_var_name[3],
+                    prob = 0.1)
   )
 
   write_dir <- file.path(pkg_dir, "src", "TMB")

@@ -20,6 +20,7 @@ spatialGEV_fit(
   s_prior = NULL,
   beta_prior = NULL,
   matern_pc_prior = NULL,
+  return_level = FALSE,
   sp_thres = -1,
   adfun_only = FALSE,
   ignore_random = FALSE,
@@ -101,6 +102,13 @@ priors on the GP Matern covariance hyperparameters \code{sig} and \code{rho}, wh
 or \code{matern_s}.
 E.g. \code{matern_pc_prior=list(matern_s=matern_pc_prior(100, 0.9, 2, 0.1))}.
 Default is NULL, which means a flat prior. See \code{?matern_pc_prior} for more details.}
+
+\item{return_level}{Optional. If TRUE, the posterior mean and sd of the upper
+p\% quantile of the GEV distribution at each location will be returned. Default p
+is 10, which can be changed in
+\code{inst/include/SpatialGEV/templates/make_template.R} under development. More
+details on how to change the model templates can be found in the README in the
+templates folder above.}
 
 \item{sp_thres}{Optional. Thresholding value to create sparse covariance matrix. Any distance
 value greater than or equal to \code{sp_thres} will be set to 0. Default is -1, which means not
