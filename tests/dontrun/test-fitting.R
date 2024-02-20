@@ -87,7 +87,7 @@ test_that("spatialGEV_fit/sample/predict works fine for model a and ab", {
 					  beta_a = 3,
 					  log_sigma_a = 1, log_kappa_a = -2),
                         kernel="spde",
-			reparam_s = "positive", silent = T)
+			reparam_s = "positive", silent = T, return_level = T)
   expect_equal(fit_s$fit$convergence, 0)
 
   # Test if sampling works

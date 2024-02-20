@@ -62,40 +62,37 @@ namespace SpatialGEV {
   /// Compute the exponential kernel function
   ///
   /// @param[in] x Value to evaluate at
-  /// @param[in] sigma Amplitude parameter
-  /// @param[in] ell Smoothness parameter
+  /// @param[in] ell Range (lengthscale) parameter
   ///
   /// @return A scalar of squared exponential kernel function value
   template <class Type>
-  Type kernel_exp(const Type x, const Type sigma, const Type ell) {
-    return sigma * exp(- x / ell);
+  Type kernel_exp(const Type x, const Type ell) {
+    return exp(- x / ell);
   }
 
   /// Compute the variance matrix for the exponential kernel.
   ///
   /// @param[out] cov Matrix into which to store the output.
   /// @param[in] dist_mat Distance matrix.
-  /// @param[in] sigma Scale parameter.
-  /// @param[in] ell Length parameter.
+  /// @param[in] ell Range (lengthscale) parameter.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
   void cov_expo(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dist_mat,
-  	       const Type sigma, const Type ell, const Type sp_thres) {
+  	        const Type ell, const Type sp_thres) {
     int i,j;
     int n = dist_mat.rows();
     if (sp_thres == -1){
       cov = - dist_mat / ell;
       cov = cov.array().exp();
-      cov *= sigma;
     }else {
       for (i = 0; i < n; i++){
-	cov(i,i) = sigma;
+	cov(i,i) = Type(1);
 	for (j = 0; j < i; j++){
 	  if (dist_mat(i,j) >= sp_thres) {
 	    cov(i,j) = 0;
 	    cov(j,i) = 0;
 	  } else {
-	    cov(i,j) = kernel_exp(dist_mat(i,j), sigma, ell);
+	    cov(i,j) = kernel_exp(dist_mat(i,j), ell);
 	    cov(j,i) = cov(i,j);
 	  }
 	}
@@ -108,33 +105,32 @@ namespace SpatialGEV {
   ///
   /// @param[out] cov Matrix into which to store the output.
   /// @param[in] dist_mat Distance matrix.
-  /// @param[in] sigma Hyperparameter of the Matern. It is in fact sigma^2.
-  /// @param[in] kappa Hyperparameter of the Matern. Positive.
+  /// @param[in] kappa Inverse range (lengthscale) hyperparameter of the Matern. Positive.
   /// @param[in] nu Smoothness parameter of the Matern.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
   void cov_matern(RefMatrix_t<Type> cov, cRefMatrix_t<Type>& dist_mat,
-		  const Type sigma, const Type kappa, const Type nu,
+		  const Type kappa, const Type nu,
 		  const Type sp_thres) {
     int i,j;
     int n = dist_mat.rows();
     if (sp_thres == -1){
       for (i = 0; i < n; i++){
-	cov(i,i) = sigma;
+	cov(i,i) = Type(1);
 	for (j = 0; j < i; j++){
-	    cov(i,j) = sigma*matern(dist_mat(i,j), 1/kappa, nu);
+	    cov(i,j) = matern(dist_mat(i,j), 1/kappa, nu);
 	    cov(j,i) = cov(i,j);
 	}
       }
     }else {
       for (i = 0; i < n; i++){
-	cov(i,i) = sigma;
+	cov(i,i) = Type(1);
 	for (j = 0; j < i; j++){
 	  if (dist_mat(i,j) >= sp_thres) {
 	    cov(i,j) = 0;
 	    cov(j,i) = 0;
 	  } else {
-	    cov(i,j) = sigma*matern(dist_mat(i,j), 1/kappa, nu);
+	    cov(i,j) = matern(dist_mat(i,j), 1/kappa, nu);
 	    cov(j,i) = cov(i,j);
 	  }
 	}
@@ -148,16 +144,16 @@ namespace SpatialGEV {
   /// @param[out] nll negative log-likelihood accumulator.
   /// @param[in] mu Mean vector of the GP
   /// @param[in] dist_mat Distance matrix.
-  /// @param[in] sigma Scale parameter.
-  /// @param[in] ell Length parameter.
+  /// @param[in] sigma Scale parameter for the exponential covariance.
+  /// @param[in] ell Range (lengthscale) parameter for the exponential covariance.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
   Type nlpdf_gp_exp(cRefVector_t<Type> mu, cRefMatrix_t<Type>& dist_mat,
 		  const Type sigma, const Type ell, const Type sp_thres) {
     int n = dist_mat.rows();
     matrix<Type> cov(n,n);
-    cov_expo<Type>(cov, dist_mat, sigma, ell, sp_thres); // construct the covariance matrix
-    Type nll = MVNORM(cov)(mu);
+    cov_expo<Type>(cov, dist_mat, ell, sp_thres); // construct the covariance matrix
+    Type nll = SCALE(MVNORM(cov), sigma)(mu);
     return nll;
   }
 
@@ -166,8 +162,8 @@ namespace SpatialGEV {
   /// @param[out] nll negative log-likelihood accumulator.
   /// @param[in] mu Mean vector of the GP
   /// @param[in] dist_mat Distance matrix.
-  /// @param[in] sigma Hyperparameter of the Matern. It is in fact sigma^2.
-  /// @param[in] kappa Hyperparameter of the Matern. Positive.
+  /// @param[in] sigma Scale hyperparameter of the Matern.
+  /// @param[in] kappa Inverse range (lengthscale) hyperparameter of the Matern. Positive.
   /// @param[in] nu Smoothness parameter of the Matern.
   /// @param[in] sp_thres Threshold parameter.
   template <class Type>
@@ -175,8 +171,8 @@ namespace SpatialGEV {
 		  const Type sigma, const Type kappa, const Type nu, const Type sp_thres) {
     int n = dist_mat.rows();
     matrix<Type> cov(n,n);
-    cov_matern<Type>(cov, dist_mat, sigma, kappa, nu, sp_thres); // construct the covariance matrix
-    Type nll = MVNORM(cov)(mu);
+    cov_matern<Type>(cov, dist_mat, kappa, nu, sp_thres); // construct the covariance matrix
+    Type nll = SCALE(MVNORM(cov), sigma)(mu);
     return nll;
   }
 
@@ -185,8 +181,8 @@ namespace SpatialGEV {
   /// @param[out] nll negative log-likelihood accumulator.
   /// @param[in] spde the returned object by INLA::inla.spde2.matern in R.
   /// @param[in] mu Mean vector of the GP.
-  /// @param[in] sigma Hyperparameter of the Matern. It is in fact sigma^2.
-  /// @param[in] kappa Hyperparameter of the Matern. Positive.
+  /// @param[in] sigma Scale hyperparameter of the Matern.
+  /// @param[in] kappa Inverse range (lengthscale) hyperparameter of the Matern. Positive.
   /// @param[in] nu Smoothness parameter of the Matern.
   template <class Type>
   Type nlpdf_gp_spde(cRefVector_t<Type> mu, spde_t<Type> spde,
