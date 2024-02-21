@@ -213,7 +213,7 @@ namespace SpatialGEV {
   ///
   /// @param[out] nll Negative log-likelihood accumulator.
   /// @param[in] log_kappa Log of inverse range parameter of Matern
-  /// @param[in] log_sigma Log of marginal variance parameter of Matern
+  /// @param[in] log_sigma Log of marginal scale parameter of Matern
   /// @param[in] prior Type of prior. 1 is weakly penalized complexity (PC) prior and any other
   /// number means noninformative prior.
   /// @param[in] nu Matern smoothness hyperparameter.
@@ -231,8 +231,7 @@ namespace SpatialGEV {
        // See Theorem 6 of Fuglstad et al. (2017) https://arxiv.org/pdf/1503.00256.pdf
        Type log_rho = 0.5*log(8.0*nu) - log_kappa; // get range parameter
        Type rho = exp(log_rho);
-       Type log_sig = 0.5*log_sigma; // get sd parameter
-       Type sig = exp(log_sig);
+       Type sig = exp(log_sigma);
        Type rho_0 = range_prior[0];
        Type p_rho = range_prior[1];
        Type sig_0 = sigma_prior[0];
@@ -242,7 +241,7 @@ namespace SpatialGEV {
        // PC prior log density
        Type logpi = log(lam1) + log(lam2) - 2.0 * log_rho - lam1 / rho - lam2 * sig;
        // Jacobian adjustment = log(1 / (|dlogkappa/drho| * |dlogsigma/dsig|))
-       logpi += log_kappa + 0.5 * log_sigma - log(2.0) - 0.5*log(8.0*nu);
+       logpi += log_sigma + 0.5*log(8.0*nu) - log_kappa;
        nll -= logpi;
     }
     return nll;
