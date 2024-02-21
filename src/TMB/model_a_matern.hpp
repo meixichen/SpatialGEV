@@ -126,7 +126,8 @@ Type model_a_matern(objective_function<Type>* obj){
   if (return_level == 1){
     Type p = 0.1;
     for (int i=0; i<a.size();i++){
-      z[i] = a(i)-exp(log_b(0))/s(0)*(1-pow(-log(1-p), -s(0)));
+      z(i) = gev_return_level(a(i), log_b(0), s(0), reparam_s, p);
+      //z[i] = a(i)-exp(log_b(0))/s(0)*(1-pow(-log(1-p), -s(0)));
     }
   }
   ADREPORT(z);

@@ -99,6 +99,18 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
 					   nu, range_b_prior, sigma_b_prior);
   nll += nlpdf_matern_hyperpar_prior<Type>(log_kappa_s, log_sigma_s, s_pc_prior,
 					   nu, range_s_prior, sigma_s_prior);
+
+  // ------------- Output z -----------------------
+  DATA_INTEGER(return_level);
+  vector<Type> z(a.size());
+  if (return_level == 1){
+    Type p = 0.1;
+    for (int i=0; i<a.size();i++){
+      z(i) = gev_return_level(a(i), log_b(i), s(i), reparam_s, p);
+    }
+  }
+  ADREPORT(z);
+
   return nll;
 
 }
