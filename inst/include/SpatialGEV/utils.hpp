@@ -288,28 +288,38 @@ namespace SpatialGEV {
   }
 
 
-  /// Calculate return level based on different parameterization of s.
+  /// Quantiles of the GEV distribution based on different parameterizations of s.
   ///
-  /// @param[out] z Scalar return level.
-  /// @param[in] a GEV Location parameter.
+  /// @param[out] quant Vector of quantiles to compute.
+  /// @param[in] prob Vector of probabilities at which to compute the quantiles.
+  /// @param[in] a GEV Location parameter vector.
   /// @param[in] log_b GEV (log) scale parameter.
   /// @param[in] s GEV Shape parameter (possibly transformed).
   /// @param[in] reparam_s Flag indicating reparametrization of s.
-  /// @param[in] p The probability with which the return level is associated.
   template <class Type>
-  Type gev_return_level(const Type a, const Type log_b, Type s, const int reparam_s, const Type p) {
-    Type z;
-    if (reparam_s == 0){ // this is the case we are using Gumbel distribution
-      z = a - exp(log_b)*log(-log(1-p));
-    } else{ // the case where we are using GEV distribution with nonzero shape parameter
-      if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
-	s = exp(s);
-      } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
-	s = -exp(s);
-      } // if we don't use any reparametrization, then s is unconstrained
-      z = a - exp(log_b)/s*(1-pow(-log(1-p), -s));
-    } // end else
-    return z;
+  void gev_reparam_quantile(RefRowVector_t<Type> quant, cRefVector_t<Type>& prob,
+                            const Type a, const Type log_b, const Type s,
+                            const int reparam_s) {
+    int n_quant = prob.size();
+    Type _b = exp(log_b);
+    // reparametrize s for s \neq 0
+    Type _s;
+    if(reparam_s == 1) {
+      _s = exp(s);
+    } else if(reparam_s == 2) {
+      _s = -exp(s);
+    } else if(reparam_s == 3) {
+      _s = s;
+    }
+    // calculate quantiles
+    if(reparam_s == 0) {
+      // Using Gumbel distribution
+      quant = a - _b * log(-log(prob.array()));
+    } else {
+      // Using full GEV distribution
+      quant = a + (_b/_s) * (pow(-log(prob.array()), -_s) - Type(1.0));
+    }
+    return;
   }
 } // end namespace SpatialGEV
 

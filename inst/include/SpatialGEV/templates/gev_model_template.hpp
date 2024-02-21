@@ -28,6 +28,8 @@
 /// @param[in] beta_prior Integer specifying the type of prior on the design matrix coefficients.
 /// 1 is weakly informative normal prior and any other numbers means Lebesgue prior
 /// `pi(beta) \propto 1`.
+/// @param[in] return_levels Vector of return levels to ADREPORT.
+/// If the first element of this vector is 0, then no return level calculations are performed.
 {{#use_spde}}
 /// @param[in] spde Object of type `spde_t` as constructed in R by a call to
 /// [INLA::inla.spde2.matern()]
@@ -105,12 +107,16 @@ Type model_{{random_effects}}_{{kernel}}(objective_function<Type>* obj){
   DATA_IVECTOR(loc_ind);
   DATA_INTEGER(reparam_s);
   DATA_INTEGER(beta_prior);
+  DATA_VECTOR(return_levels);
+  int has_returns = return_levels(0) > Type(0.0);
   {{#use_spde}}
   DATA_STRUCT(spde, spde_t);
+  int n_loc = spde.M0.rows(); // number of spatial locations
   {{/use_spde}}
   {{^use_spde}}
   DATA_MATRIX(dist_mat);
   DATA_SCALAR(sp_thres);
+  int n_loc = dist_mat.rows(); // number of spatial dimensions
   {{/use_spde}}
   {{#use_matern}}
   DATA_SCALAR(nu);
@@ -179,16 +185,16 @@ Type model_{{random_effects}}_{{kernel}}(objective_function<Type>* obj){
 
   {{#calc_z_p}}
   // ------------- Output z -----------------------
-  DATA_INTEGER(return_level);
-  vector<Type> z({{re}}.size());
-  if (return_level == 1){
-    Type p = {{prob}};
-    for (int i=0; i<{{re}}.size();i++){
-      z(i) = gev_return_level({{a_var}}, {{b_var}}, {{s_var}}, reparam_s, p);
-      //z[i] = {{a_var}}-exp({{b_var}})/{{s_var}}*(1-pow(-log(1-p), -{{s_var}}));
+  // fixme: z defined regardless of whether returns are calculated, to avoid potential compile problems.
+  // matrix<Type> z(has_returns ? return_levels.size() : 1, has_returns ? n_loc : 1);
+  if(has_returns) {
+    matrix<Type> z(return_levels.size(), n_loc);
+    for(int i=0; i<n_loc; i++) {
+      gev_reparam_quantile<Type>(z.col(i), return_levels,
+                                 {{a_var}}, {{b_var}}, {{s_var}}, reparam_s);
     }
+    ADREPORT(z);
   }
-  ADREPORT(z);
   {{/calc_z_p}}
 
   return nll;

@@ -59,7 +59,6 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   PARAMETER(log_sigma_s); // hyperparameter for Sigma_s
   PARAMETER(log_kappa_s); // as above
 
-  int n_loc = loc_ind.size();
   int n_param = 3;
   Type sigma_a = exp(log_sigma_a);
   Type kappa_a = exp(log_kappa_a);
@@ -74,7 +73,7 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   vector<Type> offset(n_param);
   matrix<Type> cov_block(n_param,n_param);
   vector<Type> mu_obs(n_param);
-  for(int i=0; i<n_loc; i++) {
+  for(int i=0; i<loc_ind.size(); i++) {
     offset(0) = a(loc_ind(i));
     offset(1) = log_b(loc_ind(i));
     offset(2) = s(loc_ind(i));
@@ -101,12 +100,14 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
 					   nu, range_s_prior, sigma_s_prior);
 
   // ------------- Output z -----------------------
-  DATA_INTEGER(return_level);
-  vector<Type> z(a.size());
-  if (return_level == 1){
-    Type p = 0.1;
-    for (int i=0; i<a.size();i++){
-      z(i) = gev_return_level(a(i), log_b(i), s(i), reparam_s, p);
+  DATA_VECTOR(return_levels);
+  int n_loc = spde.M0.rows();
+  int has_returns = return_levels(0) > Type(0.0);
+  matrix<Type> z(return_levels.size(), n_loc);
+  if (has_returns){
+    for(int i=0; i<n_loc; i++) {
+      gev_reparam_quantile<Type>(z.col(i), return_levels,
+                                 a(i), log_b(i), s(i), reparam_s);
     }
   }
   ADREPORT(z);
