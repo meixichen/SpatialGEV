@@ -2,8 +2,8 @@ require(whisker)
 require(TMBtools)
 require(usethis)
 pkg_dir <- usethis::proj_get()
-template_file <- file.path(pkg_dir, 
-                           "inst", "include", "SpatialGEV", "templates", 
+template_file <- file.path(pkg_dir,
+                           "inst", "include", "SpatialGEV", "templates",
                            "gev_model_template.hpp")
 template <- readLines(template_file)
 
@@ -18,7 +18,7 @@ choose_gp_hyperparam <- function(kernel = c("exp", "matern", "spde")){
 choose_abs_var_name <- function(random_effects = c("a", "ab", "abs"),
                                 with_loc_ind = F){
   random_effects <- match.arg(random_effects)
-  out <- switch(random_effects, 
+  out <- switch(random_effects,
                 a = c("a(i)", "log_b(0)", "s(0)"),
                 ab = c("a(i)", "log_b(i)", "s(0)"),
                 abs = c("a(i)", "log_b(i)", "s(i)"))
@@ -35,7 +35,7 @@ create_re_long_short_names <- function(re_logical = c(TRUE, TRUE, TRUE)){
   out <- list(c(short_name="a", long_name="a"),
               c(short_name="b", long_name="log_b"),
               c(short_name="s", long_name="s"))
-  out[re_logical] 
+  out[re_logical]
 }
 
 # ------------- Generate all model combinations -------------------------
@@ -73,17 +73,15 @@ for (i in 1:nrow(re_kernel_combs)){
     gp_hyperparam1 = gp_hyperparam[1],
     gp_hyperparam2 = gp_hyperparam[2],
     #calc_z_p = F
-    calc_z_p = list(re = unname(re_names[[1]]['long_name']),
-                    a_var = abs_var_name[1],
+    calc_z_p = list(a_var = abs_var_name[1],
                     b_var = abs_var_name[2],
-                    s_var = abs_var_name[3],
-                    prob = 0.1)
+                    s_var = abs_var_name[3])
   )
 
   write_dir <- file.path(pkg_dir, "src", "TMB")
   writeLines(whisker.render(template, temp_keys),
              file.path(write_dir,
-                       paste0(paste("model", random_effects, kernel, sep = "_"), 
+                       paste0(paste("model", random_effects, kernel, sep = "_"),
                               ".hpp")))
 }
 

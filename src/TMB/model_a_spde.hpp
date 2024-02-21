@@ -26,6 +26,8 @@
 /// @param[in] beta_prior Integer specifying the type of prior on the design matrix coefficients.
 /// 1 is weakly informative normal prior and any other numbers means Lebesgue prior
 /// `pi(beta) \propto 1`.
+/// @param[in] return_levels Vector of return levels to ADREPORT.
+/// If the first element of this vector is 0, then no return level calculations are performed.
 /// @param[in] spde Object of type `spde_t` as constructed in R by a call to
 /// [INLA::inla.spde2.matern()]
 /// consisting of `n_loc` mesh locations.
@@ -70,7 +72,10 @@ Type model_a_spde(objective_function<Type>* obj){
   DATA_IVECTOR(loc_ind);
   DATA_INTEGER(reparam_s);
   DATA_INTEGER(beta_prior);
+  DATA_VECTOR(return_levels);
+  int has_returns = return_levels(0) > Type(0.0);
   DATA_STRUCT(spde, spde_t);
+  int n_loc = spde.M0.rows(); // number of spatial locations
   DATA_SCALAR(nu);
 
   // Inputs for a
@@ -119,16 +124,16 @@ Type model_a_spde(objective_function<Type>* obj){
   }
 
   // ------------- Output z -----------------------
-  DATA_INTEGER(return_level);
-  vector<Type> z(a.size());
-  if (return_level == 1){
-    Type p = 0.1;
-    for (int i=0; i<a.size();i++){
-      z(i) = gev_return_level(a(i), log_b(0), s(0), reparam_s, p);
-      //z[i] = a(i)-exp(log_b(0))/s(0)*(1-pow(-log(1-p), -s(0)));
+  // fixme: z defined regardless of whether returns are calculated, to avoid potential compile problems.
+  // matrix<Type> z(has_returns ? return_levels.size() : 1, has_returns ? n_loc : 1);
+  if(has_returns) {
+    matrix<Type> z(return_levels.size(), n_loc);
+    for(int i=0; i<n_loc; i++) {
+      gev_reparam_quantile<Type>(z.col(i), return_levels,
+                                 a(i), log_b(0), s(0), reparam_s);
     }
+    ADREPORT(z);
   }
-  ADREPORT(z);
 
   return nll;
 }

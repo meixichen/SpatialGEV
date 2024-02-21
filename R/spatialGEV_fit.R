@@ -38,12 +38,8 @@
 #' or `matern_s`.
 #' E.g. `matern_pc_prior=list(matern_s=matern_pc_prior(100, 0.9, 2, 0.1))`.
 #' Default is NULL, which means a flat prior. See `?matern_pc_prior` for more details.
-#' @param return_level Optional. If TRUE, the posterior mean and sd of the upper
-#' p% quantile of the GEV distribution at each location will be returned. Default p
-#' is 10, which can be changed in
-#' `inst/include/SpatialGEV/templates/make_template.R` under development. More
-#' details on how to change the model templates can be found in the README in the
-#' templates folder above.
+#' @param return_levels Optional numeric vector. If provided, the posterior mean and sd of the
+#' upper p% quantile of the GEV distribution at each location will be returned.
 #' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance
 #' value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not
 #' using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad
@@ -252,7 +248,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                            X_a = NULL, X_b = NULL, X_s = NULL, nu = 1,
                            s_prior = NULL, beta_prior = NULL,
                            matern_pc_prior = NULL,
-			   return_level=FALSE,
+                           return_levels=0.,
                            sp_thres = -1, adfun_only = FALSE,
                            ignore_random = FALSE, silent = FALSE,
                            mesh_extra_init = list(a=0, log_b=-1, s=0.001),
@@ -276,7 +272,8 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                             sp_thres = sp_thres, ignore_random = ignore_random,
                             mesh_extra_init = mesh_extra_init, ...)
   # Build TMB template
-  adfun <- TMB::MakeADFun(data = c(model$data, return_level=as.integer(return_level)),
+  model$data$return_levels <- return_levels
+  adfun <- TMB::MakeADFun(data = model$data,
                           parameters = model$parameters,
                           random = model$random,
                           map = model$map,
@@ -291,8 +288,8 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
     }
   } else {
     start_t <- Sys.time()
-    if (return_level) {
-      adfun_optim <- TMB::MakeADFun(data = c(model$data, return_level=as.integer(0)),
+    if (return_levels[1] != 0) {
+      adfun_optim <- TMB::MakeADFun(data = c(model$data, return_levels=0.),
   				    parameters = model$parameters,
   				    random = model$random,
   				    map = model$map,
@@ -314,9 +311,19 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                 X_b = model$data$design_mat_b,
                 X_s = model$data$design_mat_s,
                 pdHess_avail = get_hessian & report$pdHess)
-    if (return_level) {
-      out$return_level <- report$value
-      out$return_level_sd <- report$sd
+    if (return_levels[1] != 0) {
+      n_probs <- length(return_levels)
+      rl_inds <- lapply(1:n_probs, function(u) seq(u, length(report$value), by=n_probs))
+      out_return_levels <- lapply(rl_inds, function(ind) report$value[ind])
+      out_return_levels_sd <- lapply(rl_inds, function(ind) report$sd[ind])
+      out_return_levels_cov <- lapply(rl_inds, function(ind) report$cov[ind, ind])
+      rl_list_names <- as.character(return_levels)
+      names(out_return_levels) <- rl_list_names
+      names(out_return_levels_sd) <- rl_list_names
+      names(out_return_levels_cov) <- rl_list_names
+      out$return_levels <- out_return_levels
+      out$return_levels_sd <- out_return_levels_sd
+      out$return_levels_cov <- out_return_levels_cov
     }
     if (kernel == "spde") {
       out$mesh <- model$mesh
