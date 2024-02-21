@@ -267,7 +267,7 @@ namespace SpatialGEV {
   ///
   /// @param[out] ll log-likelihood.
   /// @param[in] y Data.
-  /// @param[in] a GEV Location parameter vector.
+  /// @param[in] a GEV Location parameter.
   /// @param[in] log_b GEV (log) scale parameter.
   /// @param[in] s GEV Shape parameter (possibly transformed).
   /// @param[in] reparam_s Flag indicating reparametrization of s
@@ -286,6 +286,31 @@ namespace SpatialGEV {
       ll = gev_lpdf<Type>(y, a, log_b, s);
     } // end else
     return ll;
+  }
+
+
+  /// Calculate return level based on different parameterization of s.
+  ///
+  /// @param[out] z Scalar return level.
+  /// @param[in] a GEV Location parameter.
+  /// @param[in] log_b GEV (log) scale parameter.
+  /// @param[in] s GEV Shape parameter (possibly transformed).
+  /// @param[in] reparam_s Flag indicating reparametrization of s.
+  /// @param[in] p The probability with which the return level is associated.
+  template <class Type>
+  Type gev_return_level(const Type a, const Type log_b, Type s, const int reparam_s, const Type p) {
+    Type z;
+    if (reparam_s == 0){ // this is the case we are using Gumbel distribution
+      z = a - exp(log_b)*log(-log(1-p));
+    } else{ // the case where we are using GEV distribution with nonzero shape parameter
+      if (reparam_s == 1){ // if we have stated that s is constrained to be positive, this implies that we are optimizing log(s)
+	s = exp(s);
+      } else if (reparam_s == 2){ // if we have stated that s is constrained to be negative, this implies that we are optimizing log(-s)
+	s = -exp(s);
+      } // if we don't use any reparametrization, then s is unconstrained
+      z = a - exp(log_b)/s*(1-pow(-log(1-p), -s));
+    } // end else
+    return z;
   }
 } // end namespace SpatialGEV
 

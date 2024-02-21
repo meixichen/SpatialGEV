@@ -184,7 +184,8 @@ Type model_{{random_effects}}_{{kernel}}(objective_function<Type>* obj){
   if (return_level == 1){
     Type p = {{prob}};
     for (int i=0; i<{{re}}.size();i++){
-      z[i] = {{a_var}}-exp({{b_var}})/{{s_var}}*(1-pow(-log(1-p), -{{s_var}}));
+      z(i) = gev_return_level({{a_var}}, {{b_var}}, {{s_var}}, reparam_s, p);
+      //z[i] = {{a_var}}-exp({{b_var}})/{{s_var}}*(1-pow(-log(1-p), -{{s_var}}));
     }
   }
   ADREPORT(z);
