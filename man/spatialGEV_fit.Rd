@@ -21,6 +21,7 @@ spatialGEV_fit(
   beta_prior = NULL,
   matern_pc_prior = NULL,
   return_levels = 0,
+  get_return_levels_cov = T,
   sp_thres = -1,
   adfun_only = FALSE,
   ignore_random = FALSE,
@@ -103,8 +104,14 @@ or \code{matern_s}.
 E.g. \code{matern_pc_prior=list(matern_s=matern_pc_prior(100, 0.9, 2, 0.1))}.
 Default is NULL, which means a flat prior. See \code{?matern_pc_prior} for more details.}
 
-\item{return_levels}{Optional numeric vector. If provided, the posterior mean and sd of the
-upper p\% quantile of the GEV distribution at each location will be returned.}
+\item{return_levels}{Optional vector of return-level probabilities.
+If provided, the posterior mean and standard deviation of the upper-tail GEV quantile at each
+spatial location for each of these probabilities will be included in the summary output.
+See \code{?summary.spatialGEV_fit} for details.}
+
+\item{get_return_levels_cov}{Default is TRUE if \code{return_levels} is specified. Can be turned off
+for when the number of locations is large so that the high-dimensional covariance matrix for
+the return levels is not stored.}
 
 \item{sp_thres}{Optional. Thresholding value to create sparse covariance matrix. Any distance
 value greater than or equal to \code{sp_thres} will be set to 0. Default is -1, which means not
