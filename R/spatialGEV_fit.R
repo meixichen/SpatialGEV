@@ -38,8 +38,13 @@
 #' or `matern_s`.
 #' E.g. `matern_pc_prior=list(matern_s=matern_pc_prior(100, 0.9, 2, 0.1))`.
 #' Default is NULL, which means a flat prior. See `?matern_pc_prior` for more details.
-#' @param return_levels Optional numeric vector. If provided, the posterior mean and sd of the
-#' upper p% quantile of the GEV distribution at each location will be returned.
+#' @param return_levels Optional vector of return-level probabilities.
+#' If provided, the posterior mean and standard deviation of the upper-tail GEV quantile at each
+#' spatial location for each of these probabilities will be included in the summary output.
+#' See `?summary.spatialGEV_fit` for details.
+#' @param get_return_levels_cov Default is TRUE if `return_levels` is specified. Can be turned off
+#' for when the number of locations is large so that the high-dimensional covariance matrix for
+#' the return levels is not stored.
 #' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance
 #' value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not
 #' using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad
@@ -248,7 +253,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                            X_a = NULL, X_b = NULL, X_s = NULL, nu = 1,
                            s_prior = NULL, beta_prior = NULL,
                            matern_pc_prior = NULL,
-                           return_levels=0.,
+                           return_levels=0., get_return_levels_cov=T,
                            sp_thres = -1, adfun_only = FALSE,
                            ignore_random = FALSE, silent = FALSE,
                            mesh_extra_init = list(a=0, log_b=-1, s=0.001),
@@ -296,7 +301,9 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
   				    DLL = "SpatialGEV_TMBExports",
   				    silent = silent)
       fit <- nlminb(adfun_optim$par, adfun_optim$fn, adfun_optim$gr)
-      report <- TMB::sdreport(adfun, par.fixed = fit$par, getJointPrecision = get_hessian)
+      report <- TMB::sdreport(adfun, par.fixed = fit$par, 
+                              getJointPrecision = get_hessian,
+                              getReportCovariance = get_return_levels_cov)
     } else{
       adfun_optim <- adfun
       fit <- nlminb(adfun_optim$par, adfun_optim$fn, adfun_optim$gr)
@@ -316,14 +323,16 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
       rl_inds <- lapply(1:n_probs, function(u) seq(u, length(report$value), by=n_probs))
       out_return_levels <- lapply(rl_inds, function(ind) report$value[ind])
       out_return_levels_sd <- lapply(rl_inds, function(ind) report$sd[ind])
-      out_return_levels_cov <- lapply(rl_inds, function(ind) report$cov[ind, ind])
       rl_list_names <- as.character(return_levels)
       names(out_return_levels) <- rl_list_names
       names(out_return_levels_sd) <- rl_list_names
-      names(out_return_levels_cov) <- rl_list_names
       out$return_levels <- out_return_levels
       out$return_levels_sd <- out_return_levels_sd
-      out$return_levels_cov <- out_return_levels_cov
+      if (get_return_levels_cov){
+        out_return_levels_cov <- lapply(rl_inds, function(ind) report$cov[ind, ind])
+        names(out_return_levels_cov) <- rl_list_names
+        out$return_levels_cov <- out_return_levels_cov
+      }
     }
     if (kernel == "spde") {
       out$mesh <- model$mesh

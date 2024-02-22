@@ -3,6 +3,7 @@
 S3method(print,spatialGEVfit)
 S3method(print,spatialGEVpred)
 S3method(print,spatialGEVsam)
+S3method(summary,spatialGEVfit)
 S3method(summary,spatialGEVpred)
 S3method(summary,spatialGEVsam)
 export(grid_location)
