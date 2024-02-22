@@ -20,11 +20,14 @@ spatialGEV_fit(
   s_prior = NULL,
   beta_prior = NULL,
   matern_pc_prior = NULL,
+  return_levels = 0,
+  get_return_levels_cov = T,
   sp_thres = -1,
   adfun_only = FALSE,
   ignore_random = FALSE,
   silent = FALSE,
   mesh_extra_init = list(a = 0, log_b = -1, s = 0.001),
+  get_hessian = TRUE,
   ...
 )
 
@@ -101,6 +104,15 @@ or \code{matern_s}.
 E.g. \code{matern_pc_prior=list(matern_s=matern_pc_prior(100, 0.9, 2, 0.1))}.
 Default is NULL, which means a flat prior. See \code{?matern_pc_prior} for more details.}
 
+\item{return_levels}{Optional vector of return-level probabilities.
+If provided, the posterior mean and standard deviation of the upper-tail GEV quantile at each
+spatial location for each of these probabilities will be included in the summary output.
+See \code{?summary.spatialGEV_fit} for details.}
+
+\item{get_return_levels_cov}{Default is TRUE if \code{return_levels} is specified. Can be turned off
+for when the number of locations is large so that the high-dimensional covariance matrix for
+the return levels is not stored.}
+
 \item{sp_thres}{Optional. Thresholding value to create sparse covariance matrix. Any distance
 value greater than or equal to \code{sp_thres} will be set to 0. Default is -1, which means not
 using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad
@@ -120,6 +132,9 @@ out in the model. This can be helpful for checking the marginal likelihood.}
 \item{mesh_extra_init}{A named list of scalars. Used when the SPDE kernel is used. The list
 provides the initial values for a, log(b), and s on the extra triangles created in the mesh.
 The default is \code{list(a=1, log_b=0, s=0.001)}.}
+
+\item{get_hessian}{Default to TRUE so that \code{spatialGEV_sample()} can be used for sampling
+from the Normal approximated posterior with the inverse Hessian as the Normal covariance.}
 
 \item{...}{Arguments to pass to \code{INLA::inla.mesh.2d()}. See details \code{?inla.mesh.2d()} and
 Section 2.1 of Lindgren & Rue (2015) JSS paper.

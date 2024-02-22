@@ -9,9 +9,9 @@ kernel_exp(x, sigma, ell, X1 = NULL, X2 = NULL)
 \arguments{
 \item{x}{Distance measure.}
 
-\item{sigma}{The amplitude parameter (scalar) with the constraint of \code{sigma > 0}}
+\item{sigma}{The scale parameter with the constraint of \code{sigma > 0}}
 
-\item{ell}{The smoothness parameter (scalar) with the constraint of \code{ell > 0}.}
+\item{ell}{The range/lengthscale parameter with the constraint of \code{ell > 0}.}
 
 \item{X1}{A \verb{n1 x 2} matrix containing the coordinates of location set 1.
 If \code{x} is not provided, \code{X1} and \code{X2} should be provided for calculating their distance.}
@@ -28,7 +28,7 @@ Exponential covariance function
 \details{
 Let x = dist(x_i, x_j).
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{cov(i,j) = sigma*exp(-x/ell)
+\if{html}{\out{<div class="sourceCode">}}\preformatted{cov(i,j) = sigma^2*exp(-x/ell)
 }\if{html}{\out{</div>}}
 }
 \examples{

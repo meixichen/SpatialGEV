@@ -11,11 +11,11 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   /*
   Model layer 1: theta_hat ~ MVN(theta), theta_cov),
                  theta = (a, logb, g(s))
-  Model layer 2: 
+  Model layer 2:
   a ~ GP(0, Matern_SPDE)
   logb ~ GP(0, Matern_SPDE)
   g(s) ~ GP(0, Matern_SPDE) where s is a transformation function of s
-  */ 
+  */
   using namespace density;
   using namespace R_inla;
   using namespace Eigen;
@@ -30,7 +30,7 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   DATA_IVECTOR(loc_ind); // n_loc vector of locations indices in the mesh matrix.
   DATA_SCALAR(nu); // Smoothness parameter for the Matern cov kernel
   DATA_STRUCT(spde, spde_t); // take the returned object by INLA::inla.spde2.matern in R
-  // Type of prior on beta. 1 is weakly informative normal prior and any other numbers 
+  // Type of prior on beta. 1 is weakly informative normal prior and any other numbers
   // mean noninformative uniform prior U(-inf, inf).
   DATA_INTEGER(beta_prior);
   DATA_VECTOR(beta_a_prior); // length 2 vector containing mean and sd of normal prior on beta
@@ -58,8 +58,7 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   PARAMETER(log_kappa_b); // hyperparameter
   PARAMETER(log_sigma_s); // hyperparameter for Sigma_s
   PARAMETER(log_kappa_s); // as above
-  
-  int n_loc = loc_ind.size();
+
   int n_param = 3;
   Type sigma_a = exp(log_sigma_a);
   Type kappa_a = exp(log_kappa_a);
@@ -67,14 +66,14 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   Type kappa_b = exp(log_kappa_b);
   Type sigma_s = exp(log_sigma_s);
   Type kappa_s = exp(log_kappa_s);
-  
+
   // calculate the negative log likelihood
   Type nll = Type(0.0);
   // data layer: Normal distribution
   vector<Type> offset(n_param);
   matrix<Type> cov_block(n_param,n_param);
   vector<Type> mu_obs(n_param);
-  for(int i=0; i<n_loc; i++) {
+  for(int i=0; i<loc_ind.size(); i++) {
     offset(0) = a(loc_ind(i));
     offset(1) = log_b(loc_ind(i));
     offset(2) = s(loc_ind(i));
@@ -99,8 +98,22 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
 					   nu, range_b_prior, sigma_b_prior);
   nll += nlpdf_matern_hyperpar_prior<Type>(log_kappa_s, log_sigma_s, s_pc_prior,
 					   nu, range_s_prior, sigma_s_prior);
-  return nll;  
-   
+
+  // ------------- Output z -----------------------
+  DATA_VECTOR(return_levels);
+  int n_loc = spde.M0.rows();
+  int has_returns = return_levels(0) > Type(0.0);
+  matrix<Type> z(return_levels.size(), n_loc);
+  if (has_returns){
+    for(int i=0; i<n_loc; i++) {
+      gev_reparam_quantile<Type>(z.col(i), return_levels,
+                                 a(i), log_b(i), s(i), reparam_s);
+    }
+  }
+  ADREPORT(z);
+
+  return nll;
+
 }
 
 #undef TMB_OBJECTIVE_PTR
