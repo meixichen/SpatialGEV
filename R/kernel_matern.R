@@ -14,13 +14,7 @@
 #' cov(i,j) = sigma^2 * 2^(1-nu)/gamma(nu) * (kappa*x)^nu * K_v(kappa*x)
 #' ```
 #' Note that when `nu=0.5`, the Matern kernel corresponds to the absolute exponential kernel.
-#' @examples
-#' X1 <- cbind(runif(10, 1, 10), runif(10, 10, 20))
-#' X2 <- cbind(runif(5, 1, 10), runif(5, 10, 20))
-#'
-#' kernel_matern(sigma=2, kappa=1, X1=X1, X2=X2)
-#'
-#' kernel_matern(as.matrix(stats::dist(X1)), sigma=2, kappa=1)
+#' @example examples/kernel_matern.R
 #' @export
 kernel_matern <- function(x, sigma, kappa, nu=1, X1=NULL, X2=NULL){
   if (any(c(sigma, kappa)<=0)) stop("sigma and kappa need to be positive")

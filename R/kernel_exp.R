@@ -12,13 +12,7 @@
 #' ```
 #' cov(i,j) = sigma^2*exp(-x/ell)
 #' ```
-#' @examples
-#' X1 <- cbind(runif(10, 1, 10), runif(10, 10, 20))
-#' X2 <- cbind(runif(5, 1, 10), runif(5, 10, 20))
-#'
-#' kernel_exp(sigma=2, ell=1, X1=X1, X2=X2)
-#'
-#' kernel_exp(as.matrix(stats::dist(X1)), sigma=2, ell=1)
+#' @example examples/kernel_exp.R
 #' @export
 kernel_exp <- function(x, sigma, ell, X1=NULL, X2=NULL){
   if (any(c(sigma, ell)<=0)) stop("sigma and ell need to be positive.")
