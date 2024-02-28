@@ -38,6 +38,13 @@
 #' or `matern_s`.
 #' E.g. `matern_pc_prior=list(matern_s=matern_pc_prior(100, 0.9, 2, 0.1))`.
 #' Default is NULL, which means a flat prior. See `?matern_pc_prior` for more details.
+#' @param return_levels Optional vector of return-level probabilities.
+#' If provided, the posterior mean and standard deviation of the upper-tail GEV quantile at each
+#' spatial location for each of these probabilities will be included in the summary output.
+#' See `?summary.spatialGEV_fit` for details.
+#' @param get_return_levels_cov Default is TRUE if `return_levels` is specified. Can be turned off
+#' for when the number of locations is large so that the high-dimensional covariance matrix for
+#' the return levels is not stored.
 #' @param sp_thres Optional. Thresholding value to create sparse covariance matrix. Any distance
 #' value greater than or equal to `sp_thres` will be set to 0. Default is -1, which means not
 #' using sparse matrix. Caution: hard thresholding the covariance matrix often results in bad
@@ -53,6 +60,8 @@
 #' @param mesh_extra_init A named list of scalars. Used when the SPDE kernel is used. The list
 #' provides the initial values for a, log(b), and s on the extra triangles created in the mesh.
 #' The default is `list(a=1, log_b=0, s=0.001)`.
+#' @param get_hessian Default to TRUE so that `spatialGEV_sample()` can be used for sampling
+#' from the Normal approximated posterior with the inverse Hessian as the Normal covariance.
 #' @param ... Arguments to pass to `INLA::inla.mesh.2d()`. See details `?inla.mesh.2d()` and
 #' Section 2.1 of Lindgren & Rue (2015) JSS paper.
 #' This is used specifically for when `kernel="spde"`, in which case a mesh needs to be
@@ -244,9 +253,11 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                            X_a = NULL, X_b = NULL, X_s = NULL, nu = 1,
                            s_prior = NULL, beta_prior = NULL,
                            matern_pc_prior = NULL,
+                           return_levels=0., get_return_levels_cov=T,
                            sp_thres = -1, adfun_only = FALSE,
                            ignore_random = FALSE, silent = FALSE,
                            mesh_extra_init = list(a=0, log_b=-1, s=0.001),
+                           get_hessian=TRUE,
                            ...) {
   # parse inputs
   kernel <- match.arg(kernel)
@@ -266,6 +277,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                             sp_thres = sp_thres, ignore_random = ignore_random,
                             mesh_extra_init = mesh_extra_init, ...)
   # Build TMB template
+  model$data$return_levels <- return_levels
   adfun <- TMB::MakeADFun(data = model$data,
                           parameters = model$parameters,
                           random = model$random,
@@ -281,16 +293,47 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
     }
   } else {
     start_t <- Sys.time()
-    fit <- nlminb(adfun$par, adfun$fn, adfun$gr)
-    report <- TMB::sdreport(adfun, getJointPrecision = TRUE)
+    if (return_levels[1] != 0) {
+      adfun_optim <- TMB::MakeADFun(data = c(model$data, return_levels=0.),
+  				    parameters = model$parameters,
+  				    random = model$random,
+  				    map = model$map,
+  				    DLL = "SpatialGEV_TMBExports",
+  				    silent = silent)
+      fit <- nlminb(adfun_optim$par, adfun_optim$fn, adfun_optim$gr)
+      report <- TMB::sdreport(adfun, par.fixed = fit$par, 
+                              getJointPrecision = get_hessian,
+                              getReportCovariance = get_return_levels_cov)
+    } else{
+      adfun_optim <- adfun
+      fit <- nlminb(adfun_optim$par, adfun_optim$fn, adfun_optim$gr)
+      report <- TMB::sdreport(adfun_optim, getJointPrecision = get_hessian)
+    }
     t_taken <- as.numeric(difftime(Sys.time(), start_t, units="secs"))
-    out <- list(adfun = adfun, fit = fit, report = report,
+    out <- list(adfun = adfun_optim, fit = fit, report = report,
                 time = t_taken, random = model$random, kernel = kernel,
                 # FIXME: why not just call this locs?
                 locs_obs = locs,
                 X_a = model$data$design_mat_a,
                 X_b = model$data$design_mat_b,
-                X_s = model$data$design_mat_s)
+                X_s = model$data$design_mat_s,
+                pdHess_avail = get_hessian & report$pdHess)
+    if (return_levels[1] != 0) {
+      n_probs <- length(return_levels)
+      rl_inds <- lapply(1:n_probs, function(u) seq(u, length(report$value), by=n_probs))
+      out_return_levels <- lapply(rl_inds, function(ind) report$value[ind])
+      out_return_levels_sd <- lapply(rl_inds, function(ind) report$sd[ind])
+      rl_list_names <- as.character(return_levels)
+      names(out_return_levels) <- rl_list_names
+      names(out_return_levels_sd) <- rl_list_names
+      out$return_levels <- out_return_levels
+      out$return_levels_sd <- out_return_levels_sd
+      if (get_return_levels_cov){
+        out_return_levels_cov <- lapply(rl_inds, function(ind) report$cov[ind, ind])
+        names(out_return_levels_cov) <- rl_list_names
+        out$return_levels_cov <- out_return_levels_cov
+      }
+    }
     if (kernel == "spde") {
       out$mesh <- model$mesh
       out$meshidxloc <- as.integer(model$mesh$idx$loc)
