@@ -43,7 +43,7 @@ namespace SpatialGEV {
   /// @param[in] x Argument to the density.
   /// @param[in] a Location parameter.
   /// @param[in] log_b Log of scale parameter.
-  /// @param[in] s Shape parameter.
+  /// @param[in] s Shape parameter: real value excluding 0.  The special case `s = 0` is handled by `gumbel_lpdf()`.
   ///
   /// @return Log-density of GEV distribution evaluated at its inputs.
   template <class Type>
@@ -300,7 +300,7 @@ namespace SpatialGEV {
   void gev_reparam_quantile(RefRowVector_t<Type> quant, cRefVector_t<Type>& prob,
                             const Type a, const Type log_b, const Type s,
                             const int reparam_s) {
-    int n_quant = prob.size();
+    // int n_quant = prob.size();
     Type _b = exp(log_b);
     // reparametrize s for s \neq 0
     Type _s;

@@ -16,7 +16,7 @@
 #' Note that when `nu=0.5`, the Matern kernel corresponds to the absolute exponential kernel.
 #' @example examples/kernel_matern.R
 #' @export
-kernel_matern <- function(x, sigma, kappa, nu=1, X1=NULL, X2=NULL){
+kernel_matern <- function(x, sigma, kappa, nu=1, X1=NULL, X2=NULL) {
   if (any(c(sigma, kappa)<=0)) stop("sigma and kappa need to be positive")
   if (missing(x)){
     if (missing(X1) | missing(X2)) stop("x is not provided. Must provide X1 and X2.")

@@ -225,7 +225,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
       report <- TMB::sdreport(adfun, par.fixed = fit$par,
                               getJointPrecision = get_hessian,
                               getReportCovariance = get_return_levels_cov)
-    } else{
+    } else {
       adfun_optim <- adfun
       fit <- nlminb(adfun_optim$par, adfun_optim$fn, adfun_optim$gr)
       report <- TMB::sdreport(adfun_optim, getJointPrecision = get_hessian)
@@ -249,7 +249,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
       names(out_return_levels_sd) <- rl_list_names
       out$return_levels <- out_return_levels
       out$return_levels_sd <- out_return_levels_sd
-      if (get_return_levels_cov){
+      if (get_return_levels_cov) {
         out_return_levels_cov <- lapply(rl_inds, function(ind) report$cov[ind, ind])
         names(out_return_levels_cov) <- rl_list_names
         out$return_levels_cov <- out_return_levels_cov

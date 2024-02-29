@@ -20,9 +20,7 @@ r_nll(
   X_a = NULL,
   X_b = NULL,
   X_s = NULL,
-  f_s = function(x) {
-     x
- },
+  f_s = function(x) x,
   ...
 )
 }
