@@ -20,9 +20,7 @@ r_nll(
   X_a = NULL,
   X_b = NULL,
   X_s = NULL,
-  f_s = function(x) {
-     x
- },
+  f_s = function(x) x,
   ...
 )
 }
@@ -106,10 +104,10 @@ nll_r <- r_nll(y, dd, a=a, log_b=logb, s=s,
                kernel="exp", beta_a=beta_a, beta_b=beta_b)
 # Negative marg loglik produced by TMB template
 init_param <- list(beta_a=beta_a, beta_b=beta_b,
-                   a=a, log_b=logb, s=log(s), 
-                   log_sigma_a=log_sigma_a, 
+                   a=a, log_b=logb, s=log(s),
+                   log_sigma_a=log_sigma_a,
                    log_ell_a=log_ell_a,
-                   log_sigma_b=log_sigma_b, 
+                   log_sigma_b=log_sigma_b,
                    log_ell_b=log_ell_b)
 adfun <- spatialGEV_fit(y, locs, random="ab",
                         init_param=init_param,

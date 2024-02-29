@@ -4,141 +4,139 @@
 #' @param n_draw Number of draws from the posterior distribution
 #' @param observation whether to draw from the posterior distribution of the GEV observation?
 #' @param loc_ind A vector of location indices to sample from. Default is all locations.
-#' @return An object of class `spatialGEVsam`, which is a list of matrices containing the
-#' joint posterior draws of the parameters and optionally the GEV observations.
-#' @examples
-#' \donttest{
-#' library(SpatialGEV)
-#' n_loc <- 20
-#' a <- simulatedData$a[1:n_loc]
-#' logb <- simulatedData$logb[1:n_loc]
-#' logs <- simulatedData$logs[1:n_loc]
-#' y <- simulatedData$y[1:n_loc]
-#' locs <- simulatedData$locs[1:n_loc,]
-#' beta_a <- mean(a); beta_b <- mean(logb)
-#' fit <- spatialGEV_fit(y, locs = locs, random = "ab",
-#'                       init_param = list(beta_a = beta_a,
-#'                                         beta_b = beta_b,
-#'                                         a = rep(0, n_loc),
-#'                                         log_b = rep(0, n_loc),
-#'                                         s = 0,
-#'                                         log_sigma_a = 0,
-#'                                         log_kappa_a = 0,
-#'                                         log_sigma_b = 0,
-#'                                         log_kappa_b = 0),
-#'                       reparam_s = "positive",
-#'                       kernel = "matern",
-#'                       silent = TRUE)
-#' sam <- spatialGEV_sample(model = fit, n_draw = 100,
-#'                          observation = TRUE, loc_ind=1:10)
-#' print(sam)
-#' summary(sam)
+#' @return An object of class `spatialGEVsam`, which is a list with the following elements:
+#' \describe{
+#'   \item{`parameter_draws`}{A matrix of joint posterior draws for the hyperparameters and the random effects at the `loc_ind` locations.}
+#'   \item{`y_draws`}{If `observation == TRUE`, a matrix of corresponding draws from the posterior predictive GEV distribution at the `loc_ind` locations.}
 #' }
+#' @example examples/spatialGEV_sample.R
 #' @export
 spatialGEV_sample <- function(model, n_draw, observation=FALSE, loc_ind=NULL) {
   # Extract info from model
-  kernel <- model$kernel
   rep <- model$report
   random <- model$random
-  random_ind <- rep$env$random #indices of random effects
   n_loc <- length(unique(model$adfun$env$data$loc_ind)) # number of locations
   reparam_s <- model$adfun$env$data$reparam_s # parametrization of s
-  ##########################
-  if (length(random) == 1) {
-    mod <- "a"
-  } else if (length(random) == 2) {
-    mod <- "ab"
-  } else if (length(random) == 3) {
-    mod <- "abs"
-  } else {
-    stop("Cannot identify which GEV parameters are random.")
-  }
-  # Sample from MVN
-  jointPrec_mat <- rep$jointPrecision
-  C <- chol(jointPrec_mat)
-  joint_cov <- backsolve(r = C,
-                         x = backsolve(r = C, x = diag(nrow(jointPrec_mat)),
-                                       transpose = TRUE)) # Cholesky decomp
+  if(is.null(loc_ind)) loc_ind <- seq_len(n_loc)
+  loc_ind <- seq_len(n_loc) %in% loc_ind # convert to logical
+  # which parameters to keep in output
+  sample_ind <- format_sample(adfun = model$adfun,
+                              random = random,
+                              loc_ind = loc_ind,
+                              meshidxloc = model$meshidxloc)
+  # construct mean vector
   mean_random <- rep$par.random
   mean_fixed <- rep$par.fixed
-  # Extract locations of the data if using SPDE (b/c there are additional boundary locations
-  # included for fitting purpose
-  if (kernel == "spde") {
-    meshidxloc <- model$meshidxloc
-    if (mod == "a") {
-      mean_random <- mean_random[meshidxloc]
-      ind2rm <- setdiff(1:length(random_ind), meshidxloc)
-      joint_cov <- joint_cov[-ind2rm, -ind2rm]
-    } else if (mod == "ab") {
-      ind2rm <- setdiff(1:length(random_ind), c(meshidxloc, length(random_ind)/2 + meshidxloc))
-      mean_random <- mean_random[-ind2rm]
-      joint_cov <- joint_cov[-ind2rm, -ind2rm]
-    } else {
-      # if mod="abs"
-      ind2rm <- setdiff(1:length(random_ind),
-                        c(meshidxloc, # indices of a in the random effects vec
-			  length(random_ind)/3 + meshidxloc, # indices of log_b in the random vec
-			  length(random_ind)/3*2 + meshidxloc)) # indices of s in  the random vec
-      mean_random <- mean_random[-ind2rm]
-      joint_cov <- joint_cov[-ind2rm, -ind2rm]
-    }
+  mean_joint <- setNames(rep(NA, length(sample_ind)), names(sample_ind))
+  mean_joint[names(mean_joint) %in% names(mean_random)] <- mean_random
+  mean_joint[names(mean_joint) %in% names(mean_fixed)] <- mean_fixed
+  # sampling
+  prec_joint <- rep$jointPrecision
+  if(!all(sapply(dimnames(prec_joint),
+                 function(x) identical(x, names(mean_joint))))) {
+    stop("Dimension name mismatch between `mean_joint` and `prec_joint`. Please file a bug report.")
   }
-  par_names_random <- paste0(names(mean_random), 1:n_loc) # add location index to the end of each parameter name
-  par_names_fixed <- names(mean_fixed) # extract parameter names for the fixed effects
-  joint_mean <- c(mean_random, mean_fixed)
-  names(joint_mean) <- c(par_names_random, par_names_fixed) # modify parameter names
-  fixed_ind <- (length(mean_random)+1):length(joint_mean) # indices of the fixed effects
-
-  # Determine the positions of the samples based on location indices to be sampled
-  if (is.null(loc_ind)) {
-    loc_ind <- 1:n_loc
-    sam_ind <- 1:length(joint_mean)
-  } else {
-    loc_ind <- sort(loc_ind)
-    patterns <- c(paste0("a", loc_ind), paste0("log_b", loc_ind), paste0("s", loc_ind))
-    sam_ind <- which(names(joint_mean) %in% patterns)
-    sam_ind <- c(sam_ind, fixed_ind)
+  joint_post_draw <- rmvn_prec(n_draw,
+                               mean = mean_joint, prec = prec_joint)
+  joint_post_draw <- joint_post_draw[,sample_ind]
+  if(observation) {
+    tmp_names <- names(sample_ind)[sample_ind]
+    y_draw <- rgev_reparam(
+      n = n_draw * sum(loc_ind),
+      a = joint_post_draw[,tmp_names == "a"],
+      log_b = joint_post_draw[,tmp_names == "log_b"],
+      s = joint_post_draw[,tmp_names == "s"],
+      reparam_s = reparam_s
+    )
+    y_draw <- matrix(y_draw, n_draw, sum(loc_ind))
   }
-  # Sample from joint normal
-  joint_post_draw <- mvtnorm::rmvnorm(n_draw, joint_mean[sam_ind], joint_cov[sam_ind, sam_ind])
-  output_list <- list(parameter_draws=joint_post_draw)
-  # run below only if posterior draws of GEV observations are wanted
-  if (observation) {
-    if (reparam_s == 3) { # unconstrained s
-      s_fun <- function(x) x
-    } else if (reparam_s == 1) { # positive s
-      s_fun <- function(x) exp(x)
-    } else if (reparam_s == 2) { # negative s
-      s_fun <- function(x) -exp(x)
-    } else { # s=0
-      s_fun <- function(x) 0
-    }
-    # Get parameter indices
-    a_ind <- which(colnames(joint_post_draw)%in% paste0("a", loc_ind))
-    if(mod=="a") {
-      # b is fixed
-      logb_ind <- "log_b"
-    } else {
-      # b is random
-      logb_ind <- which(colnames(joint_post_draw)%in% paste0("log_b", loc_ind))
-    }
-    if(mod=="abs") {
-      # s is random
-      s_ind <- which(colnames(joint_post_draw)%in% paste0("s", loc_ind))
-    } else {
-      # s is fixed
-      s_ind <- "s"
-    }
-    y_draws <- apply(joint_post_draw, 1,
-                     function(all_draw) {
-                       mapply(rgev, n=1, loc=all_draw[a_ind],
-                              scale=exp(all_draw[logb_ind]),
-                              shape=s_fun(all_draw[s_ind]))
-                     })
-    y_draws <- t(y_draws)
-    colnames(y_draws) <- paste0("y", loc_ind)
-    output_list[["y_draws"]] <- y_draws
+  # naming
+  tmp_names <- colnames(joint_post_draw)
+  for(random_nm in random) {
+    tmp_names[tmp_names == random_nm] <- paste0(random_nm,
+                                                which(loc_ind))
+  }
+  colnames(joint_post_draw) <- tmp_names
+  output_list <- list(parameter_draws = joint_post_draw)
+  if(observation) {
+    colnames(y_draw) <- paste0("y", which(loc_ind))
+    output_list$y_draws <- y_draw
   }
   class(output_list) <- "spatialGEVsam"
   output_list
+}
+
+#--- helper functions ----------------------------------------------------------
+
+#' Get indices of random locations.
+#'
+#' @param adfun The `adfun` element of `model`.
+#' @param random The `random` element of `model`.
+#' @param loc_ind The location indices as a logical vector.
+#' @param meshidxloc The `meshidxloc` element of the `model`, which can be `NULL`.
+#' @return Named logical vector for which `parameter` elements should be sampled.  See Details.
+#' @details The `parameter` elements -- be they fixed or random -- are returned in the order as they are specified by [TMB::MakeADFun()].  So the only thing that changes here is that some of the random effects are removed.
+#' @noRd
+format_sample <- function(adfun, random, loc_ind, meshidxloc) {
+  sample_id <- rep(TRUE, length(adfun$env$par))
+  sample_nm <- names(adfun$env$par)
+  if(is.null(meshidxloc)) meshidxloc <- seq(1, length(loc_ind))
+  for(random_nm in random) {
+    # indices of given random effect
+    random_id <- sample_nm == random_nm
+    # determine which of these are excluded
+    exclude_id <- rep(TRUE, sum(random_id))
+    exclude_id[meshidxloc[loc_ind]] <- FALSE
+    sample_id[which(random_id)[exclude_id]] <- FALSE
+  }
+  setNames(sample_id, sample_nm)
+}
+
+#' Sample from a multivariate normal with sparse precision matrix.
+#'
+#' @param n Number of random draws.
+#' @param mean Mean vector.
+#' @param prec Sparse precision matrix, i.e., inheriting from [Matrix::sparseMatrix] or its Cholesky factor, i.e., inheriting from [Matrix::CHMfactor-class].
+#'
+#' @return A matrix with `n` rows, each of which is a draw from the corresponding normal distribution.
+#'
+#' @details If the matrix is provided in precision form, it is converted to Cholesky form using `Matrix::Cholesky(prec, super = TRUE)`.  Once it is of form [Matrix::CHMfactor-class], this function is essentially copied from local function `rmvnorm()` in function `MC()` defined in [TMB::MakeADFun()].
+#' @noRd
+rmvn_prec <- function(n, mean, prec) {
+  d <- ncol(prec) # number of mvn dimensions
+  if(!is(prec, "CHMfactor")) {
+    prec <- Matrix::Cholesky(prec, super = TRUE)
+  }
+  u <- matrix(rnorm(d*n),d,n)
+  u <- Matrix::solve(prec,u,system="Lt")
+  u <- Matrix::solve(prec,u,system="Pt")
+  u <- t(as(u, "matrix") + mean)
+}
+
+#' Sample from GEV distribution with reparametrization.
+#'
+#' @param a Vector of location parameters.
+#' @param log_b Vector of log-scale parameters.
+#' @param s Vector of transformed shape parameters.  Ignored if `reparam_s == 0`.
+#' @param reparam_s Integer type of shape parametrization.
+#'
+#' @details Largely copied from [evd::rgev()], except allows one to vectorize through the shape parameter, since `reparam_s` separately handles the special case `shape = 0`.  Thus, if `reparam_s =
+#'
+#' @noRd
+rgev_reparam <- function(n, a, log_b, s, reparam_s) {
+  loc <- a
+  scale <- exp(log_b)
+  if(reparam_s == 3) { # unconstrained s
+    shape <- s
+  } else if(reparam_s == 1) { # positive s
+    shape <- exp(s)
+  } else if(reparam_s == 2) { # negative s
+    shape <- -exp(s)
+  } else if(reparam_s == 0) { # s=0
+    # sample from Gumbel distribution
+    return(loc - scale * log(rexp(n)))
+  } else {
+    stop("Invalid value of `reparam_s`.")
+  }
+  return(loc + scale * (rexp(n)^(-shape) - 1)/shape)
 }

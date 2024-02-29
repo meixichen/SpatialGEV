@@ -83,7 +83,7 @@ spatialGEV_model <- function(data, locs, random = c("a", "ab", "abs"),
 #' @return For `method == "laplace"`, a list with elements `y`, `loc_ind`.  For `method == "maxsmooth"`, a list with elements `random_est`, `random_var`, `loc_ind`.
 parse_data <- function(data, locs, random,
                        method = c("laplace", "maxsmooth")) {
-  match.arg(method)
+  method <- match.arg(method)
   n_loc <- nrow(locs)
   n_par <- sum(random)
   if(method == "laplace") {

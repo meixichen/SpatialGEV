@@ -1,5 +1,5 @@
-#ifndef SpatialGEV_model_gev_matern_hpp
-#define SpatialGEV_model_gev_matern_hpp
+#ifndef SpatialGEV_model_gev_spde_hpp
+#define SpatialGEV_model_gev_spde_hpp
 
 #include "SpatialGEV/utils.hpp"
 
@@ -14,7 +14,9 @@
 ///
 ///
 /// @param[in] y Response vector of length `n_obs`.  Assumed to be > 0.
-/// @param[in] loc_ind Location vector of length `n_obs` of integers `0 <= i_loc < n_loc` to which each observation in `y` is associated.
+/// @param[in] spde Object of type `spde_t` as constructed in R by a call to [INLA::inla.spde2.matern()] consisting of `n_loc` mesh locations.
+/// @param[in] loc_ind Location vector of length `n_obs` of integers `0 <= i_loc < n_loc` indicating to which of the SPDE mesh locations each element of `y` is associated.
+/// @param[in] nu Smoothness parameter for Matern covariance (same for all random effects).
 ///
 /// @param[in] reparam_s Integer indicating the type of shape parameter. 0: `s = 0`, i.e., use Gumbel instead of GEV distribution.  1: `s > 0`, in which case we operate on `log(s)`.  2: `s < 0`, in which case we operate on `log(-s)`.  3: unconstrained.
 ///
@@ -33,10 +35,6 @@
 /// @param[in] is_random_b, ..., b_fixed_prior Same as for `*_a` but for `log_b`.
 /// @param[in] is_random_s, ..., s_fixed_prior Same as for `*_a` but for `log_s`.
 ///
-/// @param[in] use_spde An integer indicating whether to use the SPDE approximation.
-/// @param[in] nu Smoothness parameter for Matern covariance (same for all random effects).
-/// @param[in] spde Optional object of type `spde_t` as constructed in R by a call to [INLA::inla.spde2.matern()].  Unused if `use_spde == false`.
-///
 /// @param[in] a GEV location parameter(s).  Vector of length `n_loc` if `is_random_a == 0` or length 1 if `is_random_a == 1`.
 /// @param[in] log_b GEV scale parameter(s) on the log scale.  Same shape as `a`.
 /// @param[in] s GEV shape parameter(s) on the scale specified by `reparam_s`.  Same shape as `a`.
@@ -45,7 +43,7 @@
 /// @param[in] beta_b, log_sigma_b, log_kappa_b Hyperparameters of Matern GP for `log_b`.
 /// @param[in] beta_s, log_sigma_s, log_kappa_s Hyperparameters of Matern GP for `s`.
 template<class Type>
-Type model_gev_matern(objective_function<Type>* obj) {
+Type model_gev_spde(objective_function<Type>* obj) {
   using namespace density;
   using namespace R_inla;
   using namespace Eigen;
@@ -58,9 +56,8 @@ Type model_gev_matern(objective_function<Type>* obj) {
   DATA_INTEGER(beta_prior); 
 
   // spde inputs
-  DATA_INTEGER(use_spde);
-  DATA_SCALAR(nu); 
   DATA_STRUCT(spde, spde_t); 
+  DATA_SCALAR(nu); 
 
   // a inputs
   DATA_INTEGER(is_random_a);
