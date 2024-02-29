@@ -25,7 +25,9 @@ Imports:
     TMB (>= 1.7.16),
     mvtnorm,
     evd,
-    stats
+    stats,
+    Matrix,
+    methods
 LinkingTo: 
     TMB, RcppEigen
 RoxygenNote: 7.2.3

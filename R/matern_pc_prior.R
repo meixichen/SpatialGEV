@@ -25,7 +25,7 @@
 #' construct priors. Statistical Science.
 #' @example examples/matern_pc_prior.R
 #' @export
-matern_pc_prior <- function(rho_0, p_rho, sig_0, p_sig){
+matern_pc_prior <- function(rho_0, p_rho, sig_0, p_sig) {
   if (p_rho > 1 | p_rho < 0) stop("p_rho must be between 0 and 1.")
   if (p_sig > 1 | p_sig < 0) stop("p_sig must be between 0 and 1.")
   if (rho_0 < 0 | sig_0 < 0) stop("rho_0 and sig_0 must be positive.")

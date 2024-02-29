@@ -1,7 +1,8 @@
 #' @keywords internal
 #' @import mvtnorm
 #' @import evd
-#' @importFrom stats dist nlminb rnorm runif quantile
+#' @importFrom stats dist nlminb rnorm runif rexp setNames quantile
+#' @importFrom methods as is
 #' @rawNamespace useDynLib(SpatialGEV, .registration=TRUE);useDynLib(SpatialGEV_TMBExports)
 "_PACKAGE"
 

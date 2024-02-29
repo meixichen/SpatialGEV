@@ -38,65 +38,66 @@
 #' This function is used as the ground truth for testing hpp model likelihood.
 #' @example examples/r_nll.R
 #' @export
-r_nll <- function(y, dd, a, log_b, s, hyperparam_a, hyperparam_b, hyperparam_s, kernel = "exp",
-		  beta_a = NULL, beta_b = NULL, beta_s = NULL, X_a = NULL, X_b = NULL, X_s = NULL,
-		  f_s = function(x){x}, ...) {
+r_nll <- function(y, dd, a, log_b, s,
+                  hyperparam_a, hyperparam_b, hyperparam_s, kernel = "exp",
+                  beta_a = NULL, beta_b = NULL, beta_s = NULL,
+                  X_a = NULL, X_b = NULL, X_s = NULL,
+                  f_s = function(x) x, ...) {
   n <- length(y)
-  if (kernel == "exp"){
+  if(kernel == "exp") {
     cov_a <- kernel_exp(dd, hyperparam_a[1], hyperparam_a[2], ...)
-  }
-  else if (kernel == "matern"){
+  } else if(kernel == "matern") {
     cov_a <- kernel_matern(dd, hyperparam_a[1], hyperparam_a[2], ...)
-  }
-  else{
+  } else {
     stop("Argument kernel must be `exp` or `matern`.")
   }
-  if (is.null(X_a)) X_a <- matrix(1, nrow=n, ncol=1)
+  if(is.null(X_a)) X_a <- matrix(1, nrow=n, ncol=1)
   nll <- -mvtnorm::dmvnorm(a, mean = X_a%*%beta_a, sigma = cov_a, log = TRUE)
   # if only a is random
-  if (length(log_b)==1 & length(s)==1){
-    for (i in 1:n){
-      nll <- nll - sum(sapply(y[[i]], dgev, loc=a[i], scale=exp(log_b), shape=s, log=TRUE))
+  if(length(log_b)==1 && length(s)==1) {
+    for(i in 1:n) {
+      nll <- nll - sum(sapply(y[[i]], dgev, loc=a[i],
+                              scale=exp(log_b), shape=s, log=TRUE))
     }
-  }
-  # if a and b are both random
-  else if (length(log_b)>1 & length(log_b)==length(a)){
-    if (missing(hyperparam_b)){stop("b is a spatial random effect. Must provide `hyperparam_b`.")}
-    if (kernel == "exp"){
+  } else if (length(log_b)>1 && length(log_b)==length(a)) {
+    # if a and b are both random
+    if(missing(hyperparam_b)) {
+      stop("b is a spatial random effect. Must provide `hyperparam_b`.")
+    }
+    if (kernel == "exp") {
       cov_b <- kernel_exp(dd, hyperparam_b[1], hyperparam_b[2], ...)
-    }else{
+    } else {
       cov_b <- kernel_matern(dd, hyperparam_b[1], hyperparam_b[2], ...)
     }
-    if (is.null(X_b)) X_b <- matrix(1, nrow=n, ncol=1)
+    if(is.null(X_b)) X_b <- matrix(1, nrow=n, ncol=1)
     nll <- nll - dmvnorm(log_b, mean = X_b%*%beta_b, sigma = cov_b, log = TRUE)
-
-    # if s is fixed
-    if (length(s)==1){
+    if(length(s)==1) {
+      # if s is fixed
       for (i in 1:n){
-	nll <- nll - sum(sapply(y[[i]], dgev, loc=a[i], scale=exp(log_b[i]), shape=s, log=TRUE))
+        nll <- nll - sum(sapply(y[[i]], dgev, loc=a[i], scale=exp(log_b[i]), shape=s, log=TRUE))
       }
-    }
-    else if (length(s)>1 & length(s)==length(a)){
-      if (missing(hyperparam_s)){stop("s is a spatial random effect. Must provide `hyperparam_s`.")}
-      if (kernel == "exp"){
-	cov_s <- kernel_exp(dd, hyperparam_s[1], hyperparam_s[2], ...)
-      }else{
-	cov_s <- kernel_matern(dd, hyperparam_s[1], hyperparam_s[2], ...)
+    } else if (length(s)>1 && length(s)==length(a)) {
+      if (missing(hyperparam_s)) {
+        stop("s is a spatial random effect. Must provide `hyperparam_s`.")
       }
-      if (is.null(X_s)) X_s <- matrix(1, nrow=n, ncol=1)
-      nll <- nll - dmvnorm(f_s(s), mean = X_s%*%beta_s, sigma = cov_s, log = TRUE)
+      if(kernel == "exp") {
+        cov_s <- kernel_exp(dd, hyperparam_s[1], hyperparam_s[2], ...)
+      } else {
+        cov_s <- kernel_matern(dd, hyperparam_s[1], hyperparam_s[2], ...)
+      }
+      if(is.null(X_s)) X_s <- matrix(1, nrow=n, ncol=1)
+      nll <- nll - dmvnorm(f_s(s),
+                           mean = X_s%*%beta_s, sigma = cov_s, log = TRUE)
       for (i in 1:n){
-	nll <- nll - sum(sapply(y[[i]], dgev,
-				loc=a[i], scale=exp(log_b[i]), shape=s[i], log=TRUE))
+        nll <- nll - sum(sapply(y[[i]], dgev,
+                                loc=a[i], scale=exp(log_b[i]),
+                                shape=s[i], log=TRUE))
       }
-    }
-    else{
+    } else {
       stop("Check length of `s`: when it is random, it should be same length as `a` and `b`.")
     }
-  }
-  else{
+  } else {
     stop("Check the length of `log_b`: when it is random, it should be same length as `a`.")
   }
-
   nll
 }
