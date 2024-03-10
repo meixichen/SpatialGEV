@@ -6,7 +6,8 @@
 #undef TMB_OBJECTIVE_PTR
 #define TMB_OBJECTIVE_PTR obj
 
-// @param[in] prior_s Vector of length two specifying the mean and sd of a normal prior on the shape parameter `s.`  For `sd > 9999` a flat prior is used.
+// @param[in] prior_s Vector of length two specifying the mean and sd of a
+// normal prior on the shape parameter `s.`  For `sd > 9999` a flat prior is used.
 template<class Type>
 Type model_gev(objective_function<Type>* obj) {
   using namespace SpatialGEV;
@@ -17,7 +18,7 @@ Type model_gev(objective_function<Type>* obj) {
   DATA_VECTOR(s_prior);
 
   // parameter list
-  PARAMETER(a);  
+  PARAMETER(a);
   PARAMETER(log_b);
   PARAMETER(s);
 

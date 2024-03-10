@@ -10,11 +10,11 @@
 #include "model_ab_spde.hpp"
 #include "model_abs_exp.hpp"
 #include "model_abs_matern.hpp"
-#include "model_abs_multlink.hpp"
 #include "model_abs_spde_maxsmooth.hpp"
 #include "model_abs_spde.hpp"
 #include "model_gev_spde.hpp"
 #include "model_gev.hpp"
+#include "model_ptp_spde.hpp"
 
 template<class Type>
 Type objective_function<Type>::operator() () {
@@ -35,8 +35,6 @@ Type objective_function<Type>::operator() () {
     return model_abs_exp(this);
   } else if(model == "model_abs_matern") {
     return model_abs_matern(this);
-  } else if(model == "model_abs_multlink") {
-    return model_abs_multlink(this);
   } else if(model == "model_abs_spde_maxsmooth") {
     return model_abs_spde_maxsmooth(this);
   } else if(model == "model_abs_spde") {
@@ -45,6 +43,8 @@ Type objective_function<Type>::operator() () {
     return model_gev_spde(this);
   } else if(model == "model_gev") {
     return model_gev(this);
+  } else if(model == "model_ptp_spde") {
+    return model_ptp_spde(this);
   } else {
     Rf_error("Unknown model.");
   }
