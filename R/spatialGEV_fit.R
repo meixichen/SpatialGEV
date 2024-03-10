@@ -198,7 +198,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
                             sp_thres = sp_thres, ignore_random = ignore_random,
                             mesh_extra_init = mesh_extra_init, ...)
   # Build TMB template
-  model$data$return_levels <- return_levels
+  model$data$return_periods <- return_levels
   adfun <- TMB::MakeADFun(data = model$data,
                           parameters = model$parameters,
                           random = model$random,
@@ -215,7 +215,7 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
   } else {
     start_t <- Sys.time()
     if (return_levels[1] != 0) {
-      adfun_optim <- TMB::MakeADFun(data = c(model$data, return_levels=0.),
+      adfun_optim <- TMB::MakeADFun(data = c(model$data, return_periods=0.),
   				    parameters = model$parameters,
   				    random = model$random,
   				    map = model$map,
@@ -233,7 +233,6 @@ spatialGEV_fit <- function(data, locs, random = c("a", "ab", "abs"),
     t_taken <- as.numeric(difftime(Sys.time(), start_t, units="secs"))
     out <- list(adfun = adfun_optim, fit = fit, report = report,
                 time = t_taken, random = model$random, kernel = kernel,
-                # FIXME: why not just call this locs?
                 locs_obs = locs,
                 X_a = model$data$design_mat_a,
                 X_b = model$data$design_mat_b,
