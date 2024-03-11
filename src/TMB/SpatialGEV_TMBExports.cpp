@@ -12,7 +12,6 @@
 #include "model_abs_matern.hpp"
 #include "model_abs_spde_maxsmooth.hpp"
 #include "model_abs_spde.hpp"
-#include "model_gev_spde.hpp"
 #include "model_gev.hpp"
 #include "model_ptp_spde.hpp"
 
@@ -39,8 +38,6 @@ Type objective_function<Type>::operator() () {
     return model_abs_spde_maxsmooth(this);
   } else if(model == "model_abs_spde") {
     return model_abs_spde(this);
-  } else if(model == "model_gev_spde") {
-    return model_gev_spde(this);
   } else if(model == "model_gev") {
     return model_gev(this);
   } else if(model == "model_ptp_spde") {
