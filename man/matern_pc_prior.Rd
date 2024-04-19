@@ -13,10 +13,10 @@ See details.}
 \item{p_rho}{Hyperparameter for PC prior on the range parameter. Must be between 0
 and 1. See details.}
 
-\item{sig_0}{Hyperparameter for PC prior on the range parameter. Must be positive.
+\item{sig_0}{Hyperparameter for PC prior on the scale parameter. Must be positive.
 See details.}
 
-\item{p_sig}{Hyperparameter for PC prior on the range parameter. Must be between 0
+\item{p_sig}{Hyperparameter for PC prior on the scale parameter. Must be between 0
 and 1. See details.}
 }
 \value{
@@ -26,42 +26,54 @@ A list to provide to the \code{matern_pc_prior} argument of \code{spatialGEV_fit
 Helper funcion to specify a Penalized Complexity (PC) prior on the Matern hyperparameters
 }
 \details{
-The joint prior on \code{rho} and \code{sig} achieves\preformatted{P(rho < rho_0) = p_rho,
-}
+The joint prior on \code{rho} and \code{sig} achieves
 
-and\preformatted{P(sig > sig_0) = p_sig,
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{P(rho < rho_0) = p_rho,
+}\if{html}{\out{</div>}}
 
-where \code{rho = sqrt(8*nu)/kappa} and \code{sig = sqrt(sigma)}.
+and
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{P(sig > sig_0) = p_sig,
+}\if{html}{\out{</div>}}
+
+where \code{rho = sqrt(8*nu)/kappa}.
 }
 \examples{
 \donttest{
-y <- simulatedData2$y
-locs <- simulatedData2$locs
-n_loc <- nrow(locs) 
-fit <- spatialGEV_fit(y = y, locs = locs, random = "abs",
-                      init_param = list(a = rep(0, n_loc),
-                                        log_b = rep(0, n_loc), 
-                                        s = rep(-2, n_loc),
-                                        beta_a = 0,
-                                        beta_b = 0,
-                                        beta_s = -2,
-                                        log_sigma_a = 0, 
-                                        log_kappa_a = 0,
-                                        log_sigma_b = 0, 
-                                        log_kappa_b = 0,
-                                        log_sigma_s = 0, 
-                                        log_kappa_s = 0
-                                        ),
-                       reparam_s = "positive",
-                       kernel = "matern",
-                       beta_prior = list(beta_a=c(0,100), beta_b=c(0,10),
-                                         beta_s=c(0,10)),
-                       matern_pc_prior = list(
-                                              matern_a=matern_pc_prior(1e5,0.95,5,0.1),
-                                              matern_b=matern_pc_prior(1e5,0.95,3,0.1),
-                                              matern_s=matern_pc_prior(1e2,0.95,1,0.1)
-                                              ))
+n_loc <- 20
+y <- simulatedData2$y[1:n_loc]
+locs <- simulatedData2$locs[1:n_loc,]
+fit <- spatialGEV_fit(
+  data = y,
+  locs = locs,
+  random = "abs",
+  init_param = list(
+    a = rep(0, n_loc),
+    log_b = rep(0, n_loc),
+    s = rep(-2, n_loc),
+    beta_a = 0,
+    beta_b = 0,
+    beta_s = -2,
+    log_sigma_a = 0,
+    log_kappa_a = 0,
+    log_sigma_b = 0,
+    log_kappa_b = 0,
+    log_sigma_s = 0,
+    log_kappa_s = 0
+  ),
+  reparam_s = "positive",
+  kernel = "matern",
+  beta_prior = list(
+    beta_a=c(0,100),
+    beta_b=c(0,10),
+    beta_s=c(0,10)
+  ),
+  matern_pc_prior = list(
+    matern_a=matern_pc_prior(1e5,0.95,5,0.1),
+    matern_b=matern_pc_prior(1e5,0.95,3,0.1),
+    matern_s=matern_pc_prior(1e2,0.95,1,0.1)
+  )
+)
 }
 }
 \references{

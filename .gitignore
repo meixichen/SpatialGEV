@@ -6,6 +6,7 @@
 *.so
 *.dll
 *.aux
+.DS_store
 
 # swap
 [._]*.s[a-w][a-z]

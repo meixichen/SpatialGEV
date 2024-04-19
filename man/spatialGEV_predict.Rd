@@ -8,6 +8,7 @@ spatialGEV_predict(
   model,
   locs_new,
   n_draw,
+  type = "response",
   X_a_new = NULL,
   X_b_new = NULL,
   X_s_new = NULL,
@@ -21,6 +22,9 @@ spatialGEV_predict(
 
 \item{n_draw}{Number of draws from the posterior predictive distribution}
 
+\item{type}{A character string: "response" or "parameters". The former returns draws from the
+posterior predictive distribution, and the latter returns parameter draws (all on original scale).}
+
 \item{X_a_new}{\verb{n_test x r1} design matrix for a at the new locations. If not provided, the
 default is a column matrix of all 1s.}
 
@@ -28,7 +32,8 @@ default is a column matrix of all 1s.}
 
 \item{X_s_new}{\verb{n_test x r2} design matrix for (possibly transformed) s at the new locations}
 
-\item{parameter_draws}{Optional. A \verb{n_draw x n_parameter} matrix. If \code{spatialGEV_sample()} has
+\item{parameter_draws}{Optional. A \verb{n_draw x n_parameter} matrix, or an object that is of
+class 'spatialGEVsam'. If \code{spatialGEV_sample()} has
 already been called, the output matrix of parameter draws can be supplied here to avoid doing
 sampling of parameters again. Make sure the number of rows of \code{parameter_draws} is the same as
 \code{n_draw}.}
@@ -49,13 +54,13 @@ Draw from the posterior predictive distributions at new locations based on a fit
 \donttest{
 set.seed(123)
 library(SpatialGEV)
-a <- simulatedData$a
-logb <- simulatedData$logb
-logs <- simulatedData$logs
-y <- simulatedData$y
-locs <- simulatedData$locs
-n_loc <- nrow(locs)
-n_test <- 20
+n_loc <- 20
+a <- simulatedData$a[1:n_loc]
+logb <- simulatedData$logb[1:n_loc]
+logs <- simulatedData$logs[1:n_loc]
+y <- simulatedData$y[1:n_loc]
+locs <- simulatedData$locs[1:n_loc,]
+n_test <- 5
 test_ind <- sample(1:n_loc, n_test)
 
 # Obtain coordinate matrices and data lists
@@ -65,20 +70,31 @@ locs_train <- locs[-test_ind,]
 y_train <- y[-test_ind]
 
 # Fit the GEV-GP model to the training set
-train_fit <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab",
-                            init_param = list(beta_a = mean(a),
-                                             beta_b = mean(logb),   
-                                             a = rep(0, n_loc-n_test), 
-              				log_b = rep(0, n_loc-n_test),
-					s = 0,
-					log_sigma_a = 1, 
-                                             log_kappa_a = -2,
-					log_sigma_b = 1, 
-                                             log_kappa_b = -2),
-	       	       reparam_s = "positive", 
-		       kernel = "matern",
-		       silent = TRUE)
-pred <- spatialGEV_predict(model = train_fit, locs_new = locs_test, n_draw = 100)
+train_fit <- spatialGEV_fit(
+  data = y_train,
+  locs = locs_train,
+  random = "ab",
+  init_param = list(
+    beta_a = mean(a),
+    beta_b = mean(logb),
+    a = rep(0, n_loc-n_test),
+    log_b = rep(0, n_loc-n_test),
+    s = 0,
+    log_sigma_a = 1,
+    log_kappa_a = -2,
+    log_sigma_b = 1,
+    log_kappa_b = -2
+  ),
+  reparam_s = "positive",
+  kernel = "matern",
+  silent = TRUE
+)
+
+pred <- spatialGEV_predict(
+  model = train_fit,
+  locs_new = locs_test,
+  n_draw = 100
+)
 summary(pred)
 }
 }

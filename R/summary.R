@@ -30,10 +30,40 @@ print.spatialGEVfit <- function(x, ...){
   cat("Number of random effects in the model is", length(x$report$par.random), "\n")
 
   # Hessian info
-  ifelse(x$report$pdHess, 
+  ifelse(x$pdHess_avail, 
 	 mes <- "Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples \n",
-         mes <- "Hessian matrix is NOT positive definite. spatialGEV_sample and spatialGEV_predict cannot be used \n")
+         mes <- "Hessian matrix is NOT available or NOT positive definite. spatialGEV_sample and spatialGEV_predict cannot be used \n")
   cat(mes)
+}
+
+#' Summary method for spatialGEVfit
+#'
+#' @param object Object of class `spatialGEVfit` returned by `spatialGEV_fit`.
+#' @param ... Additional arguments for `summary`. Not used.
+#' @return Point estimates and standard errors of fixed effects, random effects,
+#' and the return levels (if specified in `spatialGEV_fit()`) returned by TMB.
+#' @export
+
+summary.spatialGEVfit <- function(object, ...){
+  fixed_summary <- summary(object$report, "fixed")
+  random_summary <- summary(object$report, "random")
+  if (object$kernel == "spde"){
+    random_len <- nrow(random_summary)/3
+    loc_ind <- object$meshidxloc
+    random_output_ind <- c(loc_ind, loc_ind+random_len, loc_ind+random_len*2)
+    random_summary <- random_summary[random_output_ind,]
+  }
+  out <- list(fixed = fixed_summary, random = random_summary)
+  if (length(object$return_levels) > 0){
+    quantile_summary <- cbind(do.call(cbind, object$return_levels),
+                              do.call(cbind, object$return_levels_sd))
+    rl_names <- names(object$return_levels)
+    colnames(quantile_summary) <- as.vector(
+      sapply(c("Estimate", "Std.Error"), function(name) paste0(name, rl_names)))
+    if (object$kernel == "spde") quantile_summary <- quantile_summary[loc_ind,]
+    out$return_levels <- quantile_summary
+  }
+  out
 }
 
 #' Print method for spatialGEVsam
