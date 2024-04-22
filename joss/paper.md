@@ -63,10 +63,9 @@ In a Bayesian context, the posterior distribution $p(z_p(\xx)\mid \yy)$, where $
 
 # Statement of field
 
-The R package `SpatialExtremes` [@spatialextremes] is one of the most popular software for fitting spatial extreme value models, which employs an efficient Gibbs sampler. The Stan programming language and its R interface `RStan` [@rstan] provides off-the-shelf implementations for Hamiltonian Monte Carlo and its variants [@neal11; @hoffman-gelman14], which are considered state-of-the-art MCMC algorithms and often used for fitting hierarchical spatial models. @chen-etal21 compares the speed and accuracy of the Laplace method implemented in `SpatialGEV` to `RStan`. It is found that `SpatialGEV` is three orders of magnitude faster than `RStan`. A well-known alternative to MCMC is the `R-INLA` package [@lindgren-rue15] which implements the integrated nested Laplace approximation (INLA) approach. As an extension of the Laplace approximation, INLA is often considerably more accurate. However, the INLA methodology is inapplicable to GEV-GP models in which two or more GEV parameter are modeled as random effects following different Gaussian processes. Moreover, the `R-INLA` implementation of the GEV-GP model only allows the GEV location parameter to be random. In contrast, `SpatialGEV` offers more flexibility as it is straightforward for the user to choose what GEV parameters are spatial random effects.
+The R package `SpatialExtremes` [@spatialextremes] is one of the most popular software for fitting spatial extreme value models, which employs an efficient Gibbs sampler. The Stan programming language and its R interface `RStan` [@rstan] provides off-the-shelf implementations for Hamiltonian Monte Carlo and its variants [@neal11; @hoffman-gelman14], which are considered state-of-the-art MCMC algorithms and often used for fitting hierarchical spatial models. @chen-etal21 compares the speed and accuracy of the Laplace method implemented in `SpatialGEV` to `RStan`. It is found that `SpatialGEV` is three orders of magnitude faster than `RStan`. A well-known alternative to MCMC is the `R-INLA` package [@lindgren-rue15] which implements the integrated nested Laplace approximation (INLA) approach. As an extension of the Laplace approximation, INLA is often considerably more accurate. However, the `R-INLA` implementation is inapplicable to GEV-GP models in which two or more GEV parameter are modeled as random effects following different Gaussian processes. In contrast, `SpatialGEV` offers more flexibility as it is straightforward for the user to choose what GEV parameters are spatial random effects. @mgcv and @youngman22 provide another means for estimating spatially varying GEV parameters in the framework of generalized additive models (GAMs), as opposed to Bayesian hierarchical models in `SpatialGEV`. Though the latent spatial effects are modelled differently, connections between the GAM approach and the GEV-GP model with a Matérn-SPDE kernel are described in @miller-etal20.
 
 # Example
-
 ## Model fitting
 The main functions of the `SpatialGEV` package are `spatialGEV_fit()`, `spatialGEV_sample()`, and `spatialGEV_predict()`. This example shows how to apply these functions to analyze a simulated dataset using the GEV-GP model. The spatial domain is a $20\times 20$ regular lattice on $[0, 10] \times [0,10] \subset \mathbb{R}^2$, such that there are $n=400$ locations in total. The GEV location parameter $a(\xx)$ and the scale parameter $b(\xx)$ are generated from surfaces depicted in Figure \ref{fig:sim-par}, whereas the shape parameter $s$ is a constant $exp(-2)$ across space. 10 to 30 observations per location are simulated from the GEV distribution conditional on the GEV parameters $(a(\xx), b(\xx), s)$. The simulated data is provided by the package as a list called `simulatedData`.
 
@@ -86,14 +85,14 @@ The GEV-GP model is fitted by calling `spatialGEV_fit()`. By specifying `random=
 ```r
 set.seed(123)                      # set seed for reproducible results
 library(SpatialGEV)                # load package
-locs <- simulatedData$locs         # location coordinates
-n_loc <- nrow(locs)                # number of locations
-a <- simulatedData$a               # true GEV location parameters
-logb <- simulatedData$logb         # true GEV (log) scale parameters
-logs <- simulatedData$logs         # true GEV (log) shape parameter
-y <- simulatedData$y               # simulated observations
+n_loc <- 50                        # number of locations
+locs <- simulatedData$locs[1:n_loc,]  # location coordinates
+a <- simulatedData$a[1:n_loc]         # true GEV location parameters
+logb <- simulatedData$logb[1:n_loc]   # true GEV (log) scale parameters
+logs <- simulatedData$logs            # true GEV (log) shape parameter
+y <- simulatedData$y[1:n_loc]         # simulated observations
 # Model fitting
-fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
+fit <- spatialGEV_fit(data = y, locs = locs, random = "ab",
                       init_param = list(a = rep(4, n_loc),
                                         log_b = rep(0,n_loc),
                                         s = -2,
@@ -105,11 +104,11 @@ fit <- spatialGEV_fit(y = y, locs = locs, random = "ab",
                       X_b = matrix(1, nrow=n_loc, ncol=1),
                       silent=T)                
 print(fit)
-#> Model fitting took 63.9106986522675 seconds 
+#> Model fitting took 10.1354069709778 seconds 
 #> The model has reached relative convergence 
 #> The model uses a exp kernel 
 #> Number of fixed effects in the model is 7 
-#> Number of random effects in the model is 800 
+#> Number of random effects in the model is 100 
 #> Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples 
 ```
 
@@ -119,8 +118,8 @@ Now, we show how to sample 2000 times from the joint posterior distribution of t
 ```r
 sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = T)
 print(sam)
-#> The samples contains 2000 draws of 807 parameters 
-#> The samples contains 2000 draws of response at 400 locations 
+#> The samples contains 2000 draws of 107 parameters 
+#> The samples contains 2000 draws of response at 50 locations 
 #> Use summary() to obtain summary statistics of the samples
 pos_summary <- summary(sam)
 ```
@@ -150,32 +149,37 @@ abline(0, 1, lty="dashed", col="blue")
 ![Posterior mean estimates of the 10-year return level $z_{10}(\xx)$ plotted against the true values at different locations.\label{fig:sim-return-level}](sim-return-level.png){width=45%}
 
 ## Prediction at new locations
-Next, we show how to predict the values of the extreme event at test locations. First, we divide the simulated dataset into training and test sets, and fit the model to the training dataset. We can simulate from the posterior predictive distribution of observations at the test locations using the `spatialGEV_predict()` function, which requires the fitted model to the training data passed to `model`, a matrix of the coordinates of the test locations passed to `locs_new`, and the number of simulation draws passed to `n_draw`. Figure \ref{fig:sim-pred} plots the 90\% quantile values of the posterior predictive distributions against the 90\% quantile values of the observations at all test locations.
+Next, we show how to predict the values of the extreme event at test locations. First, we divide the simulated dataset into training and test sets, and fit the model to the training dataset using the Matérn-SPDE kernel. We can simulate from the posterior predictive distribution of observations at the test locations using the `spatialGEV_predict()` function, which requires the fitted model to the training data passed to `model`, a matrix of the coordinates of the test locations passed to `locs_new`, and the number of simulation draws passed to `n_draw`. Figure \ref{fig:sim-pred} plots the 90\% quantile values of the posterior predictive distributions against the 90\% quantile values of the observations at all test locations.
 
-```
+```r
 set.seed(123)
 n_test <- 100                        # number of test locations
 test_ind <- sample(1:400, n_test)    # indices of the test locations
-locs_test <- locs[test_ind,]         # coordinates of the test locations
-y_test <- y[test_ind]                # observations at the test locations
-locs_train <- locs[-test_ind,]       # coordinates of the training locations
-y_train <- y[-test_ind]              # observations at the training locations
+locs_test <- simulatedData$locs[test_ind,]  # coordinates of the test locations
+y_test <- simulatedData$y[test_ind]         # observations at the test locations
+locs_train <- simulatedData$locs[-test_ind,]# coordinates of the training locations
+y_train <- simulatedData$y[-test_ind]       # observations at the training locations
 
 # Fit the GEV-GP model to the training set
-train_fit <- spatialGEV_fit(y = y_train, locs = locs_train, random = "ab", 
-                            init_param = list(a = a[-test_ind], 
-                                              log_b = logb[-test_ind], 
+train_fit <- spatialGEV_fit(data = y_train, locs = locs_train, random = "ab", 
+                            init_param = list(a = simulatedData$a[-test_ind], 
+                                              log_b = simulatedData$logb[-test_ind], 
                                               s = -2,
                                               beta_a = 60, beta_b = 2,
-                                              log_sigma_a = 0, log_ell_a = 1,
-                                              log_sigma_b = 0, log_ell_b = 1),
-                            reparam_s = "positive", kernel="exp", silent=T)
+                                              log_sigma_a = 0, log_kappa_a = -1,
+                                              log_sigma_b = 0, log_kappa_b = -1),
+                            reparam_s = "positive", kernel="spde", silent=T)
                           
 # Make predictions at the test locations
 pred <- spatialGEV_predict(model = train_fit, locs_new = locs_test, 
                            n_draw = 2000)
+plot(sapply(y_test, quantile, probs=0.9),
+     apply(pred$pred_y_draws, 2, quantile, probs=0.9), 
+     xlim=c(3,10), ylim=c(3,10), 
+     xlab="Observed 90% quantiles of responses at test locations",
+     ylab="Predicted 90% quantiles of responses")
+abline(0, 1, lty="dashed", col="blue")
 ```
-
 ![90\% quantile values of posterior predictive distributions at test locations plotted against the observed 90\% quantile values at the corresponding locations. Each circle corresponds to a test location. \label{fig:sim-pred}](sim-pred.png){width=45%}
 
 # Acknowledgements
