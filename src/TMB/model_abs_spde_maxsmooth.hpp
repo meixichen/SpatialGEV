@@ -169,9 +169,9 @@ Type model_abs_spde_maxsmooth(objective_function<Type>* obj){
   vector<Type> mu_a = a - design_mat_a * beta_a;
   vector<Type> mu_b = log_b - design_mat_b * beta_b;
   vector<Type> mu_s = s - design_mat_s * beta_s;
-  nll += gp_spde_nlpdf<Type>(mu_a, spde, sigma_a, kappa_a, nu);
-  nll += gp_spde_nlpdf<Type>(mu_b, spde, sigma_b, kappa_b, nu);
-  nll += gp_spde_nlpdf<Type>(mu_s, spde, sigma_s, kappa_s, nu);
+  nll += nlpdf_gp_spde<Type>(mu_a, spde, sigma_a, kappa_a, nu);
+  nll += nlpdf_gp_spde<Type>(mu_b, spde, sigma_b, kappa_b, nu);
+  nll += nlpdf_gp_spde<Type>(mu_s, spde, sigma_s, kappa_s, nu);
   // prior
   nll += nlpdf_beta_prior<Type>(beta_a, beta_prior, beta_a_prior[0],
       beta_a_prior[1]);
