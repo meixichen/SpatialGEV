@@ -1,5 +1,5 @@
 ^inst/extdata$
-^joss$
+^paper$
 ^data-raw$
 ^LICENSE\.txt$
 ^doc$
@@ -9,3 +9,4 @@
 ^examples$
 vignettes/SpatialGEV-vignette.Rmd.orig
 vignettes/rebuild_vignette.R
+vignettes/vignette-helper-functions.R
