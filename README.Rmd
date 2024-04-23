@@ -119,5 +119,3 @@ pos_summary$y_summary[1:5,]
 - [ ] Argument `init_params` adds a lot of complexity to `spatialGEV_fit()`.  Perhaps this function can be broken down into two parts: `spatialGEV_adfun()` which returns the `adfun` object, and then `spatialGEV_fit()` which does the fitting.  The advantage is that the `adfun$env$parameters` object tells you the dimension of the parameter values, which can be useful for initialization.  Also, note that `adfun$env$data` object contains the entire data list for browsing.
 
 - [ ] Write some tests for the `spde` kernel.  Construct the sparse precision matrix using `get_spde_prec()`, invert it using `Matrix::solve()`, apply the scale factor, and pass as variance to `dmvnorm()`.
-
-- [ ] Refactor the tests to avoid copy-pasting, which makes it easier to add new models.
