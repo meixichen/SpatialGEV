@@ -65,7 +65,7 @@ and \code{var}, a \verb{3 x 3 x n_loc} array of corresponding variance estimates
 \code{b} indicates the scale parameter, \code{s} indicates the shape parameter.  This tells the model
 which GEV parameters are considered as random effects.}
 
-\item{method}{Either "laplace" or "maxsmooth".}
+\item{method}{Either "laplace" or "maxsmooth". Default is "laplace". See details.}
 
 \item{init_param}{A list of initial parameters. See details.}
 
@@ -165,6 +165,19 @@ Fit a GEV-GP model.
 }
 \details{
 This function adopts Laplace approximation using TMB model to integrate out the random effects.
+
+Specifying \code{method="laplace"} means integrating out the random effects \eqn{u} in the joint likelihood
+via the Laplace approximation: \eqn{p_{\mathrm{LA}}(y \mid \theta) \approx \int p(y, u \mid \theta) \ \mathrm{d}u}.
+Then the random effects posterior is constructed via a Normal approximation centered at the Laplace-approximated
+marginal likelihood mode with the covariance being the quadrature of it.
+If \code{method="maxsmooth"}, the inference is carried out in two steps. First, the user provide the MLEs
+and variance estimates of \code{a}, \code{b} and \code{s} at each location to \code{data}, which is known as the max step.
+The max-step estimates are denoted as \eqn{\hat{u}}, and the likelihood function at each location is approximated
+by a Normal distribution at \eqn{\mathcal{N}(\hat{u}, \widehat{Var}(u))}.
+Second, the Laplace approximation is used to integrate out the random effects in the joint likelihood
+\eqn{p_{\mathrm{LA}}(\hat{u} \mid \theta) \approx \int p(\hat{u},u \mid \theta) \ \mathrm{d}u}, followed by a Normal
+approximation at mode and quadrature of the approximated marginal likelihood \eqn{p_{\mathrm{LA}}(\hat{u} \mid \theta)}.
+This is known as the smooth step.
 
 The random effects are assumed to follow Gaussian processes with mean 0 and covariance matrix
 defined by the chosen kernel function. E.g., using the exponential kernel function:
