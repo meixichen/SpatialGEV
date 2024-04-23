@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/meixichen/SpatialGEV/workflows/R-CMD-check/badge.svg)](https://github.com/meixichen/SpatialGEV/actions)
 <!-- badges: end -->
 
-*Meixi Chen, Martin Lysy*
+*Meixi Chen, Martin Lysy, Reza Ramezan*
 
 ---
 
@@ -42,12 +42,12 @@ Before installing ***SpatialGEV***, make sure you have ***TMB*** installed follo
 ***SpatialGEV*** uses several functions from the ***INLA*** package for SPDE approximation to the Matérn covariance as well as mesh creation on the spatial domain. If the user would like to use the SPDE method (i.e. `kernel="spde"` in `spatialGEV_fit()`), please first install package ***INLA***. Since ***INLA*** is not on CRAN, it needs to be downloaded following their instruction [here](https://www.r-inla.org/download-install).
 
 To download the stable version of this package, run
-```{r, eval=FALSE}
+```{r install-pkg-cran, eval=FALSE}
 install.packages("SpatialGEV")
 ```
 
 To download the development version of this package, run 
-```{r, eval=FALSE}
+```{r install-pkg-github, eval=FALSE}
 devtools::install_github("meixichen/SpatialGEV")
 ```
 
@@ -81,18 +81,18 @@ filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logs), ncol=sqrt(n_loc
                cex.lab=1,cex.axis=1)
 ```
 
-To fit a GEV-GP model to the simulated data, use the `spatialGEV_fit()` function. We use `random="abs"` to indicate that all three GEV parameters are treated as random effects. The shape parameter `s` is constrained to be positive (log transformed) by specifying `reparam_s="positive"`. The covariance kernel function used here is the exponential kernel `kernel="exp"`. Initial parameter values are passed to `init_param` using a list.
+To fit a GEV-GP model to the simulated data, use the `spatialGEV_fit()` function. We use `random="abs"` to indicate that all three GEV parameters are treated as random effects. The shape parameter `s` is constrained to be positive (log transformed) by specifying `reparam_s="positive"`. The covariance kernel function used here is the SPDE-approximated Matérn kernel `kernel="spde"`. Initial parameter values are passed to `init_param` using a list.
 
 ```{r fit}
-fit <- spatialGEV_fit(y = y, locs = locs, random = "abs",
+fit <- spatialGEV_fit(data = y, locs = locs, random = "abs",
                       init_param = list(a = rep(60, n_loc),
                                         log_b = rep(2,n_loc),
                                         s = rep(-3,n_loc),
                                         beta_a = 60, beta_b = 2, beta_s = -2,
-                                        log_sigma_a = 1.5, log_ell_a = 5,
-                                        log_sigma_b = 1.5, log_ell_b = 5,
-                                        log_sigma_s = -1, log_ell_s = 5),
-                      reparam_s = "positive", kernel="exp", silent = T)
+                                        log_sigma_a = 1.5, log_kappa_a = -2,
+                                        log_sigma_b = 1.5, log_kappa_b = -2,
+                                        log_sigma_s = -1, log_kappa_s = -2),
+                      reparam_s = "positive", kernel="spde", silent = TRUE)
 
 class(fit)
 print(fit)
@@ -101,7 +101,7 @@ print(fit)
 Posterior samples of the random and fixed effects are drawn using `spatialGEV_sample()`. Specify `observation=TRUE` if we would also like to draw from the posterior predictive distribution.
 
 ```{r sample}
-sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = T)
+sam <- spatialGEV_sample(model = fit, n_draw = 1000, observation = T)
 print(sam)
 ```
 
@@ -112,3 +112,12 @@ pos_summary$param_summary[1:5,]
 pos_summary$y_summary[1:5,]
 ```
 
+
+# TODO
+- [ ] Consider a shorter name, e.g., `sgev_*`, than `spatialGEV_*`.
+
+- [ ] Argument `init_params` adds a lot of complexity to `spatialGEV_fit()`.  Perhaps this function can be broken down into two parts: `spatialGEV_adfun()` which returns the `adfun` object, and then `spatialGEV_fit()` which does the fitting.  The advantage is that the `adfun$env$parameters` object tells you the dimension of the parameter values, which can be useful for initialization.  Also, note that `adfun$env$data` object contains the entire data list for browsing.
+
+- [ ] Write some tests for the `spde` kernel.  Construct the sparse precision matrix using `get_spde_prec()`, invert it using `Matrix::solve()`, apply the scale factor, and pass as variance to `dmvnorm()`.
+
+- [ ] Refactor the tests to avoid copy-pasting, which makes it easier to add new models.
