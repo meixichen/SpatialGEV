@@ -177,6 +177,3 @@ pos_summary$y_summary[1:5,]
   precision matrix using `get_spde_prec()`, invert it using
   `Matrix::solve()`, apply the scale factor, and pass as variance to
   `dmvnorm()`.
-
-- [ ] Refactor the tests to avoid copy-pasting, which makes it easier to
-  add new models.

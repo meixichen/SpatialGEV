@@ -101,3 +101,124 @@ r_nll <- function(y, dd, a, log_b, s,
   }
   nll
 }
+
+
+#' Simulate location data and GP parameters for testing
+#' @param random A vector of character strings "a", "b" or "s".
+#' @param kernel "exp" or "matern".
+#' @param reparam_s "positive", "negative", "unconstrained", or "zero"
+#' @return A list of simulated parameters: a, log(b) (if `random` contains "b"),
+#' reparameterized s (if `random` contains "s"), corresponding GP hyperparameters,
+#' and the negative log-likelihood calculated in R.
+test_sim <- function(random="a", kernel=c("exp", "matern"),
+                     reparam_s=c("positive", "negative", "unconstrained", "zero")){
+  kernel <- match.arg(kernel)
+  reparam_s <- match.arg(reparam_s)
+  if (kernel == "exp"){
+    kernel_fun <- kernel_exp
+  } else if (kernel == "matern"){
+    kernel_fun <- kernel_matern
+  }
+  n_sqrt <- sample(5:10, 1)
+  n <- n_sqrt^2
+  lon <- seq(0, 10, length.out = n_sqrt)
+  lat <- seq(0, 10, length.out = n_sqrt)
+  X <- expand.grid(x = lon, y = lat)
+  dd <- as.matrix(stats::dist(X))
+  gp_hyper1_a <- runif(1, 0, 1)
+  gp_hyper2_a <- rnorm(1, 0.5, 0.1)
+  cov_a <- kernel_fun(dd, exp(gp_hyper1_a), exp(gp_hyper2_a))
+  mean_a <- rep(rnorm(1, 1, 1), n)
+  a <- mvtnorm::rmvnorm(1, mean_a, cov_a)
+  beta_a <- mean(a)
+  f_s <- function(x) x
+  if ("b" %in% random){
+    gp_hyper1_b <- runif(1, 0,0.5)
+    gp_hyper2_b <- rnorm(1, 0.5, 0.1)
+    cov_b <- kernel_fun(dd, exp(gp_hyper1_b), exp(gp_hyper2_b))
+    mean_b <- rep(rnorm(1, 0.5, 0.5), n)
+    log_b <- mvtnorm::rmvnorm(1, mean_b, cov_b)
+    beta_b <- mean(log_b)
+  } else{
+    log_b <- runif(1, -3, 0)
+    beta_b <- NULL
+    gp_hyper1_b <- NULL
+    gp_hyper2_b <- NULL
+  }
+  if ("s" %in% random){
+    gp_hyper1_s <- runif(1, -4, -2)
+    gp_hyper2_s <- rnorm(1, 1, 2)
+    cov_s <- kernel_fun(dd, exp(gp_hyper1_s), exp(gp_hyper2_s))
+    mean_s <- rep(rnorm(1, -3, 1), n)
+    log_s <- mvtnorm::rmvnorm(1, mean_s, cov_s)
+    s_orig <- exp(log_s)
+    beta_s <- mean(log_s)
+  } else{
+    s_orig <- runif(1, 0.01, 0.1)
+    log_s <- log(s_orig)
+    tmb_s <- s_orig
+    beta_s <- NULL
+    gp_hyper1_s <- NULL
+    gp_hyper2_s <- NULL
+  }
+  if (reparam_s == "positive"){
+    tmb_s <- log_s
+    f_s <- function(x) log(x)
+  } else if (reparam_s == "unconstrained"){
+    if ("s"%in%random) beta_s <- mean(s_orig)
+    tmb_s <- s_orig
+  } else if (reparam_s == "negative"){
+    s_orig <- -exp(log_s)
+    tmb_s <- log_s
+    f_s <- function(x) log(abs(s_orig))
+  } else if (reparam_s == "zero"){
+    s_orig <- 0
+    tmb_s <- 0
+  }
+  y <- Map(evd::rgev, n=sample(1:20, n, replace=TRUE),
+           loc=a, scale=exp(log_b), shape=s_orig)
+  re_list <- list(
+    a=a, log_b=log_b, s=tmb_s,
+    beta_a=beta_a, beta_b=beta_b, beta_s=beta_s
+  )
+  hyper_list <- list(
+    log_sigma_a=gp_hyper1_a, log_ell_a=gp_hyper2_a,
+    log_sigma_b=gp_hyper1_b, log_ell_b=gp_hyper2_b,
+    log_sigma_s=gp_hyper1_s, log_ell_s=gp_hyper2_s
+  ) 
+  if (kernel == "matern"){
+    names(hyper_list) <- gsub("_ell_", "_kappa_", names(hyper_list))
+  }
+  param_list <- c(re_list, hyper_list)
+  param_list <- param_list[!sapply(param_list, is.null)]
+  
+  nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s_orig,
+                 hyperparam_a=c(exp(gp_hyper1_a), exp(gp_hyper2_a)),
+                 hyperparam_b=c(exp(gp_hyper1_b), exp(gp_hyper2_b)),
+                 hyperparam_s=c(exp(gp_hyper1_s), exp(gp_hyper2_s)),
+                 kernel=kernel, beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
+                 f_s=f_s)
+  list(y=y, locs=X, params=param_list, nll_r=nll_r, 
+       kernel=kernel, random=paste(random, collapse=""), reparam_s=reparam_s)
+}
+
+
+#' Calculate negative log-likelihood in TMB
+#' @param sim_res Simulation results produced by `test_sim()`.
+#' @return A scalar.
+calc_tmb_nll <- function(sim_res){
+  adfun <- spatialGEV_fit(sim_res$y, locs=sim_res$locs, 
+                          random=sim_res$random,
+                          init_param=sim_res$params,
+                          reparam_s=sim_res$reparam_s,
+                          kernel=sim_res$kernel,
+                          sp_thres=-1,
+                          adfun_only=TRUE,
+                          ignore_random=TRUE,
+                          silent=TRUE)
+  if (sim_res$reparam == "zero"){
+    sim_res$params <- sim_res$params[names(sim_res$params) != "s"]
+  }
+  adfun$fn(unlist(sim_res$params))
+}
+
