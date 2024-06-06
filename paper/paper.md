@@ -1,5 +1,5 @@
 ---
-title: 'SpatialGEV: Fast Bayesian inference for spatial extreme value models in R'
+title: 'SpatialGEV: Fast Bayesian inference for spatial extreme value models in \textsf{R}'
 tags:
 - R
 - Bayesian inference
@@ -43,31 +43,49 @@ MathJax.Hub.Config({
 \newcommand{\uu}{{\bm{u}}}
 \newcommand{\SSi}{{\bm{\Sigma}}}
 \newcommand{\VV}{{\bm{V}}}
-\newcommand{\iid}{{\overset{iid}{\sim}}}
+\newcommand{\iid}{{\overset{\mathrm{iid}}{\sim}}}
 
 # Summary
 
-Extreme weather phenomena such as floods and hurricanes are of great concern due to their potential to cause extensive damage. To develop more reliable damage prevention protocols, statistical models are often used to infer the chance of observing an extreme weather event at a given location [@coles98; @cooley07; @sang-gelfand10]. Here we present `SpatialGEV`, an R package providing a fast and convenient toolset for analyzing spatial extreme values using a hierarchical Bayesian modeling framework. In this framework, the marginal behavior of the extremes is given by a generalized extreme value (GEV) distribution, whereas the spatial dependence between locations is captured by modeling the GEV parameters as spatially varying random effects following a Gaussian process (GP). Users are provided with a streamlined way to build and fit various GEV-GP models in R, which are compiled in C++ under the hood. For downstream analyses, the package offers methods for Bayesian parameter estimation and forecasting of extreme events. 
+Extreme weather phenomena such as floods and hurricanes are of great concern due to their potential to cause extensive damage. To develop more reliable damage prevention protocols, statistical models are often used to infer the chance of observing an extreme weather event at a given location [@coles98; @cooley07; @sang-gelfand10]. Here we present **SpatialGEV**, an \textsf{R} package providing a fast and convenient toolset for analyzing spatial extreme values using a hierarchical Bayesian modeling framework. In this framework, the marginal behavior of the extremes is given by a generalized extreme value (GEV) distribution, whereas the spatial dependence between locations is captured by modeling the GEV parameters as spatially varying random effects following a Gaussian process (GP). Users are provided with a streamlined way to build and fit various GEV-GP models in \textsf{R}, which are compiled in \textsf{C++} under the hood. For downstream analyses, the package offers methods for Bayesian parameter estimation and forecasting of extreme events. 
 
-# Statement of need
+# Background
 
-The GEV-GP model has important applications in meteorological studies. For example, let $y=y(\xx)$ denote the amount of rainfall at a spatial location $\xx$. To forecast extreme rainfalls, it is often of interest for meteorologists to estimate the $1/p$-year rainfall return value $z_p(\xx)$, which is the value above which precipitation levels at location $\xx$ occur with probability $p$, i.e.,
+Let $\operatorname{GEV(a, b, s)}$ denote a GEV distribution for which the cumulative density function (CDF) is given by
 \begin{equation}
-\Pr\big(y(\xx) > z_p(\xx)\big) = 1-F_{y\mid \xx}\big(z_p(\xx)\big) = p,
+F(y \mid a, b, s) = 
+\begin{cases}
+\exp\left\{-\left(1+s\cdot \frac{y-a}{b}\right)^{-1/s}\right\}, \ &s\neq 0,\\
+\exp\left\{-\exp\left(-\frac{y-a}{b}\right)\right\}, \ &s=0, 
+\end{cases}
+\end{equation}
+with location parameter $a$, positive scale parameter $b$ and shape parameter $s$.
+The general form of the GEV-GP models that can be fit using **SpatialGEV** is 
+\begin{equation}
+\begin{aligned}
+  y_{ij} &\iid \operatorname{GEV}(a(\xx_i), \exp(b(\xx_i)), s(\xx_i)),\\
+  u(\xx) &\sim \operatorname{GP}(\bm{c}_u(\xx)^T\bm{\beta}_u(\xx), \ \mathcal{K}(\xx,\xx' \mid \bm{\eta}_u)),
+\end{aligned}
+\end{equation}
+where $y_{ij}$ denotes observation $j$ at spatial location $i$, of which the two-dimensional spatial coordinates are $\xx_i$, $u\in\{a,b,s\}$ is any subset of the GEV parameters which we would like to model as spatially varying, and $\operatorname{GP}(\mu(\xx), \mathcal{K}(\xx,\xx'))$ is a Gaussian process with mean function $\mu(\xx)$ (possibly depending on covariates $\bm{c}(\xx)$ via coefficients $\bm{\beta}(\xx)$) and covariance kernel $\mathcal{K}(\xx,\xx')$.
+
+The GEV-GP model has important applications in meteorological studies. For example, let $y=y(\xx)$ denote the amount of rainfall at a spatial location $\xx$. To forecast extreme rainfalls, it is often of interest for meteorologists to estimate the $1/p$-year rainfall return level $z_p(\xx)$, which is the value above which precipitation levels at location $\xx$ occur with probability $p$, i.e.,
+\begin{equation}
+\Pr\big(y(\xx) > z_p(\xx)\big) = 1-F\big(z_p(\xx)\mid a(\xx), b(\xx), s(\xx)\big) = p,
 \label{eq:return-level}
 \end{equation}
-where the CDF is that of the GEV distribution specific to location $\xx$. The value $r=1/p$ is known as the return period. When $p$ is chosen to be a small value, $z_p(\xx)$ indicates how extreme the precipitation level might be at location $\xx$. 
+where $F\big(z_p(\xx)\mid a(\xx), b(\xx), s(\xx)\big)$ is the CDF of the GEV distribution specific to location $\xx$. When $p$ is chosen to be a small value, $z_p(\xx)$ indicates how extreme the precipitation level might be at location $\xx$. 
 
-In a Bayesian context, the posterior distribution $p(z_p(\xx)\mid \yy)$, where $\yy=(\yy(\xx_1), \ldots, \yy(\xx_n))$ represents rainfall measurements at $n$ different locations, is very useful for forecasting extreme weather events. Traditionally, Markov Chain Monte Carlo (MCMC) methods are used to sample from the posterior distribution of the GEV model [e.g., @cooley07; @schliep10; @dyrrdal15]. However, this can be extremely computationally intensive when the number of locations is large. The `SpatialGEV` package implements Bayesian inference based on the Laplace approximation as an alternative to MCMC, making large-scale spatial analyses orders of magnitude faster while achieving roughly the same accuracy as MCMC. The Laplace approximation is carried out using the R/C++ package `TMB` [@kristensen16]. Details of the inference method can be found in @chen-etal21. 
+In a Bayesian context, the posterior distribution $p(z_p(\xx)\mid \yy)$ is very useful for forecasting extreme weather events. For model inference, we construct a Normal approximation to the joint posterior distribution of both GEV parameters and GP hyperparameters $p(u(\xx), \bm{\eta}, \bm{\beta}_u\mid \yy)$, which is then used to estimate the return level posterior. This is done via an efficient Laplace approximation to the marginal hyperparameter posterior $p(\bm{\eta}, \bm{\beta}_u \mid \yy)$ [see, e.g., @tierney-kadane86; @kristensen16; @chen-etal24].
 
+# Statement of need
+Traditionally, Markov Chain Monte Carlo (MCMC) methods are used to sample from the posterior distribution of the GEV model [e.g., @cooley07; @schliep10; @dyrrdal15]. However, this can be extremely computationally intensive when the number of locations is large. The **SpatialGEV** package implements Bayesian inference based on the Laplace approximation as an alternative to MCMC, making large-scale spatial analyses orders of magnitude faster while achieving roughly the same accuracy as MCMC. The Laplace approximation is carried out using the \textsf{R}/\textsf{C++} package **TMB** [@kristensen16]. Details of the inference method can be found in @chen-etal24. 
 
-# Statement of field
-
-The R package `SpatialExtremes` [@spatialextremes] is one of the most popular software for fitting spatial extreme value models, which employs an efficient Gibbs sampler. The Stan programming language and its R interface `RStan` [@rstan] provides off-the-shelf implementations for Hamiltonian Monte Carlo and its variants [@neal11; @hoffman-gelman14], which are considered state-of-the-art MCMC algorithms and often used for fitting hierarchical spatial models. @chen-etal21 compares the speed and accuracy of the Laplace method implemented in `SpatialGEV` to `RStan`. It is found that `SpatialGEV` is three orders of magnitude faster than `RStan`. A well-known alternative to MCMC is the `R-INLA` package [@lindgren-rue15] which implements the integrated nested Laplace approximation (INLA) approach. As an extension of the Laplace approximation, INLA is often considerably more accurate. However, the `R-INLA` implementation is inapplicable to GEV-GP models in which two or more GEV parameter are modeled as random effects following different Gaussian processes. In contrast, `SpatialGEV` offers more flexibility as it is straightforward for the user to choose what GEV parameters are spatial random effects. @mgcv and @youngman22 provide another means for estimating spatially varying GEV parameters in the framework of generalized additive models (GAMs), as opposed to Bayesian hierarchical models in `SpatialGEV`. Though the latent spatial effects are modelled differently, connections between the GAM approach and the GEV-GP model with a Matérn-SPDE kernel are described in @miller-etal20.
+The \textsf{R} package **SpatialExtremes** [@spatialextremes] is a popular software for fitting spatial extreme value models including GEV-GP. Although it supports a wider range of model classes, its inference for GEV-GP models relies on a MCMC sampler which is not optimized for speed. The Stan programming language and its \textsf{R} interface **RStan** [@rstan] provides off-the-shelf implementations for Hamiltonian Monte Carlo and its variants [@neal11; @hoffman-gelman14], which are considered state-of-the-art MCMC algorithms and often used for fitting hierarchical spatial models. @chen-etal24 compares the speed and accuracy of the Laplace method implemented in **SpatialGEV** to **RStan**. It is found that **SpatialGEV** is three orders of magnitude faster than **RStan**. A well-known alternative to MCMC is the integrated Laplace approximation (INLA) method, whose \textsf{R} implementation is provided in the **R-INLA** package [@lindgren-rue15]. As an extension of the Laplace approximation, INLA is often considerably more accurate. However, **R-INLA** is inapplicable to GEV-GP models in which two or more GEV parameter are modeled as random effects following different Gaussian processes. In contrast, **SpatialGEV** offers more flexibility as it is straightforward for the user to choose what GEV parameters are spatial random effects. @mgcv and @youngman22 provide another means for estimating spatially varying GEV parameters via a scalable basis representation reducing the number of random effects in the model. Compared to **SpatialGEV** which keeps all random effects for inference, the basis function expansion approach is less accurate for estimating spatial processes that are not smooth or exhibit short-range correlation [@wood20; @lindgren-etal21].
 
 # Example
 ## Model fitting
-The main functions of the `SpatialGEV` package are `spatialGEV_fit()`, `spatialGEV_sample()`, and `spatialGEV_predict()`. This example shows how to apply these functions to analyze a simulated dataset using the GEV-GP model. The spatial domain is a $20\times 20$ regular lattice on $[0, 10] \times [0,10] \subset \mathbb{R}^2$, such that there are $n=400$ locations in total. The GEV location parameter $a(\xx)$ and the scale parameter $b(\xx)$ are generated from surfaces depicted in Figure \ref{fig:sim-par}, whereas the shape parameter $s$ is a constant $\exp(-2)$ across space. 10 to 30 observations per location are simulated from the GEV distribution conditional on the GEV parameters $(a(\xx), b(\xx), s)$. The simulated data is provided by the package as a list called `simulatedData`.
+The main functions of the **SpatialGEV** package are `spatialGEV_fit()`, `spatialGEV_sample()`, and `spatialGEV_predict()`. This example shows how to apply these functions to analyze a simulated dataset using the GEV-GP model. The spatial domain is a $20\times 20$ regular lattice on $[0, 10] \times [0,10] \subset \mathbb{R}^2$, such that there are $n=400$ locations in total. The GEV location parameter $a(\xx)$ and the scale parameter $b(\xx)$ are generated from surfaces depicted in Figure \ref{fig:sim-par}, whereas the shape parameter $s$ is a constant $\exp(-2)$ across space. 10 to 30 observations per location are simulated from the GEV distribution conditional on the GEV parameters $(a(\xx), b(\xx), s)$. The simulated data is provided by the package as a list called `simulatedData`, whose values are calibrated to the level of total daily precipitation in mm.
 
 \begin{figure}[h]
 \centering
@@ -83,9 +101,9 @@ The main functions of the `SpatialGEV` package are `spatialGEV_fit()`, `spatialG
 The GEV-GP model is fitted by calling `spatialGEV_fit()`. By specifying `random="ab"`, only the GEV parameters $a$ and $b$ are considered spatial random effects. Initial parameter values are passed to `init_param`, where `log_sigma_{a/b}` and `log_ell_{a/b}` are hyperparameters in the GP exponential kernel functions, and `beta_{a/b}` are regression coefficients in the GP mean function. The GP kernel function is chosen using `kernel="exp"`. Other kernel function options are the Matérn kernel and the SPDE approximation to the Matérn described in @lindgren-etal11. The argument `reparam_s="positive"` means we constrain the shape parameter to be positive, i.e., its estimation is done on the log scale. Covariates to include in the mean functions can be provided in a matrix form to `X_{a/b}`. In this example, we only include the intercepts. The posterior mean estimates of the spatial random effects can be accessed from `mod_fit$report$par.random`, whereas the fixed effects can be obtained from `mod_fit$report$par.fixed`.
 
 ```r
-set.seed(123)                      # set seed for reproducible results
-library(SpatialGEV)                # load package
-n_loc <- 50                        # number of locations
+set.seed(123)                         # set seed for reproducible results
+library(SpatialGEV)                   # load package
+n_loc <- 50                           # number of locations
 locs <- simulatedData$locs[1:n_loc,]  # location coordinates
 a <- simulatedData$a[1:n_loc]         # true GEV location parameters
 logb <- simulatedData$logb[1:n_loc]   # true GEV (log) scale parameters
@@ -104,19 +122,20 @@ fit <- spatialGEV_fit(data = y, locs = locs, random = "ab",
                       X_b = matrix(1, nrow=n_loc, ncol=1),
                       silent=T)                
 print(fit)
-#> Model fitting took 10.1354069709778 seconds 
+#> Model fitting took 8.78002285957336 seconds 
 #> The model has reached relative convergence 
 #> The model uses a exp kernel 
 #> Number of fixed effects in the model is 7 
 #> Number of random effects in the model is 100 
-#> Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples 
+#> Hessian matrix is positive definite. 
+#> Use spatialGEV_sample to obtain posterior samples 
 ```
 
 ## Sampling from the joint posterior
 Now, we show how to sample 2000 times from the joint posterior distribution of the GEV parameters using the function `spatialGEV_sample()`. Only three arguments need to be passed to this function: `model` takes in the list output by `spatialGEV_fit()`, `n_draw` is the number of samples to draw from the posterior distribution, and `observation` indicates whether to draw from the posterior predictive distribution of the data at the observed locations. Call `summary()` on the sample object to obtain summary statistics of the posterior samples.
 
 ```r
-sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = T)
+sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = TRUE)
 print(sam)
 #> The samples contains 2000 draws of 107 parameters 
 #> The samples contains 2000 draws of response at 50 locations 
@@ -141,8 +160,8 @@ z_draws <- apply(sam$parameter_draws, 1,
                         lower.tail=F)
                  })
 z_mean <- apply(z_draws, 1, mean)
-plot(z_true, z_mean, xlab="True 10-year return levels", 
-     ylab="Posterior mean estimates of 10-year return levels")
+plot(z_true, z_mean, xlab="True", ylab="Posterior mean",
+     main="10-year return levels (mm)")
 abline(0, 1, lty="dashed", col="blue")
 ```
 
@@ -153,8 +172,8 @@ Next, we show how to predict the values of the extreme event at test locations. 
 
 ```r
 set.seed(123)
-n_test <- 100                        # number of test locations
-test_ind <- sample(1:400, n_test)    # indices of the test locations
+n_test <- 100                               # number of test locations
+test_ind <- sample(1:400, n_test)           # indices of the test locations
 locs_test <- simulatedData$locs[test_ind,]  # coordinates of the test locations
 y_test <- simulatedData$y[test_ind]         # observations at the test locations
 locs_train <- simulatedData$locs[-test_ind,]# coordinates of the training locations
@@ -176,8 +195,9 @@ pred <- spatialGEV_predict(model = train_fit, locs_new = locs_test,
 plot(sapply(y_test, quantile, probs=0.9),
      apply(pred$pred_y_draws, 2, quantile, probs=0.9), 
      xlim=c(3,10), ylim=c(3,10), 
-     xlab="Observed 90% quantiles of responses at test locations",
-     ylab="Predicted 90% quantiles of responses")
+     main="90% quantiles of responses at test locations",
+     xlab="Observed",
+     ylab="Predicted")
 abline(0, 1, lty="dashed", col="blue")
 ```
 ![90\% quantile values of posterior predictive distributions at test locations plotted against the observed 90\% quantile values at the corresponding locations. Each circle corresponds to a test location. \label{fig:sim-pred}](sim-pred.png){width=45%}
