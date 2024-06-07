@@ -117,7 +117,7 @@ grid_plot(unique(locs$x), unique(locs$y), matrix(logs, ncol=sqrt(n_loc)),
           "Spatial variation of log(s)", y_lab="")
 ```
 
-<img src="figure/sim1-plot-abs-1.png" title="plot of chunk sim1-plot-abs" alt="plot of chunk sim1-plot-abs" width="100%" />
+<img src="sim1-plot-abs-1.png" title="plot of chunk sim1-plot-abs" alt="plot of chunk sim1-plot-abs" width="100%" />
 
 Number of observations at each location is shown in the figure below.
 
@@ -127,7 +127,7 @@ barplot(sapply(y, length),
         main = "Summary of number of observations per location")
 ```
 
-<img src="figure/sim1-plot-num-obs-per-loc-1.png" title="plot of chunk sim1-plot-num-obs-per-loc" alt="plot of chunk sim1-plot-num-obs-per-loc" width="100%" />
+<img src="sim1-plot-num-obs-per-loc-1.png" title="plot of chunk sim1-plot-num-obs-per-loc" alt="plot of chunk sim1-plot-num-obs-per-loc" width="100%" />
 
 Below are histograms of observations at $8$ randomly sampled locations.
 
@@ -143,7 +143,7 @@ for (i in sam_inds){
 }
 ```
 
-<img src="figure/sim-1plot-y-1.png" title="plot of chunk sim-1plot-y" alt="plot of chunk sim-1plot-y" width="100%" />
+<img src="sim-1plot-y-1.png" title="plot of chunk sim-1plot-y" alt="plot of chunk sim-1plot-y" width="100%" />
 
 ### Model fitting
 The function `spatialGEV_fit()` in the **SpatialGEV** package is used to find the mode and quadrature of the Laplace approximation to the marginal hyperparameter posterior, which is the basis of a Normal approximation to the posterior of both hyperparameters and random effects referred to as Laplace-MQ in our paper. The function `spatialGEV_sample()` is then used to sample from this distribution via a sparse representation of its precision matrix. 
@@ -308,7 +308,7 @@ plot(exp(logs), exp(pos_summary$param_summary[(2*n_loc+1):(3*n_loc),"mean"]),
 abline(0, 1, col="blue", lty="dashed")
 ```
 
-<img src="figure/sim1-pos-plots-1.png" title="plot of chunk sim1-pos-plots" alt="plot of chunk sim1-pos-plots" width="100%" />
+<img src="sim1-pos-plots-1.png" title="plot of chunk sim1-pos-plots" alt="plot of chunk sim1-pos-plots" width="100%" />
 
 ### Posterior prediction
 Finally, we demonstrate how to make predictions at new locations. This is done using the `spatialGEV_predict()` function, which takes the following arguments:
@@ -339,7 +339,7 @@ grid_plot(unique(locs$x), unique(locs$y), matrix(logb, ncol=sqrt(n_loc)),
           "Spatial variation of log(b)", y_lab="")
 ```
 
-<img src="figure/sim2-plot-ab-1.png" title="plot of chunk sim2-plot-ab" alt="plot of chunk sim2-plot-ab" width="50%" />
+<img src="sim2-plot-ab-1.png" title="plot of chunk sim2-plot-ab" alt="plot of chunk sim2-plot-ab" width="50%" />
 
 We randomly sample 100 locations from the simulated dataset `simulatedData` as test locations which are left out. Data from the rest 300 training locations are used for model fitting. We fit a GEV-GP model with random $a$ and $b$ and log-transformed $s$ to the training dataset. The kernel used here is the SPDE approximation to the Matérn covariance function (@lindgren-etal11).
 
@@ -406,7 +406,7 @@ plot(sapply(y_test, function(x){quantile(x, probs=0.975)}), pred_summary[,"97.5%
 abline(0, 1, col="blue", lty="dashed")
 ```
 
-<img src="figure/sim2-pred-plot-1.png" title="plot of chunk sim2-pred-plot" alt="plot of chunk sim2-pred-plot" width="100%" />
+<img src="sim2-pred-plot-1.png" title="plot of chunk sim2-pred-plot" alt="plot of chunk sim2-pred-plot" width="100%" />
 
 ## Case study: Yearly maximum snowfall data in Ontario, Canada
 In this section, we show how to use the ***SpatialGEV*** package to analyze a real dataset. The data used here are the 1987-2021 monthly total snowfall data (in cm) obtained from Environment and Natural Resources, Government of Canada. The link to download the raw data is https://climate-change.canada.ca/climate-data/#/monthly-climate-summaries. This dataset is automatically loaded with the package and is named `ONsnow`.
@@ -428,7 +428,7 @@ maps::map(xlim = lon_range, ylim = lat_range)
 points(ONsnow$LONGITUDE, ONsnow$LATITUDE)
 ```
 
-<img src="figure/snow-display-raw-data-1.png" title="plot of chunk snow-display-raw-data" alt="plot of chunk snow-display-raw-data" width="60%" />
+<img src="snow-display-raw-data-1.png" title="plot of chunk snow-display-raw-data" alt="plot of chunk snow-display-raw-data" width="60%" />
 
 ### Data preprocessing
 We first grid the data using cells of length $0.5^{\circ}$. By doing this, weather stations that are apart by less than $0.5^{\circ}$ in longitude/latitude are grouped together in the same grid cell. From now on, we refer to each grid cell as a location.
@@ -490,7 +490,7 @@ maps::map(xlim = lon_range, ylim = lat_range)
 points(locs$cell_lon, locs$cell_lat)
 ```
 
-<img src="figure/snow-display-grid-data-1.png" title="plot of chunk snow-display-grid-data" alt="plot of chunk snow-display-grid-data" width="60%" />
+<img src="snow-display-grid-data-1.png" title="plot of chunk snow-display-grid-data" alt="plot of chunk snow-display-grid-data" width="60%" />
 
 Now we fit the GEV-GP model to the data using the SPDE kernel. Both $a$ and $b$ are treated as spatial random effects. $s$ is constrained to be a positive constant. Note that here we have specified a $\mathcal{N}(-5,5)$ prior on the log-transformed shape parameter. This is because we found that the shape parameter is estimated close to 0 and such a prior ensures model fitting procedure is numerically stable.
 
@@ -560,13 +560,13 @@ map_plot(return5, title="5-year Return levels")
 map_plot(return5sd, title="SD of 5-year Return levels")
 ```
 
-<img src="figure/snow-return-plots-1.png" title="plot of chunk snow-return-plots" alt="plot of chunk snow-return-plots" width="60%" />
+<img src="snow-return-plots-1.png" title="plot of chunk snow-return-plots" alt="plot of chunk snow-return-plots" width="60%" />
 
 ```r
 map_plot(return25, title="25-year Return levels")
 map_plot(return25sd, title="SD of 25-year Return levels")
 ```
 
-<img src="figure/snow-return-plots-2.png" title="plot of chunk snow-return-plots" alt="plot of chunk snow-return-plots" width="60%" />
+<img src="snow-return-plots-2.png" title="plot of chunk snow-return-plots" alt="plot of chunk snow-return-plots" width="60%" />
 
 ## References
