@@ -6,80 +6,175 @@
 #undef TMB_OBJECTIVE_PTR
 #define TMB_OBJECTIVE_PTR obj
 
+/// TMB specification of GEV-GP models with a chosen covariance kernel.
+///
+/// The model is defined as follows:
+///
+/// y ~ GEV(a, b, s),
+/// a ~ GP(log_sigma_a, log_ell_a)
+/// log_b ~ GP(log_sigma_b, log_ell_b)
+/// s ~ GP(log_sigma_s, log_ell_s)
+/// where the GP is parameterized using the exp covariance kernel.
+///
+/// --------- Data provided from R ---------------
+/// @param[in] y Response vector of length `n_obs`.  Assumed to be > 0.
+/// @param[in] loc_ind Location vector of length `n_obs` of integers
+/// `0 <= i_loc < n_loc` indicating to which locations each element of `y` is
+/// associated.
+/// @param[in] reparam_s Integer indicating the type of shape parameter. 0:
+/// `s = 0`, i.e., use Gumbel instead of GEV distribution.  1: `s > 0`, in which
+/// case we operate on `log(s)`.  2: `s < 0`, in which case we operate on
+/// `log(-s)`.  3: unconstrained.
+/// @param[in] beta_prior Integer specifying the type of prior on the design
+/// matrix coefficients. 1 is weakly informative normal prior and any other
+/// numbers means Lebesgue prior `pi(beta) \propto 1`.
+/// @param[in] return_periods Vector of return periods to ADREPORT. If the first
+/// element of this vector is 0, then no return level calculations are performed
+/// .
+/// @param[in] dist_mat `n_loc x n_loc` distance matrix typically constructed
+/// via `stats::dist(coordinates)`.
+/// @param[in] sp_thres Scalar number used to make the covariance matrix sparse
+/// by thresholding. If sp_thres=-1, no thresholding is made.
+/// @param[in] design_mat_a Design matrix of size
+/// `n_loc x n_covariate` for parameter a.
+/// @param[in] beta_a_prior Vector of length 2 containing the mean
+/// and sd of the normal prior on `beta_a`.
+/// @param[in] design_mat_b Design matrix of size
+/// `n_loc x n_covariate` for parameter log_b.
+/// @param[in] beta_b_prior Vector of length 2 containing the mean
+/// and sd of the normal prior on `beta_b`.
+/// @param[in] design_mat_s Design matrix of size
+/// `n_loc x n_covariate` for parameter s.
+/// @param[in] beta_s_prior Vector of length 2 containing the mean
+/// and sd of the normal prior on `beta_s`.
+///
+/// --------- Parameters to estimate ------------
+/// @param[in] a GEV location parameter.
+/// Vector of length `n_loc`.
+/// @param[in] log_b GEV scale parameter on the log scale.
+/// Vector of length `n_loc`.
+/// @param[in] s GEV shape parameter on the scale specified by `reparam_s`.
+/// Vector of length `n_loc`.
+/// @param[in] beta_a GP mean covariate coefficient vector of
+/// length `n_covariate` for a.
+/// @param[in] log_sigma_a GP covariance kernel variance
+/// hyperparameter for a.
+/// @param[in] log_ell_a GP covariance kernel range
+/// hyperparameter for a.
+/// @param[in] beta_b GP mean covariate coefficient vector of
+/// length `n_covariate` for log_b.
+/// @param[in] log_sigma_b GP covariance kernel variance
+/// hyperparameter for log_b.
+/// @param[in] log_ell_b GP covariance kernel range
+/// hyperparameter for log_b.
+/// @param[in] beta_s GP mean covariate coefficient vector of
+/// length `n_covariate` for s.
+/// @param[in] log_sigma_s GP covariance kernel variance
+/// hyperparameter for s.
+/// @param[in] log_ell_s GP covariance kernel range
+/// hyperparameter for s.
 template<class Type>
 Type model_abs_exp(objective_function<Type>* obj){
-  /*
-  Model layer 1: y ~ GEV(a, b, s)
-  Model layer 2: 
-  a ~ GP(0, Sigma_a(sigma_a, ell_a))
-  logb ~ GP(0, Sigma_b(sigma_b, ell_b))
-  g(s) ~ GP(0, Sigma_s(sigma_s, ell_s)) where s is a transformation function of s
-  */ 
   using namespace density;
+  using namespace R_inla;
+  using namespace Eigen;
   using namespace SpatialGEV;
-  
-  // data inputs
-  DATA_VECTOR(y); // response vector: mws. Assumed to be > 0
-  DATA_IVECTOR(n_obs); // number of observations per location
-  DATA_MATRIX(design_mat_a); // n x r design matrix for a
-  DATA_MATRIX(design_mat_b); // n x r design matrix for logb
-  DATA_MATRIX(design_mat_s); // n x r design matrix for s
-  DATA_MATRIX(dd); // distance matrix
-  DATA_SCALAR(sp_thres); // a number used to make the covariance matrix sparse by thresholding. If sp_thres=-1, no thresholding is made.
-  DATA_INTEGER(reparam_s); // a flag indicating whether the shape parameter is "zero", "unconstrained", constrained to be "negative", or constrained to be "positve"
-  DATA_INTEGER(beta_prior); // Type of prior on beta. 1 is weakly informative normal prior and any other numbers mean noninformative uniform prior U(-inf, inf).
-  DATA_VECTOR(beta_a_prior); // length 2 vector containing mean and sd of normal prior on beta
-  DATA_VECTOR(beta_b_prior); // length 2 vector containing mean and sd of normal prior on beta
-  DATA_VECTOR(beta_s_prior); // length 2 vector containing mean and sd of normal prior on beta
-  // parameter list
-  PARAMETER_VECTOR(a); // random effect to be integrated out. 
-  PARAMETER_VECTOR(log_b); // random effect to be integrated out: log-transformed scale parameters of the GEV model  
-  PARAMETER_VECTOR(s); // if reparam_s = "negative" or "postive", the initial input should be log(|s|)
-  PARAMETER_VECTOR(beta_a); // r x 1 mean vector coefficients for a
-  PARAMETER_VECTOR(beta_b); // r x 1 mean vector coefficients for logb
-  PARAMETER_VECTOR(beta_s); // r x 1 mean vector coefficients for s
-  PARAMETER(log_sigma_a); // hyperparameter: log-transformed squared amplitude parameter (scalar) of the exponential covariance function in Sigma_a
-  PARAMETER(log_ell_a); // hyperparameter: log-transformed smoothness parameter (scalar) of the exponential covariance function in Sigma_a
-  PARAMETER(log_sigma_b); // hyperparameter: log-transformed squared amplitude parameter (scalar) of the exponential covariance function in Sigma_b
-  PARAMETER(log_ell_b); // hyperparameter: log-transformed smoothness parameter (scalar) of the exponential covariance function in Sigma_b
-  PARAMETER(log_sigma_s); // hyperparameter for s
-  PARAMETER(log_ell_s); // as above
 
-  int n = n_obs.size();
-  Type sigma_a = exp(log_sigma_a);
-  Type ell_a = exp(log_ell_a);
-  Type sigma_b = exp(log_sigma_b);
-  Type ell_b = exp(log_ell_b);
-  Type sigma_s = exp(log_sigma_s); 
-  Type ell_s = exp(log_ell_s); 
-  
-  // construct the covariance matrices
-  matrix<Type> cova(n,n);
-  matrix<Type> covb(n,n);
-  matrix<Type> covs(n,n);
-  cov_expo<Type>(cova, dd, sigma_a, ell_a, sp_thres);
-  cov_expo<Type>(covb, dd, sigma_b, ell_b, sp_thres);
-  cov_expo<Type>(covs, dd, sigma_s, ell_s, sp_thres);
-  
-  // calculate the negative log likelihood
-  Type nll = Type(0.0); 
-  vector<Type> mu_a = a - design_mat_a * beta_a;
-  vector<Type> mu_b = log_b - design_mat_b * beta_b;
-  vector<Type> mu_s = s - design_mat_s * beta_s;
-  nll += MVNORM(cova)(mu_a);
-  nll += MVNORM(covb)(mu_b);
-  nll += MVNORM(covs)(mu_s);
-  nll_accumulator_abs<Type>(nll, y, n_obs, a, log_b, s, n, reparam_s);
-  
-  // prior
-  nll_accumulator_beta<Type>(nll, beta_a, beta_prior, beta_a_prior[0], beta_a_prior[1]);
-  nll_accumulator_beta<Type>(nll, beta_b, beta_prior, beta_b_prior[0], beta_b_prior[1]);
-  nll_accumulator_beta<Type>(nll, beta_s, beta_prior, beta_s_prior[0], beta_s_prior[1]);
-  
-  return nll;  
+  // ------ Data inputs ------------
+  DATA_VECTOR(y);
+  DATA_IVECTOR(loc_ind);
+  DATA_INTEGER(reparam_s);
+  DATA_INTEGER(beta_prior);
+  DATA_VECTOR(return_periods);
+  int has_returns = return_periods(0) > Type(0.0);
+  DATA_MATRIX(dist_mat);
+  DATA_SCALAR(sp_thres);
+  int n_loc = dist_mat.rows(); // number of spatial dimensions
+
+  // Inputs for a
+  DATA_MATRIX(design_mat_a);
+  DATA_VECTOR(beta_a_prior);
+  // Inputs for log_b
+  DATA_MATRIX(design_mat_b);
+  DATA_VECTOR(beta_b_prior);
+  // Inputs for s
+  DATA_MATRIX(design_mat_s);
+  DATA_VECTOR(beta_s_prior);
+
+  // ------------ Parameters ----------------------
+
+  PARAMETER_VECTOR(a);
+  PARAMETER_VECTOR(log_b);
+  PARAMETER_VECTOR(s);
+
+  PARAMETER_VECTOR(beta_a);
+  PARAMETER_VECTOR(beta_b);
+  PARAMETER_VECTOR(beta_s);
+  PARAMETER(log_sigma_a);
+  PARAMETER(log_ell_a);
+  PARAMETER(log_sigma_b);
+  PARAMETER(log_ell_b);
+  PARAMETER(log_sigma_s);
+  PARAMETER(log_ell_s);
+
+  // Initialize the negative log likelihood
+  Type nll = Type(0.0);
+
+  // ---------- Likelihood contribution from a ------------------
+  // GP latent layer
+  vector<Type> mu_a = a -
+    design_mat_a * beta_a;
+  nll += nlpdf_gp_exp<Type>(mu_a, dist_mat,
+				   exp(log_sigma_a),
+				   exp(log_ell_a),
+                                   sp_thres);
+  // Priors
+  nll += nlpdf_beta_prior<Type>(beta_a, beta_prior,
+      beta_a_prior(0), beta_a_prior(1));
+  // ---------- Likelihood contribution from log_b ------------------
+  // GP latent layer
+  vector<Type> mu_b = log_b -
+    design_mat_b * beta_b;
+  nll += nlpdf_gp_exp<Type>(mu_b, dist_mat,
+				   exp(log_sigma_b),
+				   exp(log_ell_b),
+                                   sp_thres);
+  // Priors
+  nll += nlpdf_beta_prior<Type>(beta_b, beta_prior,
+      beta_b_prior(0), beta_b_prior(1));
+  // ---------- Likelihood contribution from s ------------------
+  // GP latent layer
+  vector<Type> mu_s = s -
+    design_mat_s * beta_s;
+  nll += nlpdf_gp_exp<Type>(mu_s, dist_mat,
+				   exp(log_sigma_s),
+				   exp(log_ell_s),
+                                   sp_thres);
+  // Priors
+  nll += nlpdf_beta_prior<Type>(beta_s, beta_prior,
+      beta_s_prior(0), beta_s_prior(1));
+
+  // ------------- Data layer -----------------
+  for(int i=0;i<y.size();i++) {
+    nll -= gev_reparam_lpdf<Type>(y(i), a(loc_ind(i)), log_b(loc_ind(i)),
+	s(loc_ind(i)), reparam_s);
+  }
+
+  // ------------- Output return levels -----------------------
+  if(has_returns) {
+    matrix<Type> return_levels(return_periods.size(), n_loc);
+    for(int i=0; i<n_loc; i++) {
+      gev_reparam_quantile<Type>(return_levels.col(i), return_periods,
+                                 a(i), log_b(i), s(i), reparam_s);
+    }
+    ADREPORT(return_levels);
+  }
+
+  return nll;
 }
-
 #undef TMB_OBJECTIVE_PTR
 #define TMB_OBJECTIVE_PTR this
 
 #endif
+
+

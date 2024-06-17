@@ -2,24 +2,20 @@
 #'
 #' @param lon Numeric, `n` longitude values
 #' @param lat Numeric, `n` latitude values
-#' @param sp.resolution Numeric, must be a single value that indicates the minimal unit length of 
-#' a grid cell.  
+#' @param sp.resolution Numeric, must be a single value that indicates the minimal unit length of
+#' a grid cell.
 #' @param lon.range Optional vector that indicates the range of `lon`. Default is `range(lon)`.
 #' @param lat.range Optional vector that indicates the range of `lat`. Default is `range(lat)`.
-#' @return An `n x 3` data frame containing three variables: `cell_ind` corresponds to unique id 
-#' for each grid cell, 
-#' `cell_lon` is the longitude of the grid cell, `cell_lat` is the latitude of the grid cell. 
-#' Since the output data frame retains the order of the input coordinates, the original coordinate 
+#' @return An `n x 3` data frame containing three variables: `cell_ind` corresponds to unique id
+#' for each grid cell,
+#' `cell_lon` is the longitude of the grid cell, `cell_lat` is the latitude of the grid cell.
+#' Since the output data frame retains the order of the input coordinates, the original coordinate
 #' dataset and the output have can be linked one-to-one by the row index.
 #' @details The longitude and latitude of each grid cell are the coordinate of the cell center.
-#' For example, if `sp.resolution=1`, then `cell_lon=55.5` and `cell_lat=22.5` correspond to the 
+#' For example, if `sp.resolution=1`, then `cell_lon=55.5` and `cell_lat=22.5` correspond to the
 #' square whose left boundary is 55, right boundary is 56, upper boundary is 23, and lower boundary
 #' is 22.
-#' @examples
-#' longitude <- runif(20, -90, 80)
-#' latitude <- runif(20, 40, 60)
-#' grid_locs <- grid_location(longitude, latitude, sp.resolution=0.5)
-#' cbind(longitude, latitude, grid_locs)
+#' @example examples/grid_location.R
 #' @export
 
 grid_location <- function(lon, lat, sp.resolution=2, lon.range=range(lon), lat.range=range(lat)){
