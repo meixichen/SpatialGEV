@@ -37,3 +37,5 @@ Suggests:
     rmarkdown
 Additional_repositories: https://inla.r-inla-download.org/R/stable/
 VignetteBuilder: knitr
+URL: https://github.com/meixichen/SpatialGEV
+BugReports: https://github.com/meixichen/SpatialGEV/issues
