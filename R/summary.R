@@ -2,7 +2,7 @@
 #'
 #' @param x Model object of class `spatialGEVfit` returned by `spatialGEV_fit`.
 #' @param ... More arguments for `print`.
-#' @return Information about the fitted model containing number of fixed/random effects, 
+#' @return Information about the fitted model containing number of fixed/random effects,
 #' fitting time, convergence information, etc.
 #' @export
 
@@ -21,7 +21,7 @@ print.spatialGEVfit <- function(x, ...){
   } else {
     cat("The model has not converged and the convergence message output by nlminb is: \n",
         x$fit$message)}
-  
+
   # Kernel info
   cat("The model uses a", x$kernel, "kernel \n")
 
@@ -30,7 +30,7 @@ print.spatialGEVfit <- function(x, ...){
   cat("Number of random effects in the model is", length(x$report$par.random), "\n")
 
   # Hessian info
-  ifelse(x$pdHess_avail, 
+  ifelse(x$pdHess_avail,
 	 mes <- "Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples \n",
          mes <- "Hessian matrix is NOT available or NOT positive definite. spatialGEV_sample and spatialGEV_predict cannot be used \n")
   cat(mes)
@@ -59,7 +59,8 @@ summary.spatialGEVfit <- function(object, ...){
                               do.call(cbind, object$return_levels_sd))
     rl_names <- names(object$return_levels)
     colnames(quantile_summary) <- as.vector(
-      sapply(c("Estimate", "Std.Error"), function(name) paste0(name, rl_names)))
+      vapply(c("Estimate", "Std.Error"), function(name) paste0(name, rl_names),
+	     letters[seq_along(rl_names)]))
     if (object$kernel == "spde") quantile_summary <- quantile_summary[loc_ind,]
     out$return_levels <- quantile_summary
   }
@@ -67,11 +68,11 @@ summary.spatialGEVfit <- function(object, ...){
 }
 
 #' Print method for spatialGEVsam
-#' 
+#'
 #' @param x Object of class `spatialGEVsam` returned by `spatialGEV_sample`.
 #' @param ... Additional arguments for `print`.
 #' @return Information about the object including dimension and direction to use `summary` on the object.
-#' @export 
+#' @export
 
 print.spatialGEVsam <- function(x,...){
   # Dimension info
@@ -96,14 +97,14 @@ print.spatialGEVsam <- function(x,...){
 summary.spatialGEVsam <- function(object, q=c(0.025, 0.25, 0.5, 0.75, 0.975), ...){
   # Summary of all parameters
   param_samps <- object[["parameter_draws"]]
-  param_summary <- t(apply(param_samps, 2, quantile, 
+  param_summary <- t(apply(param_samps, 2, quantile,
 	             probs=q))
   param_summary <- cbind(param_summary, apply(param_samps, 2, mean))
   colnames(param_summary)[ncol(param_summary)] <- "mean"
-  # Summary of data resamples 
+  # Summary of data resamples
   if ("y_draws" %in% names(object)){
     y_samps <- object[["y_draws"]]
-    y_summary <- t(apply(y_samps, 2, quantile, 
+    y_summary <- t(apply(y_samps, 2, quantile,
 	           probs=q))
     y_summary <- cbind(y_summary, apply(y_samps, 2, mean))
     colnames(y_summary)[ncol(y_summary)] <- "mean"
@@ -142,7 +143,7 @@ print.spatialGEVpred <- function(x, ...){
 summary.spatialGEVpred <- function(object, q=c(0.025, 0.25, 0.5, 0.75, 0.975), ...){
   # Summary of all parameters
   y_draws <- object[["pred_y_draws"]]
-  out <- t(apply(y_draws, 2, quantile, 
+  out <- t(apply(y_draws, 2, quantile,
 	             probs=q))
   out <- cbind(out, apply(y_draws, 2, mean))
   colnames(out)[ncol(out)] <- "mean"

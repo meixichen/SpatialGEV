@@ -262,7 +262,7 @@ spatialGEV_fit <- function(y, locs, random, init_param, reparam_s, kernel="exp",
   mod <- paste("model", random, sep="_")
   mod <- paste(mod, kernel, sep="_")
   n_loc <- length(y)
-  n_obs <- sapply(y, length)
+  n_obs <- vapply(y, length, 1L)
   if (missing(sp_thres)) sp_thres <- -1
   y <- unlist(y)
   loc_ind <- rep(1:n_loc, times=n_obs) # location ind associated with each obs

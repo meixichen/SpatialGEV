@@ -4,7 +4,8 @@ logb <- simulatedData$logb[1:n_loc]
 logs <- simulatedData$logs[1:n_loc]
 y <- simulatedData$y[1:n_loc]
 locs <- simulatedData$locs[1:n_loc,]
-beta_a <- mean(a); beta_b <- mean(logb)
+beta_a <- mean(a)
+beta_b <- mean(logb)
 fit <- spatialGEV_fit(
   data = y,
   locs = locs,

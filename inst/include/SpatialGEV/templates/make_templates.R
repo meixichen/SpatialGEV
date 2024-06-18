@@ -46,7 +46,7 @@ re_kernel_combs <- expand.grid(random_effects_list, kernel_list,
                                stringsAsFactors = F)
 colnames(re_kernel_combs) <- c("random", "kernel")
 
-for (i in 1:nrow(re_kernel_combs)){
+for (i in seq_along(re_kernel_combs[,1])){
   random_effects <- re_kernel_combs[i, "random"]
   kernel <- re_kernel_combs[i, "kernel"]
   # Keys for generating the template
