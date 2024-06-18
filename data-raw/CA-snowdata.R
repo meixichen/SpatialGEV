@@ -38,10 +38,10 @@ all_locs <- data_grid %>%
   distinct()
 yearly_max_records <- data_grid %>%
   group_by(cell_ind, LOCAL_YEAR) %>%
-  slice(YEARLY_MAX_SNOWFALL = which.max(TOTAL_SNOWFALL)) %>%
+  slice(which.max(TOTAL_SNOWFALL)) %>%
   select(cell_ind, LOCAL_YEAR, LOCAL_MONTH, TOTAL_SNOWFALL) %>%
   rename(YEARLY_MAX_SNOWFALL = TOTAL_SNOWFALL) %>%
-  filter(YEARLY_MAX_SNOWFALL > 0) %>% # Remove records of 0s 
+  filter(YEARLY_MAX_SNOWFALL > 0) %>% # Remove records of 0s
   left_join(all_locs, by="cell_ind")
 
 # Coordinates of the locations
@@ -62,7 +62,7 @@ for (i in 1:n_loc){
 
 # Only keep locations with at least T years of records
 T <- 10
-chosen_loc_ind <- which(sapply(Y, length) >= T)
+chosen_loc_ind <- which(vapply(Y, length, 1L) >= T)
 Y <- Y[chosen_loc_ind]
 locs <- locs %>% select(cell_lon, cell_lat) %>% slice(chosen_loc_ind)
 n_loc <- nrow(locs)

@@ -89,13 +89,13 @@ parse_data <- function(data, locs, random,
   if(method == "laplace") {
     y <- data
     if(!is.list(y) ||
-       !all(sapply(y, is.numeric))) {
+       !all(vapply(y, is.numeric, TRUE))) {
       stop("For `method == 'laplace', `data must be a numeric list.")
     } else if(length(y) != n_loc) {
       stop("For `method == 'laplace', must have `length(data) == nrow(locs)`.")
     }
     ## n_loc <- length(y)
-    n_obs <- sapply(y, length)
+    n_obs <- vapply(y, length, 1L)
     y <- unlist(y)
     loc_ind <- rep(1:n_loc, times=n_obs) # location ind associated with each obs
     out <- list(y = y, loc_ind = loc_ind)
