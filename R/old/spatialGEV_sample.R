@@ -40,15 +40,15 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE, loc_ind=NULL) {
     meshidxloc <- model$meshidxloc
     if (mod == "a") {
       mean_random <- mean_random[meshidxloc]
-      ind2rm <- setdiff(1:length(random_ind), meshidxloc)
+      ind2rm <- setdiff(seq_along(random_ind), meshidxloc)
       joint_cov <- joint_cov[-ind2rm, -ind2rm]
     } else if (mod == "ab") {
-      ind2rm <- setdiff(1:length(random_ind), c(meshidxloc, length(random_ind)/2 + meshidxloc))
+      ind2rm <- setdiff(seq_along(random_ind), c(meshidxloc, length(random_ind)/2 + meshidxloc))
       mean_random <- mean_random[-ind2rm]
       joint_cov <- joint_cov[-ind2rm, -ind2rm]
     } else {
       # if mod="abs"
-      ind2rm <- setdiff(1:length(random_ind),
+      ind2rm <- setdiff(seq_along(random_ind),
                         c(meshidxloc, # indices of a in the random effects vec
 			  length(random_ind)/3 + meshidxloc, # indices of log_b in the random vec
 			  length(random_ind)/3*2 + meshidxloc)) # indices of s in  the random vec
@@ -65,7 +65,7 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE, loc_ind=NULL) {
   # Determine the positions of the samples based on location indices to be sampled
   if (is.null(loc_ind)) {
     loc_ind <- 1:n_loc
-    sam_ind <- 1:length(joint_mean)
+    sam_ind <- seq_along(joint_mean)
   } else {
     loc_ind <- sort(loc_ind)
     patterns <- c(paste0("a", loc_ind), paste0("log_b", loc_ind), paste0("s", loc_ind))

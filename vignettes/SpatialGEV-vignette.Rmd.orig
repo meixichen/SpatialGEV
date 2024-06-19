@@ -96,6 +96,7 @@ We now demonstrate how to use this package through a simulation study. The simul
 `a`, `logb` and `logs` are simulated from Gaussian random fields using the R package ***SpatialExtremes***. Using the simulated GEV parameters, we generate 50 to 70 observed data $\yy_i$ at each location $i, \ i=1,\ldots,400$. 
 ```{r sim1-getdata, message=FALSE}
 library(SpatialGEV)
+library(fields) # for plots
 library(evd) # for rgev() and qgev()
 source("vignette-helper-functions.R")
 set.seed(123)
@@ -109,7 +110,7 @@ y <- Map(rgev, n=sample(50:70, n_loc, replace=TRUE),
 ```
 
 Spatial variation of $a$, $\log(b)$ and $\log(s)$ can be viewed by plotting them on regular lattices:
-```{r sim1-plot-abs, fig.width=20, fig.height=7.5, out.width="80%"}
+```{r sim1-plot-abs, fig.width=14, fig.height=5, out.width="100%"}
 par(mfrow=c(1,3))
 grid_plot(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)), 
           "Spatial variation of a")

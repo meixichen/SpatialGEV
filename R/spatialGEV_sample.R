@@ -32,8 +32,8 @@ spatialGEV_sample <- function(model, n_draw, observation=FALSE, loc_ind=NULL) {
   mean_joint[names(mean_joint) %in% names(mean_fixed)] <- mean_fixed
   # sampling
   prec_joint <- rep$jointPrecision
-  if(!all(sapply(dimnames(prec_joint),
-                 function(x) identical(x, names(mean_joint))))) {
+  if(!all(vapply(dimnames(prec_joint),
+                 function(x) identical(x, names(mean_joint)), TRUE))) {
     stop("Dimension name mismatch between `mean_joint` and `prec_joint`. Please file a bug report.")
   }
   joint_post_draw <- rmvn_prec(n_draw,

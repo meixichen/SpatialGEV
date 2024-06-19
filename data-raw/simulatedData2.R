@@ -7,7 +7,7 @@ colnames(locs) <- c("x", "y")
 n_loc <- length(x)*length(y)
 
 # Simulate a
-## nugget is a constant offset, sill is sigma, range is 2*ell 
+## nugget is a constant offset, sill is sigma, range is 2*ell
 a <- rgp(1, coor, cov.mod="powexp",
           mean=60, nugget=0, sill=5, range=10, smooth=1,
           grid=TRUE)
@@ -21,7 +21,7 @@ logb <- log(b)
 #filled.contour(x, y, b, color.palette = terrain.colors, main="b")
 
 
-# Simulate s 
+# Simulate s
 logs <- rgp(1, coor, cov.mod="powexp",
             mean=-2, nugget=0, sill=1, range=10, smooth=1,
             grid=TRUE)
@@ -31,10 +31,10 @@ s <- exp(logs)
 # Simulate data
 Y <- Map(rgev, n=sample(10:30, n_loc, replace=T),
          loc=as.vector(a), scale=as.vector(b), shape=as.vector(s))
-Y_mat <- matrix(sapply(Y, mean), ncol=sqrt(n_loc))
-#filled.contour(x, y, Y_mat, 
+Y_mat <- matrix(vapply(Y, mean, numeric(1)), ncol=sqrt(n_loc))
+#filled.contour(x, y, Y_mat,
 #              color.palette = terrain.colors, main="y")
 
-simulatedData2 <- list(locs=locs, a=as.vector(a), logb=as.vector(logb), 
+simulatedData2 <- list(locs=locs, a=as.vector(a), logb=as.vector(logb),
 		       logs=as.vector(logs), y=Y)
 save(simulatedData2, file="simulatedData2.RData")
