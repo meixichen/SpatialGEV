@@ -192,7 +192,6 @@ test_sim <- function(random="a", kernel=c("exp", "matern"),
   }
   param_list <- c(re_list, hyper_list)
   param_list <- param_list[!vapply(param_list, is.null, TRUE)]
-
   nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s_orig,
                  hyperparam_a=c(exp(gp_hyper1_a), exp(gp_hyper2_a)),
                  hyperparam_b=c(exp(gp_hyper1_b), exp(gp_hyper2_b)),

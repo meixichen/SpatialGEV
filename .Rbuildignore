@@ -7,3 +7,5 @@
 ^README\.Rmd$
 ^\.github$
 ^examples$
+vignettes/SpatialGEV-vignette.Rmd.orig
+vignettes/rebuild_vignette.R
