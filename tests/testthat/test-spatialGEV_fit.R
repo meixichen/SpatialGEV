@@ -42,7 +42,7 @@ test_that("Test that `spatialGEV_fit` runs without error for Matern/SPDE.", {
       return_levels = rls,
       silent = TRUE
     )
-    test_model_fit(fit, n_loc, n_random=2, n_rl=length(rls))
+    test_model_fit(fit, n_loc, logs=logs, n_random=2, n_rl=length(rls))
   }
 })
 
@@ -74,5 +74,5 @@ test_that("Test that `spatialGEV_fit` runs without error for Expo kernel.", {
     return_levels = rls,
     silent = TRUE
   )
-  test_model_fit(fit, n_loc, n_random=2, n_rl=length(rls))
+  test_model_fit(fit, n_loc, logs=logs, n_random=2, n_rl=length(rls))
 })

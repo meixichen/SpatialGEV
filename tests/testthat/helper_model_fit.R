@@ -1,4 +1,4 @@
-test_model_fit <- function(fit, n_loc, n_random=2, n_rl=2){
+test_model_fit <- function(fit, n_loc, logs, n_random=2, n_rl=2){
   expect_true(fit$pdHess_avail)
   expect_output(print(fit), "Model fitting")
   
