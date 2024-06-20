@@ -48,10 +48,13 @@ summary.spatialGEVfit <- function(object, ...){
   fixed_summary <- summary(object$report, "fixed")
   random_summary <- summary(object$report, "random")
   if (object$kernel == "spde"){
-    random_len <- nrow(random_summary)/3
+    random_len <- nrow(random_summary)/length(object$random)
     loc_ind <- object$meshidxloc
     random_output_ind <- c(loc_ind, loc_ind+random_len, loc_ind+random_len*2)
+    random_output_ind <- random_output_ind[random_output_ind <= nrow(random_summary)]
     random_summary <- random_summary[random_output_ind,]
+  } else{
+    loc_ind <- seq_along(object$locs_obs[,1])
   }
   out <- list(fixed = fixed_summary, random = random_summary)
   if (length(object$return_levels) > 0){
@@ -77,10 +80,10 @@ summary.spatialGEVfit <- function(object, ...){
 print.spatialGEVsam <- function(x,...){
   # Dimension info
   dim_param <- dim(x[["parameter_draws"]])
-  cat("The samples contains", dim_param[1], "draws of", dim_param[2], "parameters \n")
+  cat("The samples contain", dim_param[1], "draws of", dim_param[2], "parameters \n")
   if ("y_draws" %in% names(x)){
     dim_y <- dim(x[["y_draws"]])
-    cat("The samples contains", dim_y[1], "draws of response at", dim_y[2], "locations \n")
+    cat("The samples contain", dim_y[1], "draws of response at", dim_y[2], "locations \n")
   }
   cat("Use summary() to obtain summary statistics of the samples \n")
 }

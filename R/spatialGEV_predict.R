@@ -33,7 +33,7 @@ spatialGEV_predict <- function(model, locs_new, n_draw, type="response",
   nu <- model$nu # Matern hyperparameter
   reparam_s <- model$adfun$env$data$reparam_s # parametrization of s
   n_test <- nrow(locs_new)
-  n_train <- length(unique(model$adfun$env$data$loc_ind))
+  n_train <- nrow(model$locs_obs)
   random_ind <- model$rep$env$random # indices of random effects
   random <- model$random
   if (length(random) == 1) {
