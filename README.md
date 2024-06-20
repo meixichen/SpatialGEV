@@ -7,7 +7,7 @@
 
 [![](https://www.r-pkg.org/badges/version/SpatialGEV)](https://cran.r-project.org/package=SpatialGEV)
 [![R-CMD-check](https://github.com/meixichen/SpatialGEV/workflows/R-CMD-check/badge.svg)](https://github.com/meixichen/SpatialGEV/actions)
-[![codecov](https://codecov.io/github/meixichen/SpatialGEV/graph/badge.svg?token=O7XZWKV2FD)](https://codecov.io/github/meixichen/SpatialGEV)
+[![codecov](https://codecov.io/github/meixichen/SpatialGEV/branch/joss/graph/badge.svg?token=O7XZWKV2FD)](https://codecov.io/github/meixichen/SpatialGEV)
 <!-- badges: end -->
 
 *Meixi Chen, Martin Lysy, Reza Ramezan*
