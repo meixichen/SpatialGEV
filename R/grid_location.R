@@ -19,25 +19,36 @@
 #' @export
 
 grid_location <- function(lon, lat, sp.resolution=2, lon.range=range(lon), lat.range=range(lat)){
-  if (length(lon) != length(lat)){
-    stop("lon and lat must have the same length")
+  if (length(lon)==1){
+    stop("There should be at least 2 locations.")
   }
-  grid.x <- seq(lon.range[1], lon.range[2]-sp.resolution, by = sp.resolution)
-  grid.y <- seq(lat.range[1], lat.range[2]-sp.resolution, by = sp.resolution)
-  grid.mat <- matrix(1 : (length(grid.x) * length(grid.y)), nrow = length(grid.y))
+  if (length(lon) != length(lat)){
+    stop("lon and lat must have the same length.")
+  }
+  if (max(diff(lon.range)) < sp.resolution){
+    grid.x <- lon.range[1]
+  } else{
+    grid.x <- seq(lon.range[1], lon.range[2]-sp.resolution, by = sp.resolution)
+    grid.x <- append(grid.x, tail(grid.x,1)+sp.resolution)
+  }
+  if (max(diff(lat.range)) < sp.resolution){
+    grid.y <- lat.range[1]
+  } else{
+    grid.y <- seq(lat.range[1], lat.range[2]-sp.resolution, by = sp.resolution)
+    grid.y <- append(grid.y, tail(grid.y,1)+sp.resolution)
+  }
+  
+  grid.mat <- matrix(seq_len(length(grid.x) * length(grid.y)), nrow = length(grid.y))
   x.it <- findInterval(lon, grid.x)
   y.it <- findInterval(lat, grid.y)
   n <- length(lon)
   cell_ind <- rep(0, n)
-  cell_lon <- rep(9999, n)
-  cell_lat <- rep(9999, n)
+  cell_lon <- rep(NA, n)
+  cell_lat <- rep(NA, n)
   for (i in 1:n){
     cell_ind[i] <- grid.mat[y.it[i], x.it[i]]
     cell_lon[i] <- (grid.x[x.it[i]] + grid.x[x.it[i]] + sp.resolution)/2
     cell_lat[i] <- (grid.y[y.it[i]] + grid.y[y.it[i]] + sp.resolution)/2
-  }
-  if (any(c(cell_lon==9999, cell_lat==9999))){
-    stop("Error occurred in calculating the mean coordinates")
   }
   data.frame(cell_ind, cell_lon, cell_lat)
 }
