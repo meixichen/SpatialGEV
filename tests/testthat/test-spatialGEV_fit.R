@@ -1,4 +1,4 @@
-context("spatialGEV_fit for model ab")
+context("spatialGEV_fit")
 
 n_loc <- 20
 a <- simulatedData$a[1:n_loc]
@@ -12,7 +12,27 @@ beta_b <- mean(logb)
 test_that("Test that `spatialGEV_fit` runs without error for Matern/SPDE.", {
   rls <- c(0.5, 0.9)
   for (kernel in c("matern", "spde")){
-    fit <- spatialGEV_fit(
+    # Model a
+    fit_a <- spatialGEV_fit(
+      data = y,
+      locs = locs,
+      random = "a",
+      init_param = list(
+        beta_a = beta_a,
+        a = rep(0, n_loc),
+        log_b = 0,
+        s = 0,
+        log_sigma_a = 0,
+        log_kappa_a = 0
+      ),
+      reparam_s = "zero",
+      kernel = kernel,
+      return_levels = rls,
+      silent = TRUE
+    )
+    test_model_fit(fit_a, n_loc, n_random=1, n_rl=length(rls))
+    # Model ab
+    fit_ab <- spatialGEV_fit(
       data = y,
       locs = locs,
       random = "ab",
@@ -42,13 +62,36 @@ test_that("Test that `spatialGEV_fit` runs without error for Matern/SPDE.", {
       return_levels = rls,
       silent = TRUE
     )
-    test_model_fit(fit, n_loc, logs=logs, n_random=2, n_rl=length(rls))
+    test_model_fit(fit_ab, n_loc, s_true=logs, n_random=2, n_rl=length(rls))
   }
 })
 
 test_that("Test that `spatialGEV_fit` runs without error for Expo kernel.", {
   rls <- c(0.5, 0.9)
-  fit <- spatialGEV_fit(
+  # Model a
+  fit_a <- spatialGEV_fit(
+    data = y,
+    locs = locs,
+    random = "a",
+    init_param = list(
+      beta_a = beta_a,
+      a = rep(0, n_loc),
+      log_b = 0,
+      s = 0,
+      log_sigma_a = 1,
+      log_ell_a = 5
+    ),
+    reparam_s = "zero",
+    kernel = "exp",
+    beta_prior = list(
+      beta_a=c(0,100)
+    ),
+    return_levels = rls,
+    silent = TRUE
+  )
+  test_model_fit(fit_a, n_loc, n_random=1, n_rl=length(rls))
+  # Model ab
+  fit_ab <- spatialGEV_fit(
     data = y,
     locs = locs,
     random = "ab",
@@ -74,5 +117,5 @@ test_that("Test that `spatialGEV_fit` runs without error for Expo kernel.", {
     return_levels = rls,
     silent = TRUE
   )
-  test_model_fit(fit, n_loc, logs=logs, n_random=2, n_rl=length(rls))
+  test_model_fit(fit_ab, n_loc, s_true=logs, n_random=2, n_rl=length(rls))
 })

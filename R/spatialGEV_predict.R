@@ -117,9 +117,13 @@ spatialGEV_predict <- function(model, locs_new, n_draw, type="response",
       }
       new_a <- a_sim_fun(1) # sample parameter a one time
       if (type == "response") {
-        new_y <- t(apply(X = new_a, MARGIN = 1, FUN = function(row) {
-          unlist(Map(evd::rgev, n=1, loc=row, scale=b, shape=s))
-        })) # a `1 x n_test` matrix
+        if (n_test==1){
+          new_y <- as.numeric(evd::rgev(n=1, loc=new_a, scale=b, shape=s))
+        } else{
+          new_y <- t(apply(X = new_a, MARGIN = 1, FUN = function(row) {
+            unlist(Map(evd::rgev, n=1, loc=row, scale=b, shape=s))
+          })) # a `1 x n_test` matrix
+        }
         pred_y_draws[i, ] <- new_y
       }
       pred_param_draws[i, ] <- new_a

@@ -1,4 +1,4 @@
-test_model_fit <- function(fit, n_loc, logs, n_random=2, n_rl=2){
+test_model_fit <- function(fit, n_loc, s_true=NULL, n_random=2, n_rl=2){
   expect_true(fit$pdHess_avail)
   expect_output(print(fit), "Model fitting")
   
@@ -7,7 +7,10 @@ test_model_fit <- function(fit, n_loc, logs, n_random=2, n_rl=2){
   expect_named(fit_summ, c("fixed", "random", "return_levels"))
   expect_equal(dim(fit_summ$return_levels), c(n_loc, n_rl*2)) 
   expect_equal(dim(fit_summ$random), c(n_loc*n_random, 2))
-  expect_lt(abs((fit_summ$fixed[1,1]-logs[1])/logs[1]), 0.1) # rel. error of s 
+  if (!is.null(s_true)){
+    # rel. error of s 
+    expect_lt(abs((fit_summ$fixed["s","Estimate"]-s_true[1])/s_true[1]), 0.1) 
+  }
   
   #---------- Test the sampling method --------------
   n_draw <- 10
@@ -22,23 +25,23 @@ test_model_fit <- function(fit, n_loc, logs, n_random=2, n_rl=2){
   
   #---------- Test the predict method ---------------
   locs_test <- simulatedData$locs[n_loc+1,]
-  pred <- spatialGEV_predict(model = fit, locs_new = as.matrix(locs_test),
+  pred1 <- spatialGEV_predict(model = fit, locs_new = as.matrix(locs_test),
                              n_draw = n_draw)
-  expect_output(print(pred), "posterior predictive")
-  # Check the summary method for spatialGEV_predict
-  pred_summ <- summary(pred)
-  expect_true(all(!is.na(pred_summ)))
-  expect_equal(colnames(pred_summ), 
-               c("2.5%","25%","50%","75%","97.5%","mean"))
-  
   # Predict with pre-run samples
   sam2 <- spatialGEV_sample(model=fit, n_draw=n_draw, loc_ind=1:n_loc)
   pred2 <- spatialGEV_predict(model = fit, locs_new = as.matrix(locs_test),
                               n_draw = n_draw, 
                               parameter_draws = sam2$parameter_draws)
-  expect_output(print(pred2), "posterior predictive")
-  pred_summ2 <- summary(pred2)
-  expect_true(all(!is.na(pred_summ2)))
-  expect_equal(colnames(pred_summ2), 
-               c("2.5%","25%","50%","75%","97.5%","mean"))
+  pred3 <- spatialGEV_predict(model = fit, locs_new = as.matrix(locs_test),
+                              n_draw = n_draw, 
+                              parameter_draws = sam2)
+  
+  for (pred in list(pred1, pred2, pred3)){
+    expect_output(print(pred), "posterior predictive")
+    # Check the summary method for spatialGEV_predict
+    pred_summ <- summary(pred)
+    expect_true(all(!is.na(pred_summ)))
+    expect_equal(colnames(pred_summ), 
+                 c("2.5%","25%","50%","75%","97.5%","mean"))
+  }
 }
