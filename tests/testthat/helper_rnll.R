@@ -106,18 +106,22 @@ r_nll <- function(y, dd, a, log_b, s,
 
 #' Simulate location data and GP parameters for testing
 #' @param random A vector of character strings "a", "b" or "s".
-#' @param kernel "exp" or "matern".
-#' @param reparam_s "positive", "negative", "unconstrained", or "zero"
+#' @param kernel "exp", "matern", or "spde".
+#' @param reparam_s "positive", "negative", "unconstrained", or "zero".
+#' @param calc_nll Whether to calculate the negative log-likelihood given the
+#' simulated parameters and data? Default to TRUE. If `kernel=="spde"`, this
+#' should be FALSE.
 #' @return A list of simulated parameters: a, log(b) (if `random` contains "b"),
 #' reparameterized s (if `random` contains "s"), corresponding GP hyperparameters,
 #' and the negative log-likelihood calculated in R.
-test_sim <- function(random="a", kernel=c("exp", "matern"),
-                     reparam_s=c("positive", "negative", "unconstrained", "zero")){
+test_sim <- function(random="a", kernel=c("exp", "matern", "spde"),
+                     reparam_s=c("positive", "negative", "unconstrained", "zero"),
+                     calc_nll=TRUE){
   kernel <- match.arg(kernel)
   reparam_s <- match.arg(reparam_s)
   if (kernel == "exp"){
     kernel_fun <- kernel_exp
-  } else if (kernel == "matern"){
+  } else if (kernel %in% c("matern", "spde")){
     kernel_fun <- kernel_matern
   }
   n_sqrt <- sample(5:10, 1)
@@ -187,17 +191,21 @@ test_sim <- function(random="a", kernel=c("exp", "matern"),
     log_sigma_b=gp_hyper1_b, log_ell_b=gp_hyper2_b,
     log_sigma_s=gp_hyper1_s, log_ell_s=gp_hyper2_s
   )
-  if (kernel == "matern"){
+  if (kernel %in% c("matern", "spde")){
     names(hyper_list) <- gsub("_ell_", "_kappa_", names(hyper_list))
   }
   param_list <- c(re_list, hyper_list)
   param_list <- param_list[!vapply(param_list, is.null, TRUE)]
-  nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s_orig,
-                 hyperparam_a=c(exp(gp_hyper1_a), exp(gp_hyper2_a)),
-                 hyperparam_b=c(exp(gp_hyper1_b), exp(gp_hyper2_b)),
-                 hyperparam_s=c(exp(gp_hyper1_s), exp(gp_hyper2_s)),
-                 kernel=kernel, beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
-                 f_s=f_s)
+  if (calc_nll & kernel!="spde"){
+    nll_r <- r_nll(y, dd, a=a, log_b=log_b, s=s_orig,
+                   hyperparam_a=c(exp(gp_hyper1_a), exp(gp_hyper2_a)),
+                   hyperparam_b=c(exp(gp_hyper1_b), exp(gp_hyper2_b)),
+                   hyperparam_s=c(exp(gp_hyper1_s), exp(gp_hyper2_s)),
+                   kernel=kernel, beta_a=beta_a, beta_b=beta_b, beta_s=beta_s,
+                   f_s=f_s)
+  } else{
+    nll_r <- NULL
+  }
   list(y=y, locs=X, params=param_list, nll_r=nll_r,
        kernel=kernel, random=paste(random, collapse=""), reparam_s=reparam_s)
 }

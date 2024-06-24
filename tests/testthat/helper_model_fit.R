@@ -4,12 +4,17 @@ test_model_fit <- function(fit, n_loc, s_true=NULL, n_random=2, n_rl=2){
   
   # Check the summary method for spatialGEV_fit
   fit_summ <- summary(fit)
-  expect_named(fit_summ, c("fixed", "random", "return_levels"))
-  expect_equal(dim(fit_summ$return_levels), c(n_loc, n_rl*2)) 
   expect_equal(dim(fit_summ$random), c(n_loc*n_random, 2))
   if (!is.null(s_true)){
     # rel. error of s 
     expect_lt(abs((fit_summ$fixed["s","Estimate"]-s_true[1])/s_true[1]), 0.1) 
+  }
+  if (n_rl > 0){
+    expect_named(fit_summ, c("fixed", "random", "return_levels"))
+    expect_equal(dim(fit_summ$return_levels), c(n_loc, n_rl*2)) 
+  } else{
+    expect_named(fit_summ, c("fixed", "random"))
+    expect_null(fit_summ$return_levels) 
   }
   
   #---------- Test the sampling method --------------
