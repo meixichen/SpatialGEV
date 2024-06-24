@@ -11,10 +11,8 @@
 #' @details This serves as a helper function for `spatialGEV_predict`. The notations are consistent to the notations on the MVN wikipedia page
 #' @export
 sim_cond_normal <- function(joint.mean, a, locs_new, locs_obs, kernel, ...){
-  if (!is.matrix(locs_new) | !is.matrix(locs_obs)) stop("locs_new and locs_obs must be matrices")
   n <- length(joint.mean)
   m <- nrow(locs_new)
-  if (m < 1 | m >= n) stop("Invalid length of mu1")
   mu1 <- joint.mean[1:m]
   mu2 <- joint.mean[(m+1):n]
   Sig11 <- kernel(X1 = locs_new, X2 = locs_new, ...)

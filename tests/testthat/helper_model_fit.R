@@ -30,6 +30,7 @@ test_model_fit <- function(fit, n_loc, s_true=NULL, n_random=2, n_rl=2){
   
   #---------- Test the predict method ---------------
   locs_test <- simulatedData$locs[n_loc+1,]
+  locs_test2 <- simulatedData$locs[c(n_loc+1, n_loc+2),]
   pred1 <- spatialGEV_predict(model = fit, locs_new = as.matrix(locs_test),
                              n_draw = n_draw)
   # Predict with pre-run samples
@@ -40,8 +41,10 @@ test_model_fit <- function(fit, n_loc, s_true=NULL, n_random=2, n_rl=2){
   pred3 <- spatialGEV_predict(model = fit, locs_new = as.matrix(locs_test),
                               n_draw = n_draw, 
                               parameter_draws = sam2)
+  pred4 <- spatialGEV_predict(model = fit, locs_new = as.matrix(locs_test2),
+                              n_draw = n_draw)
   
-  for (pred in list(pred1, pred2, pred3)){
+  for (pred in list(pred1, pred2, pred3, pred4)){
     expect_output(print(pred), "posterior predictive")
     # Check the summary method for spatialGEV_predict
     pred_summ <- summary(pred)
