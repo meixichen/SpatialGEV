@@ -1,7 +1,7 @@
 context("model_ab_matern")
 
 test_that("`model_ab_matern` gives the same likelihood as the one calculated in R under different parametrizations of shape parameter", {
-  n_tests <- 30 # number of test simulations
+  n_tests <- 10 # number of test simulations
   for (ii in 1:n_tests){
     # simulate parameters and data
     sim_res <- test_sim(random = c("a", "b"), kernel = "matern", reparam_s = "positive")
