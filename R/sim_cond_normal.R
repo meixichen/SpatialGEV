@@ -24,7 +24,12 @@ sim_cond_normal <- function(joint.mean, a, locs_new, locs_obs, kernel, ...){
   Sig22 <- kernel(X1 = locs_obs, X2 = locs_obs, ...)
   
   # Matrix inversion using cholesky decomposition
-  C <- chol(Sig22)
+  C <- tryCatch(
+    chol(Sig22),
+    error = function(e){
+      chol(Sig22 + diag(1e-13, nrow=nrow(Sig22)))
+    }
+  )
   A.t <- backsolve(r = C, x = backsolve(r = C, x = Sig21, transpose = TRUE)) # A.t = Sig22^{-1} * Sig21
   A <- t(A.t) #A = Sig12 * Sig22^{-1}
 

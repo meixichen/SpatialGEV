@@ -123,6 +123,47 @@ test_that("Test that `spatialGEV_fit` runs without error for Expo kernel.", {
   test_model_fit(fit_ab, n_loc, s_true=logs, n_random=2, n_rl=length(rls))
 })
 
+test_that("`spatialGEV_sample` and `spatialGEV_predict` work for model abs",{
+  locs <- simulatedData2$locs
+  a <- simulatedData2$a
+  logb <- simulatedData2$logb
+  logs <- simulatedData2$logs
+  y <- simulatedData2$y
+  n_loc <- length(y)
+  # Set a seed here because we would like to only test the functionality
+  # of sample and predict, and not all simulated data has enough complexity
+  # to need to be fit using model abs. 
+  set.seed(345)
+  n_test <- 250
+  n_train <- n_loc-n_test
+  test_ind <- sample(1:n_loc, n_test)
+  train_ind <- setdiff(1:n_loc, test_ind)
+  locs_test <- locs[test_ind,]
+  y_test <- y[test_ind]
+  locs_train <- locs[-test_ind,]
+  y_train <- y[-test_ind]
+  fit_s <- spatialGEV_fit(data = y_train, locs = locs_train, random = "abs",
+                          init_param = list(
+                            a = rep(60, n_train), 
+                            log_b = rep(3,n_train), 
+                            s = rep(-2,n_train),
+                            beta_a = 60, beta_b = 2, beta_s = -2,
+                            log_sigma_a = 0, log_kappa_a = 0,
+                            log_sigma_b = -3, log_kappa_b = -1,
+                            log_sigma_s = -1, log_kappa_s = -1),
+                          reparam_s = "positive", kernel="spde", silent = T)
+  expect_equal(fit_s$fit$convergence, 0)
+  # Test if sampling works
+  samps_s <- spatialGEV_sample(model=fit_s, n_draw=2)
+  expect_named(summary(samps_s), "param_summary")
+  # Test if prediction works
+  pred_s <- spatialGEV_predict(model = fit_s, 
+                               locs_new = as.matrix(locs_test[1:2,]),
+                               n_draw = 2, 
+                               parameter_draws = samps_s$parameter_draws)
+  expect_true(all(!is.na(summary(pred_s))))
+})
+
 
 test_that("`spatialGEV_fit` gives an informative error message for features not 
           implemented.", {
