@@ -32,7 +32,7 @@ test_model_fit <- function(fit, n_loc, s_true=NULL, n_random=2, n_rl=2){
   locs_test <- simulatedData$locs[n_loc+1,]
   locs_test2 <- simulatedData$locs[c(n_loc+1, n_loc+2),]
   pred1 <- spatialGEV_predict(model = fit, locs_new = as.matrix(locs_test),
-                             n_draw = n_draw)
+                              n_draw = n_draw)
   # Predict with pre-run samples
   sam2 <- spatialGEV_sample(model=fit, n_draw=n_draw, loc_ind=1:n_loc)
   pred2 <- spatialGEV_predict(model = fit, locs_new = as.matrix(locs_test),
