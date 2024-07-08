@@ -39,3 +39,20 @@ y <- Map(rgev, n=sample(10:30, n_loc, replace=TRUE),
 
 simulatedData <- list(locs=locs, a = a, logb = logb, logs=logs, y = y)
 save(simulatedData, file="simulatedData.RData")
+
+
+#-------- Simulate data with covariates ----------
+set.seed(123)
+cov_mat <- cbind(rep(1, n_loc), rnorm(n_loc, 0, 0.5), rnorm(n_loc, 1, 0.5))
+beta_a <- c(mean(a), rnorm(2, 1, 0.6))
+a_withcov <- cov_mat %*% beta_a + a
+
+beta_b <- c(mean(logb), rnorm(1, 1, 0.2))
+logb_withcov <- cov_mat[,1:2] %*% beta_b + logb
+
+y_withcov <- Map(rgev, n=sample(10:30, n_loc, replace=TRUE), 
+                 loc=a_withcov, scale=exp(logb_withcov), shape=exp(logs))
+simulatedData_withcov <- list(locs = locs, a = a_withcov, logb = logb_withcov, 
+                              logs = logs, y = y_withcov, beta_a = beta_a,
+                              beta_b = beta_b)
+save(simulatedData_withcov, file="simulatedData_withcov.RData")
