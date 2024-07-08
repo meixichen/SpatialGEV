@@ -54,5 +54,5 @@ y_withcov <- Map(rgev, n=sample(10:30, n_loc, replace=TRUE),
                  loc=a_withcov, scale=exp(logb_withcov), shape=exp(logs))
 simulatedData_withcov <- list(locs = locs, a = a_withcov, logb = logb_withcov, 
                               logs = logs, y = y_withcov, beta_a = beta_a,
-                              beta_b = beta_b)
+                              beta_b = beta_b, covariates = cov_mat)
 save(simulatedData_withcov, file="simulatedData_withcov.RData")
