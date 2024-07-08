@@ -54,10 +54,7 @@ spatialGEV_model(
 }
 \arguments{
 \item{data}{If \code{method == "laplace"}, a list of length \code{n_loc} where each
-element contains the GEV observations at the given spatial location.
-If \code{method == "maxsmooth"} as list with two elements: \code{est},
-an \verb{n_loc x 3} matrix of parameter estimates at each location,
-and \code{var}, a \verb{3 x 3 x n_loc} array of corresponding variance estimates.}
+element contains the GEV observations at the given spatial location.}
 
 \item{locs}{An \verb{n_loc x 2} matrix of longitude and latitude of the corresponding response values.}
 
@@ -170,8 +167,10 @@ Specifying \code{method="laplace"} means integrating out the random effects \eqn
 via the Laplace approximation: \eqn{p_{\mathrm{LA}}(y \mid \theta) \approx \int p(y, u \mid \theta) \ \mathrm{d}u}.
 Then the random effects posterior is constructed via a Normal approximation centered at the Laplace-approximated
 marginal likelihood mode with the covariance being the quadrature of it.
-If \code{method="maxsmooth"}, the inference is carried out in two steps. First, the user provide the MLEs
-and variance estimates of \code{a}, \code{b} and \code{s} at each location to \code{data}, which is known as the max step.
+
+The "maxsmooth" method is only implemented for model abs with positive s and SPDE kernel.
+If \code{method="maxsmooth"}, the inference is carried out in two steps. First, a max step is performed to
+calculate the MLEs and variance estimates of \code{a}, \code{b} and \code{s} at each location.
 The max-step estimates are denoted as \eqn{\hat{u}}, and the likelihood function at each location is approximated
 by a Normal distribution at \eqn{\mathcal{N}(\hat{u}, \widehat{Var}(u))}.
 Second, the Laplace approximation is used to integrate out the random effects in the joint likelihood

@@ -12,6 +12,9 @@ spatialGEV_model <- function(data, locs, random = c("a", "ab", "abs"),
                              ...) {
   method <- match.arg(method)
   random <- parse_random(random)
+  if (method == "maxsmooth"){
+    data <- maxstep(data, s_prior)
+  }
   out_data <- parse_data(data, locs = locs, random = random, method = method)
   ## y <- data_out$y
   ## loc_ind <- data_out$loc_ind
@@ -76,6 +79,66 @@ spatialGEV_model <- function(data, locs, random = c("a", "ab", "abs"),
   out <- list(data = data, parameters = init_param, random = random, map = map)
   if(kernel == "spde") out$mesh <- out_kernel$mesh
   out
+}
+
+#' Max step using tmb method.
+#'
+#' @param data A list of GEV observations at different locations.
+#' @param s_prior The mean and standard deviation of the normal prior on `log_s`.
+#' @return A list with two elements: `est`,
+#' an `n_loc x 3` matrix of parameter estimates at each location,
+#' and `var`, a `3 x 3 x n_loc` array of corresponding variance estimates.
+#' @noRd
+#' @details 
+#' Currently only supports model abs with log-transformed b and positive s.
+#' This is a feature that will not be further developed as it was for 
+#' publication purpose only. 
+#' See Chen et al. (2024) https://arxiv.org/abs/2110.07051
+maxstep <- function(data, s_prior) {
+  n_loc <- length(data)
+  est_set <- matrix(NA, n_loc, 3)
+  var_set <- array(NA, dim = c(3, 3, n_loc))
+  for (i in seq_len(n_loc)){
+    yi <- data[[i]]
+    # initialize optimization
+    suppressWarnings(fitgev <- evd::fgev(yi, std.err = FALSE))
+    theta_init <- fitgev$estimate
+    if(theta_init[3] <= 0) {
+      # negative shape parameter:
+      # pick smallest value such that support includes minimum value
+      shape <- theta_init[2] / (theta_init[1] - .99 * min(yi))
+      theta_init[3] <- shape
+    }
+    gev_adf <- TMB::MakeADFun(
+      data = list(model = "model_gev",
+                  y = yi, reparam_s = 1,
+                  s_prior = s_prior),
+      parameters = list(a = 0, log_b = 0, s = 0),
+      DLL = "SpatialGEV_TMBExports",
+      silent = TRUE
+    )
+    suppressWarnings({
+      gev_fit <- tryCatch(
+        # use evd initial value
+        nlminb(
+          ## start = ifelse(is.na(theta_init), 1, theta_init),
+          start = theta_init,
+          objective = gev_adf$fn,
+          gradient = gev_adf$g,
+          trace = 1
+        ), error = function(e) {
+          # start from (0, 0, 0)
+          nlminb(
+            start = c(0, 0, 0),
+            objective = gev_adf$fn,
+            gradient = gev_adf$g
+          )
+        })
+    })
+    est_set[i,] <- gev_fit$par
+    var_set[,,i] <- try(solve(gev_adf$he(gev_fit$par)), silent = TRUE)
+  }
+  list(est = est_set, var = var_set)
 }
 
 #' @noRd

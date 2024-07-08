@@ -195,3 +195,38 @@ test_that("`spatialGEV_fit` gives an informative error message for features not
     }
   }
 })
+
+
+test_that("The max-smooth method 
+          (a feature for publication purposes and hence not maintained) 
+          is working properly.", {
+  # Note: the max-smooth feature only works for model abs with kernel spde and
+  # positive s parameter. This feature will not be further developed as it was
+  # for publication purposes only.
+  locs <- simulatedData2$locs
+  a <- simulatedData2$a
+  logb <- simulatedData2$logb
+  logs <- simulatedData2$logs
+  y <- simulatedData2$y
+  n_loc <- length(y)
+  set.seed(345)
+  n_test <- 250
+  n_train <- n_loc-n_test
+  test_ind <- sample(1:n_loc, n_test)
+  train_ind <- setdiff(1:n_loc, test_ind)
+  locs_train <- locs[-test_ind,]
+  y_train <- y[-test_ind]
+  fit_s <- spatialGEV_fit(data = y_train, method="maxsmooth",
+                          locs = locs_train, random = "abs",
+                          init_param = list(
+                            a = rep(60, n_train), 
+                            log_b = rep(3,n_train), 
+                            s = rep(-2,n_train),
+                            beta_a = 60, beta_b = 2, beta_s = -2,
+                            log_sigma_a = 0, log_kappa_a = 0,
+                            log_sigma_b = -3, log_kappa_b = -1,
+                            log_sigma_s = -1, log_kappa_s = -1),
+                          s_prior=c(0,10),
+                          reparam_s = "positive", kernel="spde", silent = T)
+  expect_true(fit_s$pdHess_avail)
+})

@@ -1,10 +1,7 @@
 #' Fit a GEV-GP model.
 #'
 #' @param data If `method == "laplace"`, a list of length `n_loc` where each
-#'   element contains the GEV observations at the given spatial location.
-#'   If `method == "maxsmooth"` as list with two elements: `est`,
-#'   an `n_loc x 3` matrix of parameter estimates at each location,
-#'   and `var`, a `3 x 3 x n_loc` array of corresponding variance estimates.
+#' element contains the GEV observations at the given spatial location.
 #' @param locs An `n_loc x 2` matrix of longitude and latitude of the corresponding response values.
 #' @param random Either "a", "ab", or "abs", where `a` indicates the location parameter,
 #' `b` indicates the scale parameter, `s` indicates the shape parameter.  This tells the model
@@ -90,8 +87,10 @@
 #' via the Laplace approximation: \eqn{p_{\mathrm{LA}}(y \mid \theta) \approx \int p(y, u \mid \theta) \ \mathrm{d}u}.
 #' Then the random effects posterior is constructed via a Normal approximation centered at the Laplace-approximated
 #' marginal likelihood mode with the covariance being the quadrature of it.
-#' If `method="maxsmooth"`, the inference is carried out in two steps. First, the user provide the MLEs
-#' and variance estimates of `a`, `b` and `s` at each location to `data`, which is known as the max step.
+#' 
+#' The "maxsmooth" method is only implemented for model abs with positive s and SPDE kernel.
+#' If `method="maxsmooth"`, the inference is carried out in two steps. First, a max step is performed to 
+#' calculate the MLEs and variance estimates of `a`, `b` and `s` at each location.
 #' The max-step estimates are denoted as \eqn{\hat{u}}, and the likelihood function at each location is approximated
 #' by a Normal distribution at \eqn{\mathcal{N}(\hat{u}, \widehat{Var}(u))}. 
 #' Second, the Laplace approximation is used to integrate out the random effects in the joint likelihood
