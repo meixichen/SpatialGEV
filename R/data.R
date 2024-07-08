@@ -32,9 +32,33 @@
 "simulatedData"
 
 
+#' Simulated dataset 1 with covariates
+#'
+#' A list of data used for package testing and demos. Both `a` and `logb` are simulated on smooth
+#' deterministic surfaces depending linearly on two covariates.
+#' @format A list containing the simulation parameters and simulated data on a 20x20 grid:
+#' \describe{
+#'   \item{locs}{A 400x2 matrix. First column contains longitudes and second contains latitudes}
+#'   \item{a}{A length 400 vector. GEV location parameters}
+#'   \item{logb}{A length 400 vector. Log-transformed GEV scale parameters}
+#'   \item{logs}{A scalar. Log-transformed GEV shape parameter shared across space}
+#'   \item{y}{A length 400 list of vectors which are observations simulated at
+#'   each location}
+#'   \item{beta_a}{A length 3 vector containing the regression coefficients for
+#'   a, with the first element being the intercept, the second element as the
+#'   coefficient for covariate 1, and the third for covariate 2}
+#'   \item{beta_b}{A length 2 vector containing the regression coefficients for
+#'   b, with the first element being the intercept and the second element as the
+#'   coefficient for covariate 1}
+#'   \item{covariates}{A 400x3 design matrix containing the covariates, with the
+#'   first column being all 1s for intercept}
+#' }
+"simulatedData_withcov"
+
+
 #' Simulated dataset 2
 #'
-#' A list of data used for package testing and demos. `a`, `logb`, `logs` are simulated from 
+#' A list of data used for package testing and demos. `a`, `logb`, `logs` are simulated from
 #' respective Gaussian random fields and thus are nonsmooth.
 #' @format A list containing the simulation parameters and simulated data on a 20x20 grid:
 #' \describe{
