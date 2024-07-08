@@ -5,6 +5,7 @@
 ^doc$
 ^Meta$
 ^README\.Rmd$
+CONTRIBUTING.md
 ^\.github$
 ^examples$
 vignettes/SpatialGEV-vignette.Rmd.orig
