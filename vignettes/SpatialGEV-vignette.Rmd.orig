@@ -33,7 +33,8 @@ MathJax.Hub.Config({
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig_path = ""
+  fig_path = "",
+  cache=TRUE
 )
 ```
 
@@ -54,11 +55,12 @@ where $a\in\mathbb{R}$, $b>0$, and $s\in\mathbb{R}$ are location, scale, and sha
 A Gaussian process $z(\xx)\sim \mathcal{GP}(\mu(\xx_{cov}), k(\xx, \xx'))$ is fully characterized by its mean $\mu(\xx_{cov})$ and kernel function $k(\xx, \xx') = \cov( z(\xx), z(\xx') )$, which captures the strength of the spatial correlation between locations. The mean is a function of parameters $\bm{\beta}$ and covariates $\xx_{cov}=(x_1,\ldots,x_p)'$. We assume that given the locations, the data follow independent GEV distributions each with their own parameters. The complete GEV-GP hierarchical model then becomes
 \begin{equation}
 \begin{aligned}
-y_{ik} \mid a(\xx_i), b(\xx_i), s & \ind \tx{GEV}\big( a(\xx_i), \exp( b(\xx_i) ), \exp(s)\big)\\
+y_{ik} \mid a(\xx_i), b(\xx_i), s & \ind \tx{GEV}\big( a(\xx_i), \exp( b(\xx_i) ), \exp(s(\xx_i))\big)\\
 a(\xx) \mid \bm{\beta}_a, \tth_a &\sim \mathcal{GP}\big( \XX_a\bm{\beta}_a, k(\xx, \xx' \mid \tth_a) \big)\\
 log(b)(\xx) \mid \bm{\beta}_b, \tth_b &\sim \mathcal{GP}\big( \XX_b\bm{\beta}_b, k(\xx, \xx' \mid \tth_b) \big)\\
 s(\xx) \mid \bm{\beta}_s, \tth_s &\sim \mathcal{GP}\big( \XX_s\bm{\beta}_s, k(\xx, \xx' \mid \tth_a) \big).
 \end{aligned}
+\label{eqn:gev-gp-model}
 \end{equation}
 In this package, a uniform prior $\pi(\tth) \propto 1$ is specified on the fixed effect and hyperparameters 
 \[\tth=(s, \bm{\beta}_a, \bm{\beta}_b, \bm{\beta}_s, \tth_a, \tth_b, \tth_s).\] 
@@ -249,6 +251,51 @@ plot(exp(logs), exp(pos_summary$param_summary[(2*n_loc+1):(3*n_loc),"mean"]),
 abline(0, 1, col="blue", lty="dashed")
 ```
 
+### Including covariates
+The example below demonstrates how to include covariates in the model. The simulated data used here comes with the package as a list variable `simulatedData_withcov`, where $s$ is a fixed effect, $a_i$ and $b_i$ at each location $i$ are generated from functions that depend linearly on coefficients $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$, and $y_i$ is simulated from a GEV distribution conditional on $a_i$, $b_i$ and $s$. 
+
+The simulated data are generated with two covariates, with $a_i$ depending on both covariates and $b_i$ depending on only the first covariate. The true values of $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$ are given below, where the first elements both correspond to the intercept term. `covar` is a `n_loc x 3` design matrix with the first column being all 1s. The GEV-GP model supported by ***SpatialGEV*** assumes an intercept is always included for each random effect, so it is important to make sure the first column of the design matrix (`X_a`, `X_b`, `X_s`) is all 1s.
+```{r get_data_covar}
+y_withcov <- simulatedData_withcov$y
+locs <- simulatedData_withcov$locs
+covar <- simulatedData_withcov$covariates
+n_loc <- nrow(locs)
+beta_a <- simulatedData_withcov$beta_a
+beta_b <- simulatedData_withcov$beta_b
+print(dim(covar))
+print(head(covar))
+print(beta_a)
+print(beta_b)
+```
+
+We include the covariate matrix for random effects $a_i$ and $b_i$ by providing the `covar` variable to both `X_a` and `X_b` arguments. For priors on $\boldsymbol{\beta}$, the package only supports specifying the same Normal prior for all elements of $\boldsymbol{\beta}_u$ for each of $u=a,b,s$. Here, a Normal prior $\mathcal{N}(0, 10^2)$ is imposed on both $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$.
+```{r fit_with_covar}
+fit_withcov <- spatialGEV_fit(data = y_withcov, locs = locs, 
+                              random = "ab",
+                              init_param = list(a = rep(0, n_loc),
+                                                log_b = rep(0, n_loc), 
+                                                s = 0,
+                                                beta_a = rep(0, ncol(covar)), 
+                                                beta_b = rep(0, ncol(covar)), 
+                                                log_sigma_a = 1, 
+                                                log_kappa_a = -2,
+                                                log_sigma_b = 1, 
+                                                log_kappa_b = -2),
+                              X_a = covar, X_b = covar,
+                              beta_prior=list(beta_a=c(0,10), beta_b=c(0,10)),
+                              reparam_s = "positive", kernel="spde", 
+                              silent = TRUE)
+```
+Next, we draw 1000 samples from the approximate posterior distribution of the parameters and display the summary statistics for $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$ and their corresponding simulated (true) values below. While the credible intervals for the intercepts are wide, we see reasonably accurate and precise estimates for the coefficients corresponding to the two covariates. 
+```{r summary_with_covar}
+sam <- spatialGEV_sample(model = fit_withcov, n_draw = 1000, observation = FALSE)
+fe_summary <- summary(sam)$param_summary
+beta_df <- cbind(fe_summary[rownames(fe_summary) %in% c("beta_a", "beta_b"),],
+                 c(beta_a, beta_b, 0))
+colnames(beta_df)[7] <- "Simulated_value"
+print(beta_df)
+```
+
 ### Posterior prediction
 Finally, we demonstrate how to make predictions at new locations. This is done using the `spatialGEV_predict()` function, which takes the following arguments:
 
@@ -395,14 +442,15 @@ points(locs$cell_lon, locs$cell_lat)
 Now we fit the GEV-GP model to the data using the SPDE kernel. Both $a$ and $b$ are treated as spatial random effects. $s$ is constrained to be a positive constant. Note that here we have specified a $\mathcal{N}(-5,5)$ prior on the log-transformed shape parameter. This is because we found that the shape parameter is estimated close to 0 and such a prior ensures model fitting procedure is numerically stable.
 ```{r snow-fitting}
 fit <- spatialGEV_fit(Y, locs, random="ab",
-                      init_param = list(a=rep(55, n_loc),
+                      init_param = list(a=rep(40, n_loc),
                                         log_b=rep(3, n_loc),
                                         s=-5,
-                                        beta_a=55, beta_b=3,
-                                        log_sigma_a=6, log_kappa_a=1,
-                                        log_sigma_b=0, log_kappa_b=1),
+                                        beta_a=30, beta_b=3,
+                                        log_sigma_a=1, log_kappa_a=-3,
+                                        log_sigma_b=-2, log_kappa_b=-3),
                       reparam_s="positive",
                       kernel="spde", 
+                      beta_prior=list(beta_a=c(0,100),beta_b=c(0,100)),
                       s_prior=c(-5,5),
                       silent=TRUE)
 fit
@@ -413,8 +461,8 @@ Next, 5000 samples are drawn from the joint posterior distribution of all parame
 sam <- spatialGEV_sample(fit, n_draw=5000, observation=F)
 ```
 
-Instead of using the `return_levels` argument in `spatialGEV_fit()`, we can also use the posterior samples to calculate the 5-year, 10-year, and 25-year return level posterior samples, which are the upper $1/5$%, $1/10$%, and $1/25$% quantiles of the extreme value distributions at these locations.
-```{r snow-get-return-levels}
+Instead of using the `return_levels` argument in `spatialGEV_fit()`, we can also use the posterior samples to calculate the 5-year return level posterior samples, which are the upper $1/5$% quantiles of the extreme value distributions at these locations.
+```{r snow-get-return-levels, cache=FALSE}
 #library(evd)
 p_draws <- sam$parameter_draws
 # Get indices of each GEV parameter in the sample matrix
@@ -422,7 +470,7 @@ a_ind <- which(colnames(p_draws)%in% paste0("a", 1:n_loc))
 logb_ind <- which(colnames(p_draws)%in% paste0("log_b", 1:n_loc))
 logs_ind <- which(colnames(p_draws) == "s")
 
-# Deine a function to draw from the return level posterior distribution
+# Define a function to draw from the return level posterior distribution
 rl_draw <- function(return_period){
   apply(p_draws, 1,
                function(all_draw){
@@ -437,19 +485,13 @@ rl_draw <- function(return_period){
 q5_draws <- rl_draw(5)
 return5 <- apply(q5_draws, 1, mean)
 return5sd <- apply(q5_draws, 1, sd)
-# 25 year return-level
-q25_draws <- rl_draw(25)
-return25 <- apply(q25_draws, 1, mean)
-return25sd <- apply(q25_draws, 1, sd)
 ```
 
 Plotted below are the return levels.
-```{r snow-return-plots, fig.width=10, fig.height=5, out.width= "60%"}
+```{r snow-return-plots, fig.width=10, fig.height=5, out.width= "60%", cache=FALSE}
 par(mfrow=c(1,2))
 map_plot(return5, title="5-year Return levels")
 map_plot(return5sd, title="SD of 5-year Return levels")
-map_plot(return25, title="25-year Return levels")
-map_plot(return25sd, title="SD of 25-year Return levels")
 ```
 
 ## References
