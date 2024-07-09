@@ -170,7 +170,8 @@ parse_data <- function(data, locs, random,
       stop("For `method == 'maxsmooth'`, `data` must be a list with named elements 'est' and 'var'.")
     } else if(!isTRUE(all(dim(data$est) == c(n_loc, n_par)))) {
       stop("Incorrect dimensions for `data$est`.")
-    } else if(!isTRUE(all(dim(data$var) == c(n_par, n_par, n_loc)))) {
+    } else if(length(dim(data$var))!=3 || 
+              !isTRUE(all(dim(data$var) == c(n_par, n_par, n_loc)))) {
       stop("Incorrect dimensions for `data$var`.")
     }
     out <- list(random_est = t(data$est),
@@ -184,9 +185,6 @@ parse_data <- function(data, locs, random,
 #' @return A logical with names `a`, `log_b`, `s`.
 parse_random <- function(random = c("a", "ab", "abs")) {
   random <- match.arg(random)
-  if (!(random %in% c("a", "ab", "abs"))) {
-    stop("Argument random must be either 'a', 'ab', or 'abs'.")
-  }
   c(a = random %in% c("a", "ab", "abs"),
     log_b = random %in% c("ab", "abs"),
     s = random %in% "abs")

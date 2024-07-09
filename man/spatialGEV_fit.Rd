@@ -53,8 +53,11 @@ spatialGEV_model(
 )
 }
 \arguments{
-\item{data}{If \code{method == "laplace"}, a list of length \code{n_loc} where each
-element contains the GEV observations at the given spatial location.}
+\item{data}{A list of length \code{n_loc} where each
+element contains the GEV observations at the given spatial location.
+If \code{method == "maxsmooth"}, \code{data} can also be a list with two elements:
+\code{est}, an \verb{n_loc x 3} matrix of parameter estimates at each location,
+and \code{var}, a \verb{3 x 3 x n_loc} array of corresponding variance estimates.}
 
 \item{locs}{An \verb{n_loc x 2} matrix of longitude and latitude of the corresponding response values.}
 

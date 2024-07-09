@@ -70,6 +70,22 @@
 #' }
 "simulatedData2"
 
+#' Simulated dataset 3
+#'
+#' A list of small dataset used for package testing and demos. 
+#' `a`, `logb`, `logs` are simulated from smooth surfaces.
+#' @format A list containing the simulation parameters and simulated data on a 20x20 grid:
+#' \describe{
+#'   \item{locs}{A 100x2 matrix. First column contains longitudes and second contains latitudes}
+#'   \item{a}{A length 100 vector. GEV location parameters}
+#'   \item{logb}{A length 100 vector. Log-transformed GEV scale parameters}
+#'   \item{logs}{A length 100 vector. Log-transformed GEV shape parameters}
+#'   \item{y}{A length 100 list of vectors which are observations simulated at each location}
+#'   \item{lon}{A length 10 vector of longitude}
+#'   \item{lat}{A length 10 vector of latitude}
+#' }
+"simulatedData3"
+
 #' Gridded monthly total snowfall in Canada from 1987 to 2021.
 #'
 #' Variables containing the monthly total snowfall (in cm) in Canada from 1987 to
