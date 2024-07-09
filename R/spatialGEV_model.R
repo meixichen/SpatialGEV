@@ -12,7 +12,7 @@ spatialGEV_model <- function(data, locs, random = c("a", "ab", "abs"),
                              ...) {
   method <- match.arg(method)
   random <- parse_random(random)
-  if (method == "maxsmooth" && !all(c("est", "var") %in% names(data))){
+  if (method == "maxsmooth" && is.list(data) && length(data)==nrow(locs)){
     data <- maxstep(data, s_prior)
   }
   out_data <- parse_data(data, locs = locs, random = random, method = method)
@@ -98,6 +98,7 @@ maxstep <- function(data, s_prior) {
   n_loc <- length(data)
   est_set <- matrix(NA, n_loc, 3)
   var_set <- array(NA, dim = c(3, 3, n_loc))
+  if (is.null(s_prior)) s_prior <- c(0, 100)
   for (i in seq_len(n_loc)){
     yi <- data[[i]]
     # initialize optimization

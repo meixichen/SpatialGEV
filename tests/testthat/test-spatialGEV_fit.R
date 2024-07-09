@@ -194,6 +194,25 @@ test_that("`spatialGEV_fit` gives an informative error message for features not
         "For `method = 'maxsmooth'`, only `random = 'abs'` and `kernel = 'spde'` are currently implemented.")
     }
   }
+  expect_error(
+    fit_a <- spatialGEV_fit(
+      data = list(est=NULL),
+      locs = locs,
+      random = "abs",
+      method = method,
+      init_param = list(
+        beta_a = beta_a,
+        a = rep(0, n_loc),
+        log_b = 0,
+        s = 0,
+        log_sigma_a = 0,
+        log_kappa_a = 0
+      ),
+      reparam_s = "zero",
+      kernel = "spde",
+      silent = TRUE
+    ), 
+    "For `method == 'maxsmooth'`, `data` must be a list with named elements 'est' and 'var'.")
 })
 
 
