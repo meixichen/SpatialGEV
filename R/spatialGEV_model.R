@@ -12,7 +12,7 @@ spatialGEV_model <- function(data, locs, random = c("a", "ab", "abs"),
                              ...) {
   method <- match.arg(method)
   random <- parse_random(random)
-  if (method == "maxsmooth"){
+  if (method == "maxsmooth" && !all(c("est", "var") %in% names(data))){
     data <- maxstep(data, s_prior)
   }
   out_data <- parse_data(data, locs = locs, random = random, method = method)

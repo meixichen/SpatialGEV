@@ -1,7 +1,10 @@
 #' Fit a GEV-GP model.
 #'
-#' @param data If `method == "laplace"`, a list of length `n_loc` where each
+#' @param data A list of length `n_loc` where each
 #' element contains the GEV observations at the given spatial location.
+#' If `method == "maxsmooth"`, `data` can also be a list with two elements: 
+#' `est`, an `n_loc x 3` matrix of parameter estimates at each location,
+#' and `var`, a `3 x 3 x n_loc` array of corresponding variance estimates.
 #' @param locs An `n_loc x 2` matrix of longitude and latitude of the corresponding response values.
 #' @param random Either "a", "ab", or "abs", where `a` indicates the location parameter,
 #' `b` indicates the scale parameter, `s` indicates the shape parameter.  This tells the model
