@@ -1,6 +1,6 @@
 Package: SpatialGEV
 Title: Fit Spatial Generalized Extreme Value Models
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: c(
 	person(given = "Meixi",
            family = "Chen",
