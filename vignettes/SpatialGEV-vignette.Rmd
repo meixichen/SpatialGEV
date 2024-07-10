@@ -29,7 +29,14 @@ MathJax.Hub.Config({
 \newcommand{\ind}{{\overset{ind}{\sim}}}
 \newcommand{\cov}{{\tx{Cov}}}
 
-
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig_path = "",
+  cache=TRUE
+)
+```
 
 ## Introduction to the GEV-GP Model
 The generalized extreme value (GEV) distribution is often used to analyze sequences of maxima within non-overlapping time periods. An example of this type of data is the monthly maximum rainfall levels recorded over years at a weather station. Since there are typically a large number of weather stations within a country or a state, it is more ideal to have a model that can borrow information from nearby weather stations to increase inference and prediction accuracy. Such spatial information is often pooled using the Gaussian process.
@@ -71,8 +78,7 @@ Details about the approximate posterior inference can be found in @chen-etal21.
 ***SpatialGEV*** depends on the package [***TMB***](https://github.com/kaskr/adcomp) to perform the Laplace approximation. Make sure you have ***TMB*** installed following their [instruction](https://github.com/kaskr/adcomp/wiki/Download) before installing ***SpatialGEV***. Moreover, ***SpatialGEV*** uses several functions from the ***INLA*** package for approximating the Matérn covariance with the SPDE representation and for creating meshes on the spatial domain. If the user would like to use the SPDE approximation, please first install ***INLA***. Since ***INLA*** is not on CRAN, it needs to be downloaded following their instruction [here](https://www.r-inla.org/download-install). 
 
 To install the latest version of ***SpatialGEV***, run the following:
-
-```r
+```{r eval=FALSE}
 devtools::install_github("meixichen/SpatialGEV")
 ```
 
@@ -90,8 +96,7 @@ We now demonstrate how to use this package through a simulation study. The simul
 - `logs`: A length $400$ vector of the true values of log-transformed $s_i, \ i=1,\ldots,400$ at the 400 locations 
 
 `a`, `logb` and `logs` are simulated from Gaussian random fields using the R package ***SpatialExtremes***. Using the simulated GEV parameters, we generate 50 to 70 observed data $\yy_i$ at each location $i, \ i=1,\ldots,400$. 
-
-```r
+```{r sim1-getdata, message=FALSE}
 library(SpatialGEV)
 library(fields) # for plots
 library(evd) # for rgev() and qgev()
@@ -107,8 +112,7 @@ y <- Map(rgev, n=sample(50:70, n_loc, replace=TRUE),
 ```
 
 Spatial variation of $a$, $\log(b)$ and $\log(s)$ can be viewed by plotting them on regular lattices:
-
-```r
+```{r sim1-plot-abs, fig.width=14, fig.height=5, out.width="100%"}
 par(mfrow=c(1,3))
 grid_plot(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)), 
           "Spatial variation of a")
@@ -118,21 +122,15 @@ grid_plot(unique(locs$x), unique(locs$y), matrix(logs, ncol=sqrt(n_loc)),
           "Spatial variation of log(s)", y_lab="")
 ```
 
-<img src="figure/sim1-plot-abs-1.png" alt="plot of chunk sim1-plot-abs" width="100%" />
-
 Number of observations at each location is shown in the figure below.
-
-```r
+```{r sim1-plot-num-obs-per-loc, fig.width=10, fig.height=5, out.width= "100%"}
 barplot(sapply(y, length), 
         xlab = "Location", ylab = "Number of observations at each location",
         main = "Summary of number of observations per location")
 ```
 
-<img src="figure/sim1-plot-num-obs-per-loc-1.png" alt="plot of chunk sim1-plot-num-obs-per-loc" width="100%" />
-
 Below are histograms of observations at $8$ randomly sampled locations.
-
-```r
+```{r sim-1plot-y, fig.width=12, fig.height=6, out.width= "100%"}
 set.seed(123)
 n_sam <-8
 sam_inds <- sample(1:n_loc, n_sam, replace=FALSE)
@@ -143,8 +141,6 @@ for (i in sam_inds){
        xlab="Observation value", main=paste("Observations at location", i))
 }
 ```
-
-<img src="figure/sim-1plot-y-1.png" alt="plot of chunk sim-1plot-y" width="100%" />
 
 ### Model fitting
 The function `spatialGEV_fit()` in the **SpatialGEV** package is used to find the mode and quadrature of the Laplace approximation to the marginal hyperparameter posterior, which is the basis of a Normal approximation to the posterior of both hyperparameters and random effects referred to as Laplace-MQ in our paper. The function `spatialGEV_sample()` is then used to sample from this distribution via a sparse representation of its precision matrix. 
@@ -179,8 +175,7 @@ There are other arguments which user might want to specify to override the defau
 
 The code below fits a GEV-GP model with Matérn SPDE kernel to the simulated data. The shape parameter is constrained to be positive. No covariates are included in this model, so by default an intercept parameter $\beta_0$ is estimated for the GP of each spatial random effect. We also specify the return levels of interest at 0.5 and 0.9.
 
-
-```r
+```{r sim1-mod_fit}
 fit <- spatialGEV_fit(data = y, locs = locs, random = "abs",
                       init_param = list(a = rep(60, n_loc),
                                         log_b = rep(2,n_loc),
@@ -194,30 +189,15 @@ fit <- spatialGEV_fit(data = y, locs = locs, random = "abs",
                       silent = TRUE)
 ```
 
-
-```r
+```{r sim1-display-fit}
 class(fit)
-#> [1] "spatialGEVfit"
 print(fit)
-#> Model fitting took 121.461392879486 seconds 
-#> The model has reached relative convergence 
-#> The model uses a spde kernel 
-#> Number of fixed effects in the model is 9 
-#> Number of random effects in the model is 1308 
-#> Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples
 ```
 
 The point estimates and the associated standard errors (calculated via the Delta method) for the first 5 locations can be obtained as follows.
-
-```r
+```{r sim1-get-return-levels}
 fit_summary <- summary(fit)
 fit_summary$return_levels[1:5,]
-#>               Estimate0.5 Estimate0.9 Std.Error0.5 Std.Error0.9
-#> return_levels    68.26723    107.7014    0.9652088     2.683339
-#> return_levels    68.27546    108.3477    0.8641505     2.475383
-#> return_levels    68.27882    109.1868    0.7956246     2.384804
-#> return_levels    68.23156    109.5912    0.7829240     2.396303
-#> return_levels    68.16005    109.5361    0.7952542     2.161209
 ```
 
 ### Posterior sampling
@@ -232,62 +212,24 @@ To obtain posterior samples of $a$, $b$, and $s$, we pass the fitted model objec
 - `loc_ind`: A vector of location indices at which samples will be drawn. Default is all locations.
 
 The following line of code draws 2000 samples from the posterior distribution and the posterior predictive distribution:
-
-```r
+```{r sim1-pos_sam}
 sam <- spatialGEV_sample(model = fit, n_draw = 2000, observation = TRUE)
 print(sam)
-#> The samples contains 2000 draws of 1209 parameters 
-#> The samples contains 2000 draws of response at 400 locations 
-#> Use summary() to obtain summary statistics of the samples
 ```
 
 Then use `summary()` to view the summary statistics of the posterior samples.
-
-```r
+```{r sim1-display-pos-sam}
 pos_summary <- summary(sam)
 pos_summary$param_summary[c(1:5, 
                             (n_loc+1):(n_loc+5), 
                             (2*n_loc+1):(2*n_loc+5),
                             (3*n_loc):(nrow(pos_summary$param_summary))),]
-#>                  2.5%        25%        50%        75%       97.5%       mean
-#> a1          59.469508 60.5292238 61.1020295 61.7434126 62.77942497 61.1276920
-#> a2          59.652963 60.5239885 61.0973114 61.6348199 62.61717238 61.0862323
-#> a3          59.576127 60.5005076 61.0141446 61.5218522 62.40652656 61.0084872
-#> a4          59.465919 60.4091385 60.9119089 61.4102656 62.28460149 60.9089633
-#> a5          59.265492 60.2640433 60.7452080 61.2223114 62.17633411 60.7447386
-#> log_b1       2.881149  2.9315497  2.9582495  2.9828047  3.03232638  2.9576418
-#> log_b2       2.896874  2.9423802  2.9638515  2.9868046  3.02873992  2.9638448
-#> log_b3       2.917674  2.9537237  2.9735606  2.9934853  3.03366404  2.9740155
-#> log_b4       2.928134  2.9632884  2.9828617  3.0021858  3.03988473  2.9830815
-#> log_b5       2.940246  2.9747253  2.9945590  3.0124823  3.04908360  2.9941061
-#> s1          -3.791208 -3.1043824 -2.7256717 -2.3799202 -1.66033139 -2.7346756
-#> s2          -3.531185 -2.9650009 -2.6347407 -2.3025378 -1.65413837 -2.6329541
-#> s3          -3.382537 -2.8302788 -2.5331956 -2.2528162 -1.60641172 -2.5383325
-#> s4          -3.368854 -2.8106817 -2.5282727 -2.2384152 -1.68632664 -2.5211173
-#> s5          -3.380882 -2.8778813 -2.6223285 -2.3749934 -1.86132257 -2.6251945
-#> s400        -4.348978 -3.6785614 -3.2824303 -2.9480308 -2.27666988 -3.3051514
-#> beta_a      59.254986 59.8170439 60.1140164 60.3904082 60.97734164 60.1139866
-#> beta_b       2.930002  2.9900897  3.0248382  3.0565364  3.11982666  3.0233803
-#> beta_s      -2.815150 -2.5094988 -2.3405593 -2.1767840 -1.86375833 -2.3421628
-#> log_sigma_a -2.168320 -1.3661709 -0.9866478 -0.6044773  0.05501865 -0.9967687
-#> log_kappa_a -1.448783 -0.8093071 -0.4702390 -0.1377747  0.55418411 -0.4640518
-#> log_sigma_b -4.298673 -3.5310981 -3.0931269 -2.6657391 -1.87501160 -3.0952153
-#> log_kappa_b -2.002020 -1.4089644 -1.0952879 -0.7842804 -0.19887462 -1.0943473
-#> log_sigma_s -2.305678 -1.8257401 -1.5657913 -1.3120916 -0.85406613 -1.5674691
-#> log_kappa_s -0.830086 -0.5131705 -0.3312056 -0.1599720  0.17159183 -0.3330161
 pos_summary$y_summary[1:5,]
-#>        2.5%      25%      50%      75%    97.5%     mean
-#> y1 36.41209 55.09644 68.56306 85.43817 144.9523 73.70737
-#> y2 35.97513 53.94375 67.11005 85.67226 137.1669 72.74575
-#> y3 37.17113 55.04581 68.18835 85.36124 142.9345 73.76285
-#> y4 36.14432 55.06926 67.94323 85.07620 144.0487 73.52200
-#> y5 36.63988 54.38507 67.20723 87.41761 146.4917 74.04551
 ```
 
 ### Model checking
 Since we know the true values of $a$, $b$, and $s$ in this simulation study, we are able to compare the posterior mean with the true values. The posterior means of $a$, $b$ and $s$ at different locations are plotted against the true values below.
-
-```r
+```{r sim1-pos-plots, fig.width=12, fig.height=4, out.width= "100%"}
 par(mfrow=c(1,3))
 plot(a, pos_summary$param_summary[1:n_loc,"mean"], 
      xlim=c(55, 63), ylim=c(55,63),
@@ -309,38 +251,25 @@ plot(exp(logs), exp(pos_summary$param_summary[(2*n_loc+1):(3*n_loc),"mean"]),
 abline(0, 1, col="blue", lty="dashed")
 ```
 
-<img src="figure/sim1-pos-plots-1.png" alt="plot of chunk sim1-pos-plots" width="100%" />
-
 ### Including covariates
 The example below demonstrates how to include covariates in the model. The simulated data used here comes with the package as a list variable `simulatedData_withcov`, where $s$ is a fixed effect, $a_i$ and $b_i$ at each location $i$ are generated from functions that depend linearly on coefficients $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$, and $y_i$ is simulated from a GEV distribution conditional on $a_i$, $b_i$ and $s$. 
 
 The simulated data are generated with two covariates, with $a_i$ depending on both covariates and $b_i$ depending on only the first covariate. The true values of $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$ are given below, where the first elements both correspond to the intercept term. `covar` is a `n_loc x 3` design matrix with the first column being all 1s. The GEV-GP model supported by ***SpatialGEV*** assumes an intercept is always included for each random effect, so it is important to make sure the first column of the design matrix (`X_a`, `X_b`, `X_s`) is all 1s.
-
-```r
+```{r get_data_covar}
 y_withcov <- simulatedData_withcov$y
-#> Error in eval(expr, envir, enclos): object 'simulatedData_withcov' not found
 locs <- simulatedData_withcov$locs
-#> Error in eval(expr, envir, enclos): object 'simulatedData_withcov' not found
 covar <- simulatedData_withcov$covariates
-#> Error in eval(expr, envir, enclos): object 'simulatedData_withcov' not found
 n_loc <- nrow(locs)
 beta_a <- simulatedData_withcov$beta_a
-#> Error in eval(expr, envir, enclos): object 'simulatedData_withcov' not found
 beta_b <- simulatedData_withcov$beta_b
-#> Error in eval(expr, envir, enclos): object 'simulatedData_withcov' not found
 print(dim(covar))
-#> Error in h(simpleError(msg, call)): error in evaluating the argument 'x' in selecting a method for function 'print': object 'covar' not found
 print(head(covar))
-#> Error in h(simpleError(msg, call)): error in evaluating the argument 'x' in selecting a method for function 'print': error in evaluating the argument 'x' in selecting a method for function 'head': object 'covar' not found
 print(beta_a)
-#> Error in h(simpleError(msg, call)): error in evaluating the argument 'x' in selecting a method for function 'print': object 'beta_a' not found
 print(beta_b)
-#> Error in h(simpleError(msg, call)): error in evaluating the argument 'x' in selecting a method for function 'print': object 'beta_b' not found
 ```
 
 We include the covariate matrix for random effects $a_i$ and $b_i$ by providing the `covar` variable to both `X_a` and `X_b` arguments. For priors on $\boldsymbol{\beta}$, the package only supports specifying the same Normal prior for all elements of $\boldsymbol{\beta}_u$ for each of $u=a,b,s$. Here, a Normal prior $\mathcal{N}(0, 10^2)$ is imposed on both $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$.
-
-```r
+```{r fit_with_covar}
 fit_withcov <- spatialGEV_fit(data = y_withcov, locs = locs, 
                               random = "ab",
                               init_param = list(a = rep(0, n_loc),
@@ -356,21 +285,15 @@ fit_withcov <- spatialGEV_fit(data = y_withcov, locs = locs,
                               beta_prior=list(beta_a=c(0,10), beta_b=c(0,10)),
                               reparam_s = "positive", kernel="spde", 
                               silent = TRUE)
-#> Error in eval(expr, envir, enclos): object 'y_withcov' not found
 ```
 Next, we draw 1000 samples from the approximate posterior distribution of the parameters and display the summary statistics for $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$ and their corresponding simulated (true) values below. While the credible intervals for the intercepts are wide, we see reasonably accurate and precise estimates for the coefficients corresponding to the two covariates. 
-
-```r
+```{r summary_with_covar}
 sam <- spatialGEV_sample(model = fit_withcov, n_draw = 1000, observation = FALSE)
-#> Error in eval(expr, envir, enclos): object 'fit_withcov' not found
 fe_summary <- summary(sam)$param_summary
 beta_df <- cbind(fe_summary[rownames(fe_summary) %in% c("beta_a", "beta_b"),],
                  c(beta_a, beta_b, 0))
-#> Error in eval(expr, envir, enclos): object 'beta_a' not found
 colnames(beta_df)[7] <- "Simulated_value"
-#> Error: object 'beta_df' not found
 print(beta_df)
-#> Error in h(simpleError(msg, call)): error in evaluating the argument 'x' in selecting a method for function 'print': object 'beta_df' not found
 ```
 
 ### Posterior prediction
@@ -387,8 +310,7 @@ Finally, we demonstrate how to make predictions at new locations. This is done u
 - `parameter_draws`: An optional `n_draws x n_parameters` matrix that contains the posterior samples of all parameters. If `spatialGEV_sample()` has already been called prior to `spatialGEV_predict()`, its output can be provided to the prediction function to save time.
 
 In this dataset, the GEV parameters $a$ and $\log(b)$ are generated from the surfaces below, and the shape parameter is a constant $\exp(-2)$ across space.
-
-```r
+```{r sim2-plot-ab, fig.width=8, fig.height=4.5, out.width="50%"}
 a <- simulatedData$a
 logb <- simulatedData$logb
 logs <- simulatedData$logs
@@ -402,11 +324,8 @@ grid_plot(unique(locs$x), unique(locs$y), matrix(logb, ncol=sqrt(n_loc)),
           "Spatial variation of log(b)", y_lab="")
 ```
 
-<img src="figure/sim2-plot-ab-1.png" alt="plot of chunk sim2-plot-ab" width="50%" />
-
 We randomly sample 100 locations from the simulated dataset `simulatedData` as test locations which are left out. Data from the rest 300 training locations are used for model fitting. We fit a GEV-GP model with random $a$ and $b$ and log-transformed $s$ to the training dataset. The kernel used here is the SPDE approximation to the Matérn covariance function (@lindgren-etal11).
-
-```r
+```{r sim2-test-fit}
 set.seed(123)
 n_test <- 50
 n_train <- n_loc - n_test
@@ -429,31 +348,19 @@ train_fit_s <- spatialGEV_fit(data =y_train, locs = locs_train, random = "ab",
 ```
 
 The fitted model object is passed to `spatialGEV_predict()` for 500 samples from the posterior predictive distributions. Note that this might take some time.
-
-```r
+```{r sim2-test-pred}
 pred_s <- spatialGEV_predict(model = train_fit_s, locs_new = locs_test, n_draw = 500)
 pred_s
-#> 500 posterior predictive samples have been draw for 50 test locations
-#> The number of training locations is 350 
-#> Use summary() to obtain summary statistics of the posterior predictive samples
 ```
 
 Then we call `summary()` on the `pred` object to obtain summary statistics of the posterior predictive samples at the test locations.
-
-```r
+```{r sim2-test-sam-display}
 pred_summary <- summary(pred_s)
 pred_summary[1:5,]
-#>          2.5%      25%      50%      75%    97.5%     mean
-#> [1,] 3.214142 3.792051 4.251525 4.973454 6.774895 4.481719
-#> [2,] 3.970467 4.200823 4.346190 4.532252 5.019588 4.392265
-#> [3,] 3.906199 4.604364 5.140686 5.950813 8.969003 5.448645
-#> [4,] 4.144515 4.543030 4.840548 5.170953 6.420293 4.939498
-#> [5,] 3.499524 4.073225 4.409891 5.021677 7.072663 4.644918
 ```
 
 Since we have the true observations at the test locations, we can compare summary statistics of the true observations to those of the posterior predictive distributions. In the figures below, each circle represents a test location.
-
-```r
+```{r sim2-pred-plot, fig.width=12, fig.height=6, out.width= "100%"}
 par(mfrow=c(1,2))
 plot(sapply(y_test, mean), pred_summary[,"mean"], 
      xlim=c(2.5, 6), ylim=c(2.5, 6),
@@ -469,49 +376,29 @@ plot(sapply(y_test, function(x){quantile(x, probs=0.975)}), pred_summary[,"97.5%
 abline(0, 1, col="blue", lty="dashed")
 ```
 
-<img src="figure/sim2-pred-plot-1.png" alt="plot of chunk sim2-pred-plot" width="100%" />
-
 ## Case study: Yearly maximum snowfall data in Ontario, Canada
 In this section, we show how to use the ***SpatialGEV*** package to analyze a real dataset. The data used here are the 1987-2021 monthly total snowfall data (in cm) obtained from Environment and Natural Resources, Government of Canada. The link to download the raw data is https://climate-change.canada.ca/climate-data/#/monthly-climate-summaries. This dataset is automatically loaded with the package and is named `ONsnow`.
-
-```r
+```{r snow-display-raw-data, message=FALSE, fig.width=6, fig.height=5, out.width= "60%"}
 library(dplyr)
 #library(maps)
 lon_range <- c(-96, -73)
 lat_range <-  c(41.5, 55)
 summary(ONsnow)
-#>     LATITUDE       LONGITUDE      STATION_NAME       CLIMATE_IDENTIFIER   LOCAL_YEAR    LOCAL_MONTH     TOTAL_SNOWFALL  
-#>  Min.   :41.75   Min.   :-94.62   Length:63945       Length:63945       Min.   :1987   Min.   : 1.000   Min.   :  0.00  
-#>  1st Qu.:43.58   1st Qu.:-81.50   Class :character   Class :character   1st Qu.:1991   1st Qu.: 3.000   1st Qu.:  0.00  
-#>  Median :44.23   Median :-79.93   Mode  :character   Mode  :character   Median :1997   Median : 6.000   Median :  1.00  
-#>  Mean   :44.96   Mean   :-80.88                                         Mean   :1999   Mean   : 6.469   Mean   : 15.23  
-#>  3rd Qu.:45.50   3rd Qu.:-78.97                                         3rd Qu.:2005   3rd Qu.: 9.000   3rd Qu.: 23.60  
-#>  Max.   :54.98   Max.   :-74.47                                         Max.   :2021   Max.   :12.000   Max.   :326.00
 maps::map(xlim = lon_range, ylim = lat_range)
 points(ONsnow$LONGITUDE, ONsnow$LATITUDE)
 ```
 
-<img src="figure/snow-display-raw-data-1.png" alt="plot of chunk snow-display-raw-data" width="60%" />
-
 ### Data preprocessing
 We first grid the data using cells of length $0.5^{\circ}$. By doing this, weather stations that are apart by less than $0.5^{\circ}$ in longitude/latitude are grouped together in the same grid cell. From now on, we refer to each grid cell as a location.
-
-```r
+```{r snow-grid-data}
 grid_locs <- grid_location(ONsnow$LONGITUDE, ONsnow$LATITUDE,
                            sp.resolution = 0.5)
 data_grid <- cbind(grid_locs, ONsnow)
 data_grid[1:5,]
-#>   cell_ind cell_lon cell_lat LATITUDE LONGITUDE   STATION_NAME CLIMATE_IDENTIFIER LOCAL_YEAR LOCAL_MONTH TOTAL_SNOWFALL
-#> 1      259  -89.867       54   53.833   -89.867 BIG TROUT LAKE            6010738       1987           1           33.6
-#> 2      259  -89.867       54   53.833   -89.867 BIG TROUT LAKE            6010738       1987           2           33.6
-#> 3      259  -89.867       54   53.833   -89.867 BIG TROUT LAKE            6010738       1987           3           19.8
-#> 4      259  -89.867       54   53.833   -89.867 BIG TROUT LAKE            6010738       1987           4            5.6
-#> 5      259  -89.867       54   53.833   -89.867 BIG TROUT LAKE            6010738       1987           5           12.8
 ```
 
 For each location, we find the maximum snowfall amount each year and only keep locations where there are at least two years of records.
-
-```r
+```{r snow-data-process}
 # Yearly max for each location
 all_locs <- data_grid %>% 
   select(cell_ind, cell_lon, cell_lat) %>%
@@ -547,17 +434,13 @@ locs <- locs %>% select(cell_lon, cell_lat) %>% slice(chosen_loc_ind)
 n_loc <- nrow(locs)
 ```
 
-
-```r
+```{r snow-display-grid-data, fig.width=6, fig.height=5, out.width= "60%"}
 maps::map(xlim = lon_range, ylim = lat_range)
 points(locs$cell_lon, locs$cell_lat)
 ```
 
-<img src="figure/snow-display-grid-data-1.png" alt="plot of chunk snow-display-grid-data" width="60%" />
-
 Now we fit the GEV-GP model to the data using the SPDE kernel. Both $a$ and $b$ are treated as spatial random effects. $s$ is constrained to be a positive constant. Note that here we have specified a $\mathcal{N}(-5,5)$ prior on the log-transformed shape parameter. This is because we found that the shape parameter is estimated close to 0 and such a prior ensures model fitting procedure is numerically stable.
-
-```r
+```{r snow-fitting}
 fit <- spatialGEV_fit(Y, locs, random="ab",
                       init_param = list(a=rep(40, n_loc),
                                         log_b=rep(3, n_loc),
@@ -571,23 +454,15 @@ fit <- spatialGEV_fit(Y, locs, random="ab",
                       s_prior=c(-5,5),
                       silent=TRUE)
 fit
-#> Model fitting took 8.68817090988159 seconds 
-#> The model has reached relative convergence 
-#> The model uses a spde kernel 
-#> Number of fixed effects in the model is 7 
-#> Number of random effects in the model is 542 
-#> Hessian matrix is positive definite. Use spatialGEV_sample to obtain posterior samples
 ```
 
-Next, 5000 samples are drawn from the joint posterior distribution of all parameters. 
-
-```r
-sam <- spatialGEV_sample(fit, n_draw=5000, observation=F)
+Next, 2000 samples are drawn from the joint posterior distribution of all parameters. 
+```{r snow-sampling}
+sam <- spatialGEV_sample(fit, n_draw=2000, observation=F)
 ```
 
 Instead of using the `return_levels` argument in `spatialGEV_fit()`, we can also use the posterior samples to calculate the 5-year return level posterior samples, which are the upper $1/5$% quantiles of the extreme value distributions at these locations.
-
-```r
+```{r snow-get-return-levels, cache=FALSE}
 #library(evd)
 p_draws <- sam$parameter_draws
 # Get indices of each GEV parameter in the sample matrix
@@ -613,13 +488,10 @@ return5sd <- apply(q5_draws, 1, sd)
 ```
 
 Plotted below are the return levels.
-
-```r
+```{r snow-return-plots, fig.width=10, fig.height=5, out.width= "60%", cache=FALSE}
 par(mfrow=c(1,2))
 map_plot(return5, title="5-year Return levels")
 map_plot(return5sd, title="SD of 5-year Return levels")
 ```
-
-<img src="figure/snow-return-plots-1.png" alt="plot of chunk snow-return-plots" width="60%" />
 
 ## References
