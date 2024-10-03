@@ -1,9 +1,14 @@
 ---
-title: "A Guide to the ***SpatialGEV*** Package"
-output: rmarkdown::html_vignette
+title: "A Guide to the SpatialGEV Package"
+author: "Meixi Chen, Martin Lysy, Reza Ramezan"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
 bibliography: references.bib
+link-citations: true
+csl: technometrics.csl
 vignette: >
-  %\VignetteIndexEntry{SpatialGEV-guide}
+  %\VignetteIndexEntry{A Guide to the SpatialGEV Package}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -20,25 +25,32 @@ MathJax.Hub.Config({
 \newcommand{\XX}{{\bm{X}}}
 \newcommand{\YY}{{\bm{Y}}}
 \newcommand{\ZZ}{{\bm{Z}}}
+\newcommand{\bbe}{{\bm{\beta}}}
 \newcommand{\tth}{{\bm{\theta}}}
 \newcommand{\pps}{{\bm{\psi}}}
 \newcommand{\uu}{{\bm{u}}}
+\newcommand{\BB}{{\bm{B}}}
+\newcommand{\TTh}{{\bm{\Theta}}}
 \newcommand{\SSi}{{\bm{\Sigma}}}
 \newcommand{\VV}{{\bm{V}}}
 \newcommand{\iid}{{\overset{iid}{\sim}}}
 \newcommand{\ind}{{\overset{ind}{\sim}}}
-\newcommand{\cov}{{\tx{Cov}}}
+\newcommand{\cov}{{\operatorname{Cov}}}
+\newcommand{\obs}{{\tx{observed}}}
+\newcommand{\normal}{\operatorname{Normal}}
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig_path = "",
-  cache=TRUE
+  cache = TRUE,
+  tidy = "styler"
 )
 ```
 
 ## Introduction to the GEV-GP Model
+
 The generalized extreme value (GEV) distribution is often used to analyze sequences of maxima within non-overlapping time periods. An example of this type of data is the monthly maximum rainfall levels recorded over years at a weather station. Since there are typically a large number of weather stations within a country or a state, it is more ideal to have a model that can borrow information from nearby weather stations to increase inference and prediction accuracy. Such spatial information is often pooled using the Gaussian process.
 
 The GEV-GP model is a hierarchical model with a data layer and a spatial random effects layer. Let $\xx_1, \ldots, \xx_n \in \mathbb{R}^2$ denote the geographical coordinates of $n$ locations, and let $y_{ik}$ denote the extreme value measurement $k$ at location $i$, for $k = 1, \ldots, n_i$. The data layer specifies that each observation $y_{ik}$ has a generalized extreme value distribution, denoted by $y \sim \tx{GEV}(a, b, s)$, whose CDF is given by
@@ -50,37 +62,54 @@ The GEV-GP model is a hierarchical model with a data layer and a spatial random 
     \end{cases} 
 \label{eqn:gev-distn}
 \end{equation} 
-where $a\in\mathbb{R}$, $b>0$, and $s\in\mathbb{R}$ are location, scale, and shape parameters, respectively. The support of the GEV distribution depends on the parameter values: $y$ is bounded below by $a-b/s$ when $s>0$, bounded above by $a-b/s$ when $s<0$, and unbounded when $s=0$. To capture the spatial dependence in the data, we assume some or all of the GEV parameters in the data layer are spatially varying. Thus they are introduced as random effects in the model. 
+where $a\in\mathbb{R}$, $b>0$, and $s\in\mathbb{R}$ are location, scale, and shape parameters, respectively. The support of the GEV distribution depends on the parameter values: $y$ is bounded below by $a-b/s$ when $s>0$, bounded above by $a-b/s$ when $s<0$, and unbounded when $s=0$. To capture the spatial dependence in the data, we assume some or all of the GEV parameters in the data layer are spatially varying. Thus they are introduced in the model as Gaussian process (GP) random effects. 
 
-A Gaussian process $z(\xx)\sim \mathcal{GP}(\mu(\xx_{cov}), k(\xx, \xx'))$ is fully characterized by its mean $\mu(\xx_{cov})$ and kernel function $k(\xx, \xx') = \cov( z(\xx), z(\xx') )$, which captures the strength of the spatial correlation between locations. The mean is a function of parameters $\bm{\beta}$ and covariates $\xx_{cov}=(x_1,\ldots,x_p)'$. We assume that given the locations, the data follow independent GEV distributions each with their own parameters. The complete GEV-GP hierarchical model then becomes
+A Gaussian process $z(\xx)\sim \mathcal{GP}(\mu(\xx), k(\xx, \xx'))$ is fully characterized by its mean $\mu(\xx)$ and kernel function $k(\xx, \xx') = \cov( z(\xx), z(\xx') )$, which captures the strength of the spatial correlation between locations.  The mean function is typically modelled as $\mu(\xx) = \bm{c}(\xx)^T \bm{\beta}$, where $\bm{c}(\xx)=(c_1(\xx),\ldots,c_p(\xx))$ is a known function of the spatial covariates.  We assume that given the locations, the data follow independent GEV distributions each with their own parameters. The complete GEV-GP hierarchical model then becomes
 \begin{equation}
 \begin{aligned}
 y_{ik} \mid a(\xx_i), b(\xx_i), s & \ind \tx{GEV}\big( a(\xx_i), \exp( b(\xx_i) ), \exp(s(\xx_i))\big)\\
-a(\xx) \mid \bm{\beta}_a, \tth_a &\sim \mathcal{GP}\big( \XX_a\bm{\beta}_a, k(\xx, \xx' \mid \tth_a) \big)\\
-log(b)(\xx) \mid \bm{\beta}_b, \tth_b &\sim \mathcal{GP}\big( \XX_b\bm{\beta}_b, k(\xx, \xx' \mid \tth_b) \big)\\
-s(\xx) \mid \bm{\beta}_s, \tth_s &\sim \mathcal{GP}\big( \XX_s\bm{\beta}_s, k(\xx, \xx' \mid \tth_a) \big).
+a(\xx) \mid \bm{\beta}_a, \tth_a &\sim \mathcal{GP}\big( \bm{c}_a(\xx)^T \bm{\beta}_a, k(\xx, \xx' \mid \tth_a) \big)\\
+log(b)(\xx) \mid \bm{\beta}_b, \tth_b &\sim \mathcal{GP}\big( \bm{c}_b(\xx)^T \bm{\beta}_b, k(\xx, \xx' \mid \tth_b) \big)\\
+s(\xx) \mid \bm{\beta}_s, \tth_s &\sim \mathcal{GP}\big( \bm{c}_s(\xx)^T  \bm{\beta}_s, k(\xx, \xx' \mid \tth_a) \big).
 \end{aligned}
 \label{eqn:gev-gp-model}
 \end{equation}
-***SpatialGEV*** supports three types of kernel functions $k(\xx,\xx')$:
+***SpatialGEV*** supports three types of kernel functions:
 
-- Exponential kernel $k(\xx,\xx')=\sigma^2e^{-\frac{|\xx-\xx'|}{\ell}}$, in which case $\tth_u=(\sigma_u^2,\ell_u)$ for $u\in \{a,b,s\}$. 
+- **Exponential kernel:**
+    $$
+	k(\xx,\xx')=\sigma^2 \cdot \exp\left\{-\frac{|\xx-\xx'|}{\ell}\right\},
+	$$
+	in which case $\tth_u=(\log \sigma_u^2, \log \ell_u)$ for $u\in \{a,b,s\}$. 
 
-- Matérn kernel $k(\xx,\xx')=\sigma^2 \frac{2^{1-\nu}}{\Gamma(\nu)} (\kappa |\xx-\xx'|)^\nu \mathcal{K}_\nu(\kappa|\xx-\xx'|)$, where $\mathcal{K}_\nu(\cdot)$ is the modified Bessel function of the second kind and $\nu$ is typically fixed. In this case, $\tth_u=(\sigma_u^2,\kappa_u)$ for $u\in \{a,b,s\}$. 
+- **Matérn kernel:**
+    $$
+	k(\xx,\xx')=\sigma^2 \frac{2^{1-\nu}}{\Gamma(\nu)} (\kappa |\xx-\xx'|)^\nu \mathcal{K}_\nu(\kappa|\xx-\xx'|),
+	$$
+	where $\mathcal{K}_\nu(\cdot)$ is the modified Bessel function of the second kind and $\nu$ is typically fixed. In this case, $\tth_u=(\log \sigma_u^2, \log \kappa_u)$ for $u\in \{a,b,s\}$. 
 
-- An SPDE approximation to the above Matérn kernel described in @lindgren-etal11, in which case $\tth_u=(\sigma_u^2,\kappa_u)$ for $u\in \{a,b,s\}$. 
+- **SPDE kernel:** A very fast approximation to the above Matérn kernel described in @lindgren-etal11, in which case $\tth_u=(\log \sigma_u^2, \log \kappa_u)$ for $u\in \{a,b,s\}$.  It is highly recommended to use this kernel for larger datasets.
 
 ## What Does ***SpatialGEV*** Do?
-The package provides an interface to estimate the approximate joint posterior distribution of the spatial random effects $a$, $b$ and $s$ in the GEV-GP model. The main functionalities of the package are:
 
-- Method to fit the GEV-GP model and sample from the approximate joint posterior distribution of $a$, $b$ and $s$
+The package provides an interface to estimate the approximate joint posterior distribution of the spatial random effects $a$, $b$ and $s$ in the GEV-GP model. The main package functions are:
 
-- Method to sample from the posterior predictive distributions $p(\yy_{\tx{new}} \mid \yy_{\tx{observed}})$ at new locations
+- `spatialGEV_fit()`: Fit the GEV-GP model using the Laplace approximation to the posterior hyperparameter distribution $p(\bm{B}, \bm{\Theta} \mid \YY)$, where $\bm{B} = (\bbe_a, \bbe_b, \bbe_s)$, $\TTh = (\tth_a, \tth_b, \tth_s)$, and $\YY$ are the observed data.
+
+- `spatialGEV_sample()`: Sample from $p(\bm{B}, \TTh \mid \YY)$, and also potentially from the joint posterior $p(\bm{B}, \TTh, \uu(\XX) \mid \YY)$ of hyperparameters and random effects, where $\XX$ are the locations of the observed data and $\uu(\xx) = (a(\xx), b(\xx), s(\xx))$.
+
+- `spatialGEV_predict()`: Sample from the posterior predictive distribution $p(\yy(\XX_{\tx{new}}) \mid \XX)$ at new locations $\XX_{\tx{new}}$.
 
 Details about the approximate posterior inference can be found in @chen-etal21.
 
 ## Installation
-***SpatialGEV*** depends on the package [***TMB***](https://github.com/kaskr/adcomp) to perform the Laplace approximation. Make sure you have ***TMB*** installed following their [instruction](https://github.com/kaskr/adcomp/wiki/Download) before installing ***SpatialGEV***. Moreover, ***SpatialGEV*** uses several functions from the ***INLA*** package for approximating the Matérn covariance with the SPDE representation and for creating meshes on the spatial domain. If the user would like to use the SPDE approximation, please first install ***INLA***. Since ***INLA*** is not on CRAN, it needs to be downloaded following their instruction [here](https://www.r-inla.org/download-install). 
+
+***SpatialGEV*** depends on the package [***TMB***](https://github.com/kaskr/adcomp) to perform the Laplace approximation. Make sure you have ***TMB*** installed as described [here](https://github.com/kaskr/adcomp/wiki/Download) before installing ***SpatialGEV***. Moreover, ***SpatialGEV*** uses several functions from the [***INLA***](https://www.r-inla.org/) package for approximating the Matérn covariance with the SPDE representation and for creating meshes on the spatial domain. If the user would like to use the SPDE approximation (highly recommended for larger datasets), please first install ***INLA***. Since ***INLA*** is not on CRAN, it needs to be installed as described [here](https://www.r-inla.org/download-install). 
+
+Once ***TMB*** and ***INLA*** have been installed, one can install the CRAN version of ***SpatialGEV*** via the following command:
+```{r eval=FALSE}
+install.packages("SpatialGEV")
+```
 
 To install the latest version of ***SpatialGEV***, run the following:
 ```{r eval=FALSE}
@@ -90,7 +119,8 @@ devtools::install_github("meixichen/SpatialGEV")
 ## Using the ***SpatialGEV*** Package
 
 ### Exploratory analysis
-We now demonstrate how to use this package through a simulation study. The simulated data used in this example comes with the package as a list variable `simulatedData2`, which contains the following:
+
+We now demonstrate how to use this package through a simulation study. The simulated data used in this example is shipped with the package as a list variable `simulatedData2`, which contains the following:
 
 - `locs`: A $400\times 2$ data frame of spatial coordinates (longitudes and latitudes)
 
@@ -105,7 +135,7 @@ We now demonstrate how to use this package through a simulation study. The simul
 library(SpatialGEV)
 library(fields) # for plots
 library(evd) # for rgev() and qgev()
-source("vignette-helper-functions.R")
+source("vignette-helper-functions.R") # a few plotting functions for vignette
 set.seed(123)
 a <- simulatedData2$a
 logb <- simulatedData2$logb
@@ -119,19 +149,30 @@ y <- Map(rgev, n=sample(50:70, n_loc, replace=TRUE),
 Spatial variation of $a$, $\log(b)$ and $\log(s)$ can be viewed by plotting them on regular lattices:
 ```{r sim1-plot-abs, fig.width=14, fig.height=5, out.width="100%"}
 par(mfrow=c(1,3))
-grid_plot(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)), 
-          "Spatial variation of a")
-grid_plot(unique(locs$x), unique(locs$y), matrix(logb, ncol=sqrt(n_loc)),  
-          "Spatial variation of log(b)", y_lab="")
-grid_plot(unique(locs$x), unique(locs$y), matrix(logs, ncol=sqrt(n_loc)), 
-          "Spatial variation of log(s)", y_lab="")
+grid_plot(
+  x = unique(locs$x), y = unique(locs$y), z = matrix(a, ncol=sqrt(n_loc)), 
+  title = "Spatial variation of a"
+)
+grid_plot(
+  x = unique(locs$x), y = unique(locs$y), z = matrix(logb, ncol=sqrt(n_loc)),  
+  title = "Spatial variation of log(b)",
+  y_lab=""
+)
+grid_plot(
+  x = unique(locs$x), y = unique(locs$y), z = matrix(logs, ncol=sqrt(n_loc)), 
+  title = "Spatial variation of log(s)",
+  y_lab=""
+)
 ```
 
 Number of observations at each location is shown in the figure below.
 ```{r sim1-plot-num-obs-per-loc, fig.width=10, fig.height=5, out.width= "100%"}
-barplot(sapply(y, length), 
-        xlab = "Location", ylab = "Number of observations at each location",
-        main = "Summary of number of observations per location")
+barplot(
+  height = sapply(y, length), 
+  xlab = "Location",
+  ylab = "Number of observations at each location",
+  main = "Summary of number of observations per location"
+)
 ```
 
 Below are histograms of observations at $8$ randomly sampled locations.
@@ -140,15 +181,29 @@ set.seed(123)
 n_sam <-8
 sam_inds <- sample(1:n_loc, n_sam, replace=FALSE)
 par(mfrow=c(2, n_sam/2))
-for (i in sam_inds){
+for(i in sam_inds) {
   obs_i <- y[[i]]
-  hist(obs_i, breaks=8,
-       xlab="Observation value", main=paste("Observations at location", i))
+  hist(
+    x = obs_i,
+    breaks=8,
+    xlab="Observation value",
+    main=paste("Observations at location", i)
+  )
 }
 ```
 
 ### Model fitting
-***SpatialGEV*** adopts a Bayesian approach based on the Laplace approximation for model inference, which is described in @chen-etal21. The function `spatialGEV_fit()` in the **SpatialGEV** package is used to find the mode and quadrature of the Laplace approximation to the marginal hyperparameter posterior, which is the basis of a Normal approximation to the posterior of both hyperparameters and random effects referred to as Laplace-MQ in @chen-etal21. The function `spatialGEV_sample()` is then used to sample from this distribution via a sparse representation of its precision matrix. We adopt a uniform prior $\pi(\tth) \propto 1$ on the GP hyperparameters $(\tth_a, \tth_b, \tth_s)$ in this vignette, but a prior can be specified for the Matérn (and its SPDE approximated version) kernel hyperaparameters. Moreover, we allow weakly informative priors to be imposed on other fixed effects. Available prior choices are detailed below.
+
+***SpatialGEV*** adopts a Bayesian approach based on the Laplace approximation for model inference, which is described in @chen-etal21. The function `spatialGEV_fit()` in the ***SpatialGEV*** package is used to find the mode and quadrature of the Laplace approximation to the marginal hyperparameter posterior, which is the basis of a Normal approximation to the posterior of both hyperparameters and random effects referred to as Laplace-MQ in @chen-etal21. The function `spatialGEV_sample()` is then used to sample from this distribution via a sparse representation of its precision matrix.
+
+
+***SpatialGEV*** uses a Lebesgue prior
+$$
+\pi(\bm{B}, \TTh) \propto 1
+$$
+on the GP hyperparameters by default.  However, informative priors for these parameters can be specified as detailed below.
+
+<!-- We adopt a uniform prior $\pi(\tth) \propto 1$ on the GP hyperparameters $(\tth_a, \tth_b, \tth_s)$ in this vignette, but a prior can be specified for the Matérn (and its SPDE approximated version) kernel hyperaparameters. Moreover, we allow weakly informative priors to be imposed on other fixed effects. Available prior choices are detailed below. -->
 
 To fit the GEV-GP model to this simulated dataset, the first step is calling the `spatialGEV_fit()` function, for which several arguments must be provided:
 
@@ -172,7 +227,7 @@ There are other arguments which user might want to specify to override the defau
 
 - `s_prior`: A vector $(\mu, \sigma)$. Optionally a normal prior with parameters $(\mu, \sigma)$ can be specified on the fixed effect shape parameter $s$, or its reparametrized version depending on the value of `reparam_s`. When `s_prior` is not specified, a uniform prior is used. 
 
-- `beta_prior`: A named list of length-2 vectors $(\mu, \sigma)$. Optionally normal priors $\mathcal{N}(\mu, \sigma^2)$ can be put on the regression coefficients $\bm{\beta}$ for the random effects. To specify a normal prior on a random effect, name the vector `beta_a` or `beta_b` or `beta_s`. E.g., `beta_prior=list(beta_a=c(0, 100))` puts a $\mathcal{N}(0,100)$ prior on $a$. When `beta_prior` is not specified, uniform priors are applied.
+- `beta_prior`: A named list of length-2 vectors $(\mu, \sigma)$. Optionally normal priors $\normal(\mu, \sigma^2)$ can be put on the regression coefficients $\bm{\beta}$ for the random effects. To specify a normal prior on a random effect, name the vector `beta_a` or `beta_b` or `beta_s`. E.g., `beta_prior=list(beta_a=c(0, 100))` puts a $\normal(0,100)$ prior on $a$. When `beta_prior` is not specified, uniform priors are applied.
 
 - `matern_pc_prior`: A named list with elements provided using the `matern_pc_prior()` function. Optionally penalized complexity priors can be put on the Matérn covariance hyperparameters. See `?matern_pc_prior()` for more details.
 
@@ -181,17 +236,23 @@ There are other arguments which user might want to specify to override the defau
 The code below fits a GEV-GP model with Matérn SPDE kernel to the simulated data. The shape parameter is constrained to be positive. No covariates are included in this model, so by default an intercept parameter $\beta_0$ is estimated for the GP of each spatial random effect. We also specify the return levels of interest at 0.5 and 0.9.
 
 ```{r sim1-mod_fit}
-fit <- spatialGEV_fit(data = y, locs = locs, random = "abs",
-                      init_param = list(a = rep(60, n_loc),
-                                        log_b = rep(2,n_loc),
-                                        s = rep(-3,n_loc),
-                                        beta_a = 60, beta_b = 2, beta_s = -2,
-                                        log_sigma_a = 1.5, log_kappa_a = -2,
-                                        log_sigma_b = 1.5, log_kappa_b = -2,
-                                        log_sigma_s = -1, log_kappa_s = -2),
-                      reparam_s = "positive", kernel="spde", 
-                      return_levels = c(0.5, 0.9),
-                      silent = TRUE)
+fit <- spatialGEV_fit(
+  data = y,
+  locs = locs,
+  random = "abs",
+  init_param = list(
+    a = rep(60, n_loc),
+    log_b = rep(2,n_loc),
+    s = rep(-3,n_loc),
+    beta_a = 60, beta_b = 2, beta_s = -2,
+    log_sigma_a = 1.5, log_kappa_a = -2,
+    log_sigma_b = 1.5, log_kappa_b = -2,
+    log_sigma_s = -1, log_kappa_s = -2
+  ),
+  reparam_s = "positive", kernel="spde", 
+  return_levels = c(0.5, 0.9),
+  silent = TRUE
+)
 ```
 
 ```{r sim1-display-fit}
@@ -206,13 +267,14 @@ fit_summary$return_levels[1:5,]
 ```
 
 ### Posterior sampling
-To obtain posterior samples of $a$, $b$, and $s$, we pass the fitted model object `fit` to `spatialGEV_sample()`, which takes in three arguments:
+
+To obtain posterior samples of $a(\XX)$, $b(\XX)$, and $s(\XX)$, we pass the fitted model object `fit` to `spatialGEV_sample()`, which takes in three arguments:
 
 - `model`: An object of class `spatialGEVfit`, which is the output of `spatialGEV_fit()`.
 
-- `n_draw`: Number of samples to draw from the posterior distribution $p(a, b, s \mid \YY, \XX)$.
+- `n_draw`: Number of samples to draw from the posterior distribution $p(a(\XX), b(\XX), s(\XX) \mid \YY)$.
 
-- `observation`: If set to `TRUE`, the function will also draw from the posterior predictive distribution $p(y^{\tx{rep}} \mid \YY)$ at the observed locations. This is useful for Bayesian model checking, which we will demonstrate shortly. 
+- `observation`: If set to `TRUE`, the function will also draw from the posterior predictive distribution $p(y^{\tx{rep}}(\XX) \mid \YY)$ at the observed locations. This is useful for Bayesian model checking, which we will demonstrate shortly. 
 
 - `loc_ind`: A vector of location indices at which samples will be drawn. Default is all locations.
 
@@ -225,38 +287,52 @@ print(sam)
 Then use `summary()` to view the summary statistics of the posterior samples.
 ```{r sim1-display-pos-sam}
 pos_summary <- summary(sam)
-pos_summary$param_summary[c(1:5, 
-                            (n_loc+1):(n_loc+5), 
-                            (2*n_loc+1):(2*n_loc+5),
-                            (3*n_loc):(nrow(pos_summary$param_summary))),]
+pos_id <- c(
+  1:5, 
+  (n_loc+1):(n_loc+5), 
+  (2*n_loc+1):(2*n_loc+5),
+  (3*n_loc):(nrow(pos_summary$param_summary))
+)
+pos_summary$param_summary[pos_id,]
 pos_summary$y_summary[1:5,]
 ```
 
 ### Model checking
-Since we know the true values of $a$, $b$, and $s$ in this simulation study, we are able to compare the posterior mean with the true values. The posterior means of $a$, $b$ and $s$ at different locations are plotted against the true values below.
+
+Since we know the true values of $a(\XX)$, $b(\XX)$, and $s(\XX)$ in this simulation study, we are able to compare the posterior mean with the true values. The posterior means of $a$, $b$ and $s$ at different locations are plotted against the true values below.
 ```{r sim1-pos-plots, fig.width=12, fig.height=4, out.width= "100%"}
 par(mfrow=c(1,3))
-plot(a, pos_summary$param_summary[1:n_loc,"mean"], 
-     xlim=c(55, 63), ylim=c(55,63),
-     xlab="True a",
-     ylab="Posterior mean of a",
-     main="True vs Posterior Mean of a")
+plot(
+  x = a,
+  y = pos_summary$param_summary[1:n_loc,"mean"], 
+  xlim=c(55, 63), ylim=c(55,63),
+  xlab="True a",
+  ylab="Posterior mean of a",
+  main="True vs Posterior Mean of a"
+)
 abline(0, 1, col="blue", lty="dashed")
-plot(exp(logb), exp(pos_summary$param_summary[(n_loc+1):(2*n_loc),"mean"]), 
-     xlim=c(17, 24), ylim=c(17, 24),
-     xlab="True b",
-     ylab="Posterior mean of b",
-     main="True vs Posterior Mean of b")
+plot(
+  x = exp(logb),
+  y = exp(pos_summary$param_summary[(n_loc+1):(2*n_loc),"mean"]), 
+  xlim=c(17, 24), ylim=c(17, 24),
+  xlab="True b",
+  ylab="Posterior mean of b",
+  main="True vs Posterior Mean of b"
+)
 abline(0, 1, col="blue", lty="dashed")
-plot(exp(logs), exp(pos_summary$param_summary[(2*n_loc+1):(3*n_loc),"mean"]), 
-     xlim=c(0, 0.5), ylim=c(0, 0.5),
-     xlab="True s",
-     ylab="Posterior mean of s",
-     main="True vs Posterior Mean of s")
+plot(
+  x = exp(logs),
+  y = exp(pos_summary$param_summary[(2*n_loc+1):(3*n_loc),"mean"]), 
+  xlim=c(0, 0.5), ylim=c(0, 0.5),
+  xlab="True s",
+  ylab="Posterior mean of s",
+  main="True vs Posterior Mean of s"
+)
 abline(0, 1, col="blue", lty="dashed")
 ```
 
 ### Including covariates
+
 The example below demonstrates how to include covariates in the model. The simulated data used here comes with the package as a list variable `simulatedData_withcov`, where $s$ is a fixed effect, $a_i$ and $b_i$ at each location $i$ are generated from functions that depend linearly on coefficients $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$, and $y_i$ is simulated from a GEV distribution conditional on $a_i$, $b_i$ and $s$. 
 
 The simulated data are generated with two covariates, with $a_i$ depending on both covariates and $b_i$ depending on only the first covariate. The true values of $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$ are given below, where the first elements both correspond to the intercept term. `covar` is a `n_loc x 3` design matrix with the first column being all 1s. The GEV-GP model supported by ***SpatialGEV*** assumes an intercept is always included for each random effect, so it is important to make sure the first column of the design matrix (`X_a`, `X_b`, `X_s`) is all 1s.
@@ -273,23 +349,28 @@ print(beta_a)
 print(beta_b)
 ```
 
-We include the covariate matrix for random effects $a_i$ and $b_i$ by providing the `covar` variable to both `X_a` and `X_b` arguments. For priors on $\boldsymbol{\beta}$, the package only supports specifying the same Normal prior for all elements of $\boldsymbol{\beta}_u$ for each of $u=a,b,s$. Here, a Normal prior $\mathcal{N}(0, 10^2)$ is imposed on both $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$.
+We include the covariate matrix for random effects $a_i$ and $b_i$ by providing the `covar` variable to both `X_a` and `X_b` arguments. For priors on $\boldsymbol{\beta}$, the package only supports specifying the same Normal prior for all elements of $\boldsymbol{\beta}_u$ for each of $u=a,b,s$. Here, a Normal prior $\normal(0, 10^2)$ is imposed on both $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$.
 ```{r fit_with_covar}
-fit_withcov <- spatialGEV_fit(data = y_withcov, locs = locs, 
-                              random = "ab",
-                              init_param = list(a = rep(0, n_loc),
-                                                log_b = rep(0, n_loc), 
-                                                s = 0,
-                                                beta_a = rep(0, ncol(covar)), 
-                                                beta_b = rep(0, ncol(covar)), 
-                                                log_sigma_a = 1, 
-                                                log_kappa_a = -2,
-                                                log_sigma_b = 1, 
-                                                log_kappa_b = -2),
-                              X_a = covar, X_b = covar,
-                              beta_prior=list(beta_a=c(0,10), beta_b=c(0,10)),
-                              reparam_s = "positive", kernel="spde", 
-                              silent = TRUE)
+fit_withcov <- spatialGEV_fit(
+  data = y_withcov,
+  locs = locs, 
+  random = "ab",
+  init_param = list(
+    a = rep(0, n_loc),
+    log_b = rep(0, n_loc), 
+    s = 0,
+    beta_a = rep(0, ncol(covar)), 
+    beta_b = rep(0, ncol(covar)), 
+    log_sigma_a = 1, 
+    log_kappa_a = -2,
+    log_sigma_b = 1, 
+    log_kappa_b = -2
+  ),
+  X_a = covar, X_b = covar,
+  beta_prior=list(beta_a=c(0,10), beta_b=c(0,10)),
+  reparam_s = "positive", kernel="spde", 
+  silent = TRUE
+)
 ```
 Next, we draw 1000 samples from the approximate posterior distribution of the parameters and display the summary statistics for $\boldsymbol{\beta}_a$ and $\boldsymbol{\beta}_b$ and their corresponding simulated (true) values below. While the credible intervals for the intercepts are wide, we see reasonably accurate and precise estimates for the coefficients corresponding to the two covariates. 
 ```{r summary_with_covar}
@@ -302,6 +383,7 @@ print(beta_df)
 ```
 
 ### Posterior prediction
+
 Finally, we demonstrate how to make predictions at new locations. This is done using the `spatialGEV_predict()` function, which takes the following arguments:
 
 - `model`: An object of class `spatialGEVfit`, which is the output of `spatialGEV_fit()`.
@@ -315,7 +397,7 @@ Finally, we demonstrate how to make predictions at new locations. This is done u
 - `parameter_draws`: An optional `n_draws x n_parameters` matrix that contains the posterior samples of all parameters. If `spatialGEV_sample()` has already been called prior to `spatialGEV_predict()`, its output can be provided to the prediction function to save time.
 
 In this dataset, the GEV parameters $a$ and $\log(b)$ are generated from the surfaces below, and the shape parameter is a constant $\exp(-2)$ across space.
-```{r sim2-plot-ab, fig.width=8, fig.height=4.5, out.width="50%"}
+```{r sim2-plot-ab, fig.width=8, fig.height=4.5, out.width="100%"}
 a <- simulatedData$a
 logb <- simulatedData$logb
 logs <- simulatedData$logs
@@ -323,13 +405,18 @@ y <- simulatedData$y
 locs <- simulatedData$locs
 n_loc <- nrow(locs)
 par(mfrow=c(1,2))
-grid_plot(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)), 
-          "Spatial variation of a")
-grid_plot(unique(locs$x), unique(locs$y), matrix(logb, ncol=sqrt(n_loc)), 
-          "Spatial variation of log(b)", y_lab="")
+grid_plot(
+  x = unique(locs$x), y = unique(locs$y), z = matrix(a, ncol=sqrt(n_loc)), 
+  title = "Spatial variation of a"
+)
+grid_plot(
+  x  = unique(locs$x), y = unique(locs$y), z = matrix(logb, ncol=sqrt(n_loc)), 
+  title = "Spatial variation of log(b)",
+  y_lab=""
+)
 ```
 
-We randomly sample 50 locations from the simulated dataset `simulatedData` as test locations which are left out. Data from the rest 350 training locations are used for model fitting. We fit a GEV-GP model with random $a$ and $b$ and log-transformed $s$ to the training dataset. The kernel used here is the SPDE approximation to the Matérn covariance function (@lindgren-etal11).
+We randomly sample 50 locations from the simulated dataset `simulatedData` as test locations which are left out. Data from the rest 350 training locations are used for model fitting. We fit a GEV-GP model with random $a$ and $b$ and log-transformed $s$ to the training dataset. The kernel used here is the SPDE approximation to the Matérn covariance function [@lindgren-etal11].
 ```{r sim2-test-fit}
 set.seed(123)
 n_test <- 50
@@ -343,13 +430,21 @@ locs_train <- locs[-test_ind,]
 y_train <- y[-test_ind]
 
 # Fit the GEV-GP model to the training set
-train_fit_s <- spatialGEV_fit(data =y_train, locs = locs_train, random = "ab",
-                      init_param = list(a = rep(0, n_train),
-                                        log_b = rep(0,n_train), s = 0,
-                                        beta_a = 0, beta_b = 0,
-                                        log_sigma_a = 1, log_kappa_a = -2,
-                                        log_sigma_b = 1, log_kappa_b = -2),
-                      reparam_s = "positive", kernel="spde", silent = TRUE)
+train_fit_s <- spatialGEV_fit(
+  data = y_train,
+  locs = locs_train,
+  random = "ab",
+  init_param = list(
+    a = rep(0, n_train),
+    log_b = rep(0,n_train), s = 0,
+    beta_a = 0, beta_b = 0,
+    log_sigma_a = 1, log_kappa_a = -2,
+    log_sigma_b = 1, log_kappa_b = -2
+  ),
+  reparam_s = "positive",
+  kernel="spde",
+  silent = TRUE
+)
 ```
 
 The fitted model object is passed to `spatialGEV_predict()` for 500 samples from the posterior predictive distributions. Note that this might take some time.
@@ -373,17 +468,23 @@ plot(sapply(y_test, mean), pred_summary[,"mean"],
      ylab="Test statistic from predictive distribution",
      main="Test statistic = mean")
 abline(0, 1, col="blue", lty="dashed")
-plot(sapply(y_test, function(x){quantile(x, probs=0.975)}), pred_summary[,"97.5%"], 
-     xlim=c(4, 13), ylim=c(4, 13),
-     xlab="Test statistic from test data",
-     ylab="Test statistic from predictive distribution",
-     main="Test statistic = 97.5% quantile")
+plot(
+  x = sapply(y_test, function(x) {
+    quantile(x, probs=0.975)
+  }),
+  y = pred_summary[,"97.5%"], 
+  xlim=c(4, 13), ylim=c(4, 13),
+  xlab="Test statistic from test data",
+  ylab="Test statistic from predictive distribution",
+  main="Test statistic = 97.5% quantile"
+)
 abline(0, 1, col="blue", lty="dashed")
 ```
 
 ## Case study: Yearly maximum snowfall data in Ontario, Canada
+
 In this section, we show how to use the ***SpatialGEV*** package to analyze a real dataset. The data used here are the 1987-2021 monthly total snowfall data (in cm) obtained from Environment and Natural Resources, Government of Canada. The link to download the raw data is https://climate-change.canada.ca/climate-data/#/monthly-climate-summaries. This dataset is automatically loaded with the package and is named `ONsnow`.
-```{r snow-display-raw-data, message=FALSE, fig.width=6, fig.height=5, out.width= "60%"}
+```{r snow-display-raw-data, message=FALSE, fig.width=6, fig.height=5, out.width= "100%"}
 library(dplyr)
 #library(maps)
 lon_range <- c(-96, -73)
@@ -394,6 +495,7 @@ points(ONsnow$LONGITUDE, ONsnow$LATITUDE)
 ```
 
 ### Data preprocessing
+
 We first grid the data using cells of length $0.5^{\circ}$. By doing this, weather stations that are apart by less than $0.5^{\circ}$ in longitude/latitude are grouped together in the same grid cell. From now on, we refer to each grid cell as a location.
 ```{r snow-grid-data}
 grid_locs <- grid_location(ONsnow$LONGITUDE, ONsnow$LATITUDE,
@@ -439,25 +541,31 @@ locs <- locs %>% select(cell_lon, cell_lat) %>% slice(chosen_loc_ind)
 n_loc <- nrow(locs)
 ```
 
-```{r snow-display-grid-data, fig.width=6, fig.height=5, out.width= "60%"}
+```{r snow-display-grid-data, fig.width=6, fig.height=5, out.width= "100%"}
 maps::map(xlim = lon_range, ylim = lat_range)
 points(locs$cell_lon, locs$cell_lat)
 ```
 
-Now we fit the GEV-GP model to the data using the SPDE kernel. Both $a$ and $b$ are treated as spatial random effects. $s$ is constrained to be a positive constant. Note that here we have specified a $\mathcal{N}(-5,5)$ prior on the log-transformed shape parameter. This is because we found that the shape parameter is estimated close to 0 and such a prior ensures model fitting procedure is numerically stable.
+Now we fit the GEV-GP model to the data using the SPDE kernel. Both $a$ and $b$ are treated as spatial random effects. $s$ is constrained to be a positive constant. Note that here we have specified a $\normal(-5,5)$ prior on the log-transformed shape parameter. This is because we found that the shape parameter is estimated close to 0 and such a prior ensures model fitting procedure is numerically stable.
 ```{r snow-fitting}
-fit <- spatialGEV_fit(Y, locs, random="ab",
-                      init_param = list(a=rep(40, n_loc),
-                                        log_b=rep(3, n_loc),
-                                        s=-5,
-                                        beta_a=30, beta_b=3,
-                                        log_sigma_a=1, log_kappa_a=-3,
-                                        log_sigma_b=-2, log_kappa_b=-3),
-                      reparam_s="positive",
-                      kernel="spde", 
-                      beta_prior=list(beta_a=c(0,100),beta_b=c(0,100)),
-                      s_prior=c(-5,5),
-                      silent=TRUE)
+fit <- spatialGEV_fit(
+  data = Y,
+  locs = locs,
+  random="ab",
+  init_param = list(
+    a=rep(40, n_loc),
+    log_b=rep(3, n_loc),
+    s=-5,
+    beta_a=30, beta_b=3,
+    log_sigma_a=1, log_kappa_a=-3,
+    log_sigma_b=-2, log_kappa_b=-3
+  ),
+  reparam_s="positive",
+  kernel="spde", 
+  beta_prior=list(beta_a=c(0,100),beta_b=c(0,100)),
+  s_prior=c(-5,5),
+  silent=TRUE
+)
 fit
 ```
 
@@ -476,14 +584,17 @@ logb_ind <- which(colnames(p_draws)%in% paste0("log_b", 1:n_loc))
 logs_ind <- which(colnames(p_draws) == "s")
 
 # Define a function to draw from the return level posterior distribution
-rl_draw <- function(return_period){
-  apply(p_draws, 1,
-               function(all_draw){
-                 mapply(evd::qgev, p=1/return_period, 
-                        loc=all_draw[a_ind], 
-                        scale=exp(all_draw[logb_ind]),
-                        shape=exp(all_draw[logs_ind]), lower.tail=F)
-        })
+rl_draw <- function(return_period) {
+  apply(p_draws, 1, function(all_draw) {
+    mapply(
+      FUN=evd::qgev,
+      p=1/return_period, 
+      loc=all_draw[a_ind], 
+      scale=exp(all_draw[logb_ind]),
+      shape=exp(all_draw[logs_ind]),
+      lower.tail=FALSE
+    )
+  })
 }
 
 # 5 year return-level
@@ -493,7 +604,7 @@ return5sd <- apply(q5_draws, 1, sd)
 ```
 
 Plotted below are the return levels.
-```{r snow-return-plots, fig.width=10, fig.height=5, out.width= "60%", cache=FALSE}
+```{r snow-return-plots, fig.width=10, fig.height=5, out.width= "100%", cache=FALSE}
 par(mfrow=c(1,2))
 map_plot(return5, title="5-year Return levels")
 map_plot(return5sd, title="SD of 5-year Return levels")
