@@ -62,8 +62,13 @@ s(\xx) \mid \bm{\beta}_s, \tth_s &\sim \mathcal{GP}\big( \XX_s\bm{\beta}_s, k(\x
 \end{aligned}
 \label{eqn:gev-gp-model}
 \end{equation}
-In this package, a uniform prior $\pi(\tth) \propto 1$ is specified on the fixed effect and hyperparameters 
-\[\tth=(s, \bm{\beta}_a, \bm{\beta}_b, \bm{\beta}_s, \tth_a, \tth_b, \tth_s).\] 
+***SpatialGEV*** supports three types of kernel functions $k(\xx,\xx')$:
+
+- Exponential kernel $k(\xx,\xx')=\sigma^2e^{-\frac{|\xx-\xx'|}{\ell}}$, in which case $\tth_u=(\sigma_u^2,\ell_u)$ for $u\in \{a,b,s\}$. 
+
+- Matérn kernel $k(\xx,\xx')=\sigma^2 \frac{2^{1-\nu}}{\Gamma(\nu)} (\kappa |\xx-\xx'|)^\nu \mathcal{K}_\nu(\kappa|\xx-\xx'|)$, where $\mathcal{K}_\nu(\cdot)$ is the modified Bessel function of the second kind and $\nu$ is typically fixed. In this case, $\tth_u=(\sigma_u^2,\kappa_u)$ for $u\in \{a,b,s\}$. 
+
+- An SPDE approximation to the above Matérn kernel described in @lindgren-etal11, in which case $\tth_u=(\sigma_u^2,\kappa_u)$ for $u\in \{a,b,s\}$. 
 
 ## What Does ***SpatialGEV*** Do?
 The package provides an interface to estimate the approximate joint posterior distribution of the spatial random effects $a$, $b$ and $s$ in the GEV-GP model. The main functionalities of the package are:
@@ -143,7 +148,7 @@ for (i in sam_inds){
 ```
 
 ### Model fitting
-The function `spatialGEV_fit()` in the **SpatialGEV** package is used to find the mode and quadrature of the Laplace approximation to the marginal hyperparameter posterior, which is the basis of a Normal approximation to the posterior of both hyperparameters and random effects referred to as Laplace-MQ in our paper. The function `spatialGEV_sample()` is then used to sample from this distribution via a sparse representation of its precision matrix. 
+***SpatialGEV*** adopts a Bayesian approach based on the Laplace approximation for model inference, which is described in @chen-etal21. The function `spatialGEV_fit()` in the **SpatialGEV** package is used to find the mode and quadrature of the Laplace approximation to the marginal hyperparameter posterior, which is the basis of a Normal approximation to the posterior of both hyperparameters and random effects referred to as Laplace-MQ in @chen-etal21. The function `spatialGEV_sample()` is then used to sample from this distribution via a sparse representation of its precision matrix. We adopt a uniform prior $\pi(\tth) \propto 1$ on the GP hyperparameters $(\tth_a, \tth_b, \tth_s)$ in this vignette, but a prior can be specified for the Matérn (and its SPDE approximated version) kernel hyperaparameters. Moreover, we allow weakly informative priors to be imposed on other fixed effects. Available prior choices are detailed below.
 
 To fit the GEV-GP model to this simulated dataset, the first step is calling the `spatialGEV_fit()` function, for which several arguments must be provided:
 
@@ -159,7 +164,7 @@ To fit the GEV-GP model to this simulated dataset, the first step is calling the
 
 There are other arguments which user might want to specify to override the defaults:
 
-- `method`: A character string "laplace" (default) or "maxsmooth". The former corresponds to the main Laplace method described in @chen-etal21. The latter corresponds to a more computationally efficient but possibly less accurate two-step method known as *Max-and-Smooth* [@hrafnkelsson-etal19]. Details on the Max-and-Smooth approach for fitting a GEV-GP model can be found in  @@jhannesson-etal22.
+- `method`: A character string "laplace" (default) or "maxsmooth". The former corresponds to the main Laplace method described in @chen-etal21. The latter corresponds to a more computationally efficient but possibly less accurate two-step method known as *Max-and-Smooth* [@hrafnkelsson-etal19]. Details on the Max-and-Smooth approach for fitting a GEV-GP model can be found in @jhannesson-etal22.
 
 - `kernel`: The kernel used for the Gaussian process(es) describing the spatial random effect(s). Currently 3 kernels are implemented: the exponential kernel (`kernel="exp"`), the Matérn kernel (`kernel="matern"`), and the SPDE approximation to the Matérn kernel (`kernel="spde"`) based on @lindgren-etal11 (the default choice). The latter provides most computationally efficient estimation of the GEV parameters by approximating the spatial GPs using basis expansion.
 
@@ -324,7 +329,7 @@ grid_plot(unique(locs$x), unique(locs$y), matrix(logb, ncol=sqrt(n_loc)),
           "Spatial variation of log(b)", y_lab="")
 ```
 
-We randomly sample 100 locations from the simulated dataset `simulatedData` as test locations which are left out. Data from the rest 300 training locations are used for model fitting. We fit a GEV-GP model with random $a$ and $b$ and log-transformed $s$ to the training dataset. The kernel used here is the SPDE approximation to the Matérn covariance function (@lindgren-etal11).
+We randomly sample 50 locations from the simulated dataset `simulatedData` as test locations which are left out. Data from the rest 350 training locations are used for model fitting. We fit a GEV-GP model with random $a$ and $b$ and log-transformed $s$ to the training dataset. The kernel used here is the SPDE approximation to the Matérn covariance function (@lindgren-etal11).
 ```{r sim2-test-fit}
 set.seed(123)
 n_test <- 50
