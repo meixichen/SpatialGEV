@@ -5,8 +5,7 @@
 ^doc$
 ^Meta$
 ^README\.Rmd$
-CONTRIBUTING.md
+^CONTRIBUTING\.md$
 ^\.github$
 ^examples$
-vignettes/SpatialGEV-vignette.Rmd.orig
-vignettes/rebuild_vignette.R
+^vignettes/articles$
