@@ -136,7 +136,7 @@ pos_summary$y_summary[1:5,]
 ```
 
 One can also plot the full posteriors using e.g., the [***bayespolot***](https://mc-stan.org/bayesplot/) package.
-```{r sample-plot}
+```{r sample-plot, fig.width = 7, fig.height = 12, out.width = "100%"}
 library(bayesplot)
 library(ggplot2)
 mcmc_areas(
