@@ -7,7 +7,6 @@
 
 [![](https://www.r-pkg.org/badges/version/SpatialGEV)](https://cran.r-project.org/package=SpatialGEV)
 [![R-CMD-check](https://github.com/meixichen/SpatialGEV/workflows/R-CMD-check/badge.svg)](https://github.com/meixichen/SpatialGEV/actions)
-[![codecov](https://codecov.io/github/meixichen/SpatialGEV/branch/joss/graph/badge.svg?token=O7XZWKV2FD)](https://codecov.io/github/meixichen/SpatialGEV)
 <!-- badges: end -->
 
 *Meixi Chen, Martin Lysy, Reza Ramezan*
@@ -68,33 +67,50 @@ logb <- simulatedData2$logb # log scale
 logs <- simulatedData2$logs # log shape
 locs <- simulatedData2$locs # coordinate matrix
 n_loc <- nrow(locs) # number of locations
-y <- Map(evd::rgev, n=sample(50:70, n_loc, replace=TRUE),
-         loc=a, scale=exp(logb), shape=exp(logs)) # observations
+y <- Map(evd::rgev,
+  n = sample(50:70, n_loc, replace = TRUE),
+  loc = a, scale = exp(logb), shape = exp(logs)
+) # observations
 
-filled.contour(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)), 
-               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
-               main="Spatial variation of a",
-               cex.lab=1,cex.axis=1)
+filled.contour(
+  x = unique(locs$x),
+  y = unique(locs$y),
+  z = matrix(a, ncol = sqrt(n_loc)),
+  color.palette = terrain.colors,
+  xlab = "Longitude", ylab = "Latitude",
+  main = "Spatial variation of a",
+  cex.lab = 1, cex.axis = 1
+)
 ```
 
 <img src="man/figures/README-show-data-1.png" width="50%" />
 
 ``` r
 
-filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logb), ncol=sqrt(n_loc)), 
-               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
-               main="Spatial variation of b",
-               cex.lab=1,cex.axis=1)
+filled.contour(
+  x = unique(locs$x),
+  y = unique(locs$y),
+  z = matrix(exp(logb), ncol = sqrt(n_loc)),
+  color.palette = terrain.colors,
+  xlab = "Longitude", ylab = "Latitude",
+  main = "Spatial variation of b",
+  cex.lab = 1, cex.axis = 1
+)
 ```
 
 <img src="man/figures/README-show-data-2.png" width="50%" />
 
 ``` r
 
-filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logs), ncol=sqrt(n_loc)),
-               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude",
-               main="Spatial variation of s",
-               cex.lab=1,cex.axis=1)
+filled.contour(
+  x = unique(locs$x),
+  y = unique(locs$y),
+  z = matrix(exp(logs), ncol = sqrt(n_loc)),
+  color.palette = terrain.colors,
+  xlab = "Longitude", ylab = "Latitude",
+  main = "Spatial variation of s",
+  cex.lab = 1, cex.axis = 1
+)
 ```
 
 <img src="man/figures/README-show-data-3.png" width="50%" />
@@ -108,20 +124,26 @@ SPDE-approximated Matérn kernel `kernel="spde"`. Initial parameter
 values are passed to `init_param` using a list.
 
 ``` r
-fit <- spatialGEV_fit(data = y, locs = locs, random = "abs",
-                      init_param = list(a = rep(60, n_loc),
-                                        log_b = rep(2,n_loc),
-                                        s = rep(-3,n_loc),
-                                        beta_a = 60, beta_b = 2, beta_s = -2,
-                                        log_sigma_a = 1.5, log_kappa_a = -2,
-                                        log_sigma_b = 1.5, log_kappa_b = -2,
-                                        log_sigma_s = -1, log_kappa_s = -2),
-                      reparam_s = "positive", kernel="spde", silent = TRUE)
+fit <- spatialGEV_fit(
+  data = y, locs = locs, random = "abs",
+  init_param = list(
+    a = rep(60, n_loc),
+    log_b = rep(2, n_loc),
+    s = rep(-3, n_loc),
+    beta_a = 60, beta_b = 2, beta_s = -2,
+    log_sigma_a = 1.5, log_kappa_a = -2,
+    log_sigma_b = 1.5, log_kappa_b = -2,
+    log_sigma_s = -1, log_kappa_s = -2
+  ),
+  reparam_s = "positive",
+  kernel = "spde",
+  silent = TRUE
+)
 
 class(fit)
 #> [1] "spatialGEVfit"
 print(fit)
-#> Model fitting took 27.9517922401428 seconds 
+#> Model fitting took 18.7642500400543 seconds 
 #> The model has reached relative convergence 
 #> The model uses a spde kernel 
 #> Number of fixed effects in the model is 9 
@@ -134,10 +156,10 @@ Posterior samples of the random and fixed effects are drawn using
 to draw from the posterior predictive distribution.
 
 ``` r
-sam <- spatialGEV_sample(model = fit, n_draw = 1000, observation = T)
+sam <- spatialGEV_sample(model = fit, n_draw = 1e4, observation = TRUE)
 print(sam)
-#> The samples contains 1000 draws of 1209 parameters 
-#> The samples contains 1000 draws of response at 400 locations 
+#> The samples contain 10000 draws of 1209 parameters 
+#> The samples contain 10000 draws of response at 400 locations 
 #> Use summary() to obtain summary statistics of the samples
 ```
 
@@ -146,21 +168,45 @@ the sample object.
 
 ``` r
 pos_summary <- summary(sam)
-pos_summary$param_summary[1:5,]
+pos_summary$param_summary[1:5, ]
 #>        2.5%      25%      50%      75%    97.5%     mean
-#> a1 59.98220 61.58412 62.39717 63.23451 64.98185 62.40852
-#> a2 60.39339 61.75672 62.55552 63.30514 64.95137 62.55192
-#> a3 60.01955 61.28410 61.98922 62.71080 64.13772 61.98618
-#> a4 59.57800 60.92354 61.66539 62.39592 63.81774 61.66007
-#> a5 59.55668 60.86209 61.54278 62.21564 63.68217 61.55340
-pos_summary$y_summary[1:5,]
+#> a1 59.42203 60.51864 61.07608 61.65162 62.72965 61.08421
+#> a2 59.51169 60.49154 60.99219 61.53318 62.51913 61.00703
+#> a3 59.51886 60.42647 60.90600 61.40069 62.33711 60.91756
+#> a4 59.41940 60.33537 60.81912 61.30541 62.24544 60.82448
+#> a5 59.35572 60.28673 60.76393 61.25759 62.21742 60.76773
+pos_summary$y_summary[1:5, ]
 #>        2.5%      25%      50%      75%    97.5%     mean
-#> y1 39.43693 56.12927 70.41943 87.22232 140.3342 74.81315
-#> y2 37.09989 55.68274 67.98861 87.42057 148.5369 74.42377
-#> y3 38.46096 55.07948 69.19833 87.29214 152.6150 74.99553
-#> y4 38.34585 56.38710 68.56856 86.17946 143.4025 73.64138
-#> y5 37.81648 55.14434 69.23200 85.81161 143.7851 74.12148
+#> y1 38.07950 55.22167 68.23224 85.55679 137.1879 73.11054
+#> y2 37.69110 55.21894 67.88157 84.81316 135.3150 72.74923
+#> y3 36.65306 54.78220 68.18212 85.56453 138.1629 72.99914
+#> y4 36.19345 54.81739 68.08520 85.55948 141.2051 73.08745
+#> y5 36.31394 54.29342 67.38804 86.26536 143.0015 73.22856
 ```
+
+One can also plot the full posteriors using e.g., the
+[***bayespolot***](https://mc-stan.org/bayesplot/) package.
+
+``` r
+library(bayesplot)
+#> This is bayesplot version 1.11.1
+#> - Online documentation and vignettes at mc-stan.org/bayesplot
+#> - bayesplot theme set to bayesplot::theme_default()
+#>    * Does _not_ affect other ggplot2 plots
+#>    * See ?bayesplot_theme_set for details on theme setting
+library(ggplot2)
+mcmc_areas(
+  x = sam$parameter_draws[, 1:5],
+  prob = .95,
+  point_est = "mean"
+) +
+  ggtitle(
+    "Posterior distributions of a1 - a5",
+    "with posterior means and 95% credible intervals"
+  )
+```
+
+<img src="man/figures/README-sample-plot-1.png" width="100%" />
 
 # TODO
 

@@ -9,7 +9,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "man/figures/README-",
-  out.width = "100%"
+  out.width = "100%",
+  tidy = "styler"
 )
 ```
 
@@ -52,6 +53,7 @@ devtools::install_github("meixichen/SpatialGEV")
 ```
 
 ## Example
+
 Using the simulated data set `simulatedData2` provided in the package, we demonstrate how to use this package. Spatial variation of the GEV parameters are plotted below.
 
 ```{r show-data, fig.height=4, fig.width=4.5, out.width="50%"}
@@ -65,34 +67,55 @@ n_loc <- nrow(locs) # number of locations
 y <- Map(evd::rgev, n=sample(50:70, n_loc, replace=TRUE),
          loc=a, scale=exp(logb), shape=exp(logs)) # observations
 
-filled.contour(unique(locs$x), unique(locs$y), matrix(a, ncol=sqrt(n_loc)), 
-               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
-               main="Spatial variation of a",
-               cex.lab=1,cex.axis=1)
+filled.contour(
+  x = unique(locs$x),
+  y = unique(locs$y),
+  z = matrix(a, ncol=sqrt(n_loc)), 
+  color.palette = terrain.colors,
+  xlab="Longitude", ylab="Latitude", 
+  main="Spatial variation of a",
+  cex.lab=1,cex.axis=1
+)
 
-filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logb), ncol=sqrt(n_loc)), 
-               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude", 
-               main="Spatial variation of b",
-               cex.lab=1,cex.axis=1)
+filled.contour(
+  x = unique(locs$x),
+  y = unique(locs$y),
+  z = matrix(exp(logb), ncol=sqrt(n_loc)), 
+  color.palette = terrain.colors,
+  xlab="Longitude", ylab="Latitude", 
+  main="Spatial variation of b",
+  cex.lab=1,cex.axis=1
+)
 
-filled.contour(unique(locs$x), unique(locs$y), matrix(exp(logs), ncol=sqrt(n_loc)),
-               color.palette = terrain.colors, xlab="Longitude", ylab="Latitude",
-               main="Spatial variation of s",
-               cex.lab=1,cex.axis=1)
+filled.contour(
+  x = unique(locs$x),
+  y = unique(locs$y),
+  z = matrix(exp(logs), ncol=sqrt(n_loc)),
+  color.palette = terrain.colors,
+  xlab="Longitude", ylab="Latitude",
+  main="Spatial variation of s",
+  cex.lab=1,cex.axis=1
+)
 ```
 
 To fit a GEV-GP model to the simulated data, use the `spatialGEV_fit()` function. We use `random="abs"` to indicate that all three GEV parameters are treated as random effects. The shape parameter `s` is constrained to be positive (log transformed) by specifying `reparam_s="positive"`. The covariance kernel function used here is the SPDE-approximated Matérn kernel `kernel="spde"`. Initial parameter values are passed to `init_param` using a list.
 
 ```{r fit}
-fit <- spatialGEV_fit(data = y, locs = locs, random = "abs",
-                      init_param = list(a = rep(60, n_loc),
-                                        log_b = rep(2,n_loc),
-                                        s = rep(-3,n_loc),
-                                        beta_a = 60, beta_b = 2, beta_s = -2,
-                                        log_sigma_a = 1.5, log_kappa_a = -2,
-                                        log_sigma_b = 1.5, log_kappa_b = -2,
-                                        log_sigma_s = -1, log_kappa_s = -2),
-                      reparam_s = "positive", kernel="spde", silent = TRUE)
+fit <- spatialGEV_fit(
+  data = y, locs = locs, random = "abs",
+  init_param = list(
+    a = rep(60, n_loc),
+    log_b = rep(2,n_loc),
+    s = rep(-3,n_loc),
+    beta_a = 60, beta_b = 2, beta_s = -2,
+    log_sigma_a = 1.5, log_kappa_a = -2,
+    log_sigma_b = 1.5, log_kappa_b = -2,
+    log_sigma_s = -1, log_kappa_s = -2
+  ),
+  reparam_s = "positive",
+  kernel="spde",
+  silent = TRUE
+)
 
 class(fit)
 print(fit)
@@ -101,7 +124,7 @@ print(fit)
 Posterior samples of the random and fixed effects are drawn using `spatialGEV_sample()`. Specify `observation=TRUE` if we would also like to draw from the posterior predictive distribution.
 
 ```{r sample}
-sam <- spatialGEV_sample(model = fit, n_draw = 1000, observation = T)
+sam <- spatialGEV_sample(model = fit, n_draw = 1e4, observation = TRUE)
 print(sam)
 ```
 
@@ -112,8 +135,23 @@ pos_summary$param_summary[1:5,]
 pos_summary$y_summary[1:5,]
 ```
 
+One can also plot the full posteriors using e.g., the [***bayespolot***](https://mc-stan.org/bayesplot/) package.
+```{r sample-plot, fig.width = 7, fig.height = 12, out.width = "100%"}
+library(bayesplot)
+library(ggplot2)
+mcmc_areas(
+  x = sam$parameter_draws[,1:5],
+  prob = .95,
+  point_est = "mean"
+) +
+  ggtitle(
+    "Posterior distributions of a1 - a5",
+    "with posterior means and 95% credible intervals"
+  )
+```
 
 # TODO
+
 - [ ] Consider a shorter name, e.g., `sgev_*`, than `spatialGEV_*`.
 
 - [ ] Argument `init_params` adds a lot of complexity to `spatialGEV_fit()`.  Perhaps this function can be broken down into two parts: `spatialGEV_adfun()` which returns the `adfun` object, and then `spatialGEV_fit()` which does the fitting.  The advantage is that the `adfun$env$parameters` object tells you the dimension of the parameter values, which can be useful for initialization.  Also, note that `adfun$env$data` object contains the entire data list for browsing.
