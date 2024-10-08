@@ -134,7 +134,7 @@ The samples are then used to calculate the posterior mean estimate of the 10-yea
 ![Posterior mean estimates of the 10-year return level $z_{10}(\xx)$ plotted against the true values at different locations.\label{fig:sim-return-level}](sim-return-level.png){width=45%}
 
 # Conclusion
-As shown in Figure \ref{fig:sim-return-level}, and based on other evidence in @chen-etal24, **SpatialGEV** provides approximate Bayesian inference methods for fitting a flexible class of spatial extreme value models. Its computational efficiency over MCMC makes it a suitable for analyzing large datasets such as extreme weather data.
+As shown in Figure \ref{fig:sim-return-level}, and based on other evidence in @chen-etal24, **SpatialGEV** provides approximate Bayesian inference methods for fitting a flexible class of spatial extreme value models. Its computational efficiency over MCMC makes it suitable for analyzing large datasets such as extreme weather data.
 
 # Acknowledgements
 
