@@ -77,16 +77,7 @@ It is found that, while **SpatialGEV** tends to underestimate the posterior vari
 
 The main functions of the **SpatialGEV** package are `spatialGEV_fit()`, `spatialGEV_sample()`, and `spatialGEV_predict()`. This example shows how to apply these functions to analyze a simulated dataset with $400$ locations using the GEV-GP model. The GEV location parameter $a(\xx)$ and the scale parameter $b(\xx)$ are generated from surfaces depicted in Figure \ref{fig:sim-par}, whereas the shape parameter $s$ is a constant $\exp(-2)$ across space. The simulated data is provided by the package as a list called `simulatedData`, whose values are calibrated to the level of total daily precipitation in mm.
 
-\begin{figure}[h]
-\centering
-\begin{subfigure}{.4\textwidth}
-\includegraphics[]{sim-plot-a.png}
-\end{subfigure}%
-\begin{subfigure}{.4\textwidth}
-\includegraphics[]{sim-plot-b.png}
-\end{subfigure}
-\caption{The simulated GEV location parameters $a(\xx_i)$ and scale parameters $(b(\xx_i))$ plotted on regular lattices.}\label{fig:sim-par}
-\end{figure}
+![The simulated GEV location parameters $a(\xx_i)$ and scale parameters $b(\xx_i)$ plotted on regular lattices.\label{fig:sim-par}](sim-plot-ab.png){width=80%}
 
 The GEV-GP model is fit by calling `spatialGEV_fit()`. By specifying `random="ab"`, only the GEV parameters $a$ and $b$ are considered spatiallying varying. The argument `reparam_s="positive"` means we constrain the shape parameter to be positive. The GP kernel function is chosen using `kernel="exp"`. Other kernel function options are the Matérn kernel and the approximate GP computation method employing an SPDE approximation to the Matérn [@lindgren-etal11]. Covariates to include in the mean functions can be provided in a matrix form to `X_{a/b}`. Further details about the arguments are given in the [vignette](https://cran.r-project.org/web/packages/SpatialGEV/vignettes/SpatialGEV-vignette.html).
 
