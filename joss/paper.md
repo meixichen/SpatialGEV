@@ -1,5 +1,5 @@
 ---
-title: 'SpatialGEV: Fast Bayesian inference for spatial extreme value models in \textsf{R}'
+title: 'SpatialGEV: Fast Bayesian inference for spatial extreme value models in R'
 tags:
 - R
 - Bayesian inference
