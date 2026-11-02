@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, master, joss]
   pull_request:
-    branches: [main, master, joss]
+    branches: [main, master, joss, mlysy_devel]
 
 name: R-CMD-check
 
@@ -12,7 +12,7 @@ jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
 
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})${{ matrix.config.rcppeigen_dev && ' RcppEigen-dev' || '' }}
 
     strategy:
       fail-fast: false
@@ -20,8 +20,10 @@ jobs:
         config:
           - {os: macOS-latest,   r: 'release'}
           - {os: windows-latest, r: 'release'}
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: 'release'}
+          - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
+          - {os: ubuntu-latest,  r: 'release'}
+          - {os: ubuntu-latest,  r: 'release', rcppeigen_dev: true}
+          - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release', rcppeigen_dev: true}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -43,6 +45,24 @@ jobs:
         with:
           extra-packages: any::rcmdcheck
           needs: check
+          cache-version: ${{ matrix.config.rcppeigen_dev && 'rcppeigen-dev' || '1' }}
+
+      - name: Install dev RcppEigen from r-universe
+        if: matrix.config.rcppeigen_dev
+        run: |
+          install.packages("RcppEigen", repos = "https://rcppcore.r-universe.dev")
+        shell: Rscript {0}
+
+      - name: Report RcppEigen / Eigen version
+        run: |
+          cat("RcppEigen:", format(packageVersion("RcppEigen")), "\n")
+          inc <- system.file("include", "Eigen", package = "RcppEigen")
+          hdrs <- list.files(inc, recursive = TRUE, full.names = TRUE)
+          defs <- unlist(lapply(hdrs, function(f)
+            grep("^#define EIGEN_(WORLD|MAJOR|MINOR|PATCH)_VERSION\\b",
+                 readLines(f, warn = FALSE), value = TRUE)))
+          writeLines(unique(defs))
+        shell: Rscript {0}
 
       - uses: r-lib/actions/check-r-package@v2
         with:
