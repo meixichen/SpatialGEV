@@ -247,9 +247,9 @@ parse_kernel_spde <- function(locs, X_a, X_b, X_s,
          is.null(mesh_args$max.n.strict),
          is.null(mesh_args$max.n))) {
     # if none of the above is specified, use our default
-    mesh <- INLA::inla.mesh.2d(locs, max.edge=2)
+    mesh <- fmesher::fm_mesh_2d_inla(locs, max.edge=2)
   } else {
-    mesh <- INLA::inla.mesh.2d(locs, ...)
+    mesh <- fmesher::fm_mesh_2d_inla(locs, ...)
   }
   spde <- (INLA::inla.spde2.matern(mesh)$param.inla)[c("M0", "M1", "M2")]
   n_s <- nrow(spde$M0) # number of mesh triangles created by INLA
