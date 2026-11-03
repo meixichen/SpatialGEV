@@ -73,7 +73,11 @@ Type model_ptp_spde(objective_function<Type>* obj){
   Type b3 = -sig3*(log(-log(1-pow(0.5, alp3))));
   vector<Type> a = exp(psi);
   vector<Type> log_b = tau + psi;
+#if EIGEN_VERSION_AT_LEAST(5, 0, 0)
+  vector<Type> s = pow_cwise(1. - exp(-exp( (phi - b3) / sig3)), 1./alp3) - .5;
+#else
   vector<Type> s = pow(1. - exp(-exp( (phi - b3) / sig3)), 1./alp3) - .5;
+#endif
 
   // calculate the negative log likelihood
   Type nll = Type(0.0);
