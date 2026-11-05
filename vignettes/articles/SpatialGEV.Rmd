@@ -1,7 +1,7 @@
 ---
 title: "A Guide to the SpatialGEV Package"
 author: "Meixi Chen, Martin Lysy, Reza Ramezan"
-date: "2024-10-05"
+date: "2026-11-05"
 output: 
   rmarkdown::html_vignette:
     toc: true
@@ -142,7 +142,8 @@ We now demonstrate how to use this package through a simulation study. The simul
 library(SpatialGEV)
 library(fields) # for plots
 library(evd) # for rgev() and qgev()
-source("vignette-helper-functions.R") # a few plotting functions for vignette
+# a few plotting functions for vignette
+source(system.file("doc", "helper-functions.R", package = "SpatialGEV"))
 set.seed(123)
 a <- simulatedData2$a
 logb <- simulatedData2$logb
@@ -776,6 +777,6 @@ map_plot(return5, title = "5-year Return levels")
 map_plot(return5sd, title = "SD of 5-year Return levels")
 ```
 
-<img src="SpatialGEV_figures/snow-return-plots-1.png" width="100%" />
+<img src="SpatialGEV_figures/snow-return-plots-1.png" alt="" width="100%" />
 
 ## References
