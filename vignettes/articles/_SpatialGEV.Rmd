@@ -149,7 +149,8 @@ We now demonstrate how to use this package through a simulation study. The simul
 library(SpatialGEV)
 library(fields) # for plots
 library(evd) # for rgev() and qgev()
-source("vignette-helper-functions.R") # a few plotting functions for vignette
+# a few plotting functions for vignette
+source(system.file("doc", "helper-functions.R", package = "SpatialGEV"))
 set.seed(123)
 a <- simulatedData2$a
 logb <- simulatedData2$logb
